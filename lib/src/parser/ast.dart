@@ -523,3 +523,185 @@ final class TreeViewNodeAst {
   @override
   int get hashCode => Object.hash(name, indent, cssClass, icon, description);
 }
+
+enum EventModelEntityType { readModel, ui, command, event, processor }
+
+enum EventModelDataType { json, javaScriptObject, figma, salt, uri, markdown, html, text }
+
+final class EventModelingAst extends DiagramAst {
+  const EventModelingAst({
+    this.modelEntities = const [],
+    this.frames = const [],
+    this.dataEntities = const [],
+    this.notes = const [],
+    this.scenarios = const [],
+    this.title,
+    this.accessibilityTitle,
+    this.accessibilityDescription,
+  });
+
+  final List<EventModelEntityAst> modelEntities;
+  final List<EventModelFrameAst> frames;
+  final List<EventModelDataEntityAst> dataEntities;
+  final List<EventModelNoteAst> notes;
+  final List<EventModelScenarioAst> scenarios;
+  final String? title;
+  final String? accessibilityTitle;
+  final String? accessibilityDescription;
+}
+
+final class EventModelEntityAst {
+  const EventModelEntityAst({required this.name});
+  final String name;
+
+  @override
+  bool operator ==(Object other) => identical(this, other) || other is EventModelEntityAst && name == other.name;
+
+  @override
+  int get hashCode => name.hashCode;
+}
+
+sealed class EventModelFrameAst {
+  const EventModelFrameAst({
+    required this.name,
+    required this.entityType,
+    required this.entityIdentifier,
+    this.sourceFrames = const [],
+    this.dataReference,
+    this.dataType,
+    this.dataInlineValue,
+  });
+
+  final String name;
+  final EventModelEntityType entityType;
+  final String entityIdentifier;
+  final List<String> sourceFrames;
+  final String? dataReference;
+  final EventModelDataType? dataType;
+  final String? dataInlineValue;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other.runtimeType == runtimeType &&
+          other is EventModelFrameAst &&
+          name == other.name &&
+          entityType == other.entityType &&
+          entityIdentifier == other.entityIdentifier &&
+          _listEquals(sourceFrames, other.sourceFrames) &&
+          dataReference == other.dataReference &&
+          dataType == other.dataType &&
+          dataInlineValue == other.dataInlineValue;
+
+  @override
+  int get hashCode => Object.hash(
+    runtimeType,
+    name,
+    entityType,
+    entityIdentifier,
+    Object.hashAll(sourceFrames),
+    dataReference,
+    dataType,
+    dataInlineValue,
+  );
+}
+
+final class EventModelTimeFrameAst extends EventModelFrameAst {
+  const EventModelTimeFrameAst({
+    required super.name,
+    required super.entityType,
+    required super.entityIdentifier,
+    super.sourceFrames,
+    super.dataReference,
+    super.dataType,
+    super.dataInlineValue,
+  });
+}
+
+final class EventModelResetFrameAst extends EventModelFrameAst {
+  const EventModelResetFrameAst({
+    required super.name,
+    required super.entityType,
+    required super.entityIdentifier,
+    super.sourceFrames,
+    super.dataReference,
+    super.dataType,
+    super.dataInlineValue,
+  });
+}
+
+final class EventModelDataEntityAst {
+  const EventModelDataEntityAst({required this.name, this.dataType, required this.value});
+
+  final String name;
+  final EventModelDataType? dataType;
+  final String value;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is EventModelDataEntityAst && name == other.name && dataType == other.dataType && value == other.value;
+
+  @override
+  int get hashCode => Object.hash(name, dataType, value);
+}
+
+final class EventModelNoteAst {
+  const EventModelNoteAst({required this.sourceFrame, this.dataType, required this.value});
+
+  final String sourceFrame;
+  final EventModelDataType? dataType;
+  final String value;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is EventModelNoteAst &&
+          sourceFrame == other.sourceFrame &&
+          dataType == other.dataType &&
+          value == other.value;
+
+  @override
+  int get hashCode => Object.hash(sourceFrame, dataType, value);
+}
+
+final class EventModelStatementAst {
+  const EventModelStatementAst({required this.entityType, required this.entityIdentifier});
+
+  final EventModelEntityType entityType;
+  final String entityIdentifier;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is EventModelStatementAst && entityType == other.entityType && entityIdentifier == other.entityIdentifier;
+
+  @override
+  int get hashCode => Object.hash(entityType, entityIdentifier);
+}
+
+final class EventModelScenarioAst {
+  const EventModelScenarioAst({
+    required this.sourceFrame,
+    required this.given,
+    this.when = const [],
+    required this.then,
+  });
+
+  final String sourceFrame;
+  final List<EventModelStatementAst> given;
+  final List<EventModelStatementAst> when;
+  final List<EventModelStatementAst> then;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is EventModelScenarioAst &&
+          sourceFrame == other.sourceFrame &&
+          _listEquals(given, other.given) &&
+          _listEquals(when, other.when) &&
+          _listEquals(then, other.then);
+
+  @override
+  int get hashCode => Object.hash(sourceFrame, Object.hashAll(given), Object.hashAll(when), Object.hashAll(then));
+}
