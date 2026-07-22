@@ -1681,6 +1681,36 @@ void main() {
       expect(services[1].x - services[2].x, closeTo(201.29653714581747, 1e-9));
       expect(services[0].x - services[3].x, closeTo(222.65023530391295, 1e-9));
     });
+
+    test('architecture row alignments center a fan-in using Mermaid proof spacing', () {
+      final ast =
+          parse(
+                DiagramType.architecture,
+                'architecture-beta\n'
+                'service src1(server)[Source 1]\n'
+                'service src2(server)[Source 2]\n'
+                'service src3(server)[Source 3]\n'
+                'service proc(server)[Processor]\n'
+                'src1:B --> T:proc\n'
+                'src2:B --> T:proc\n'
+                'src3:B --> T:proc\n'
+                'align row src1 src2 src3\n',
+              )
+              as ArchitectureAst;
+      final scene = layoutDiagram(ast, textMeasurer: measurer, options: const RenderOptions(padding: 0));
+      final services = _flatten(scene.elements)
+          .whereType<SceneGroup>()
+          .where((element) => element.cssClasses.contains('architecture-service'))
+          .map((service) => service.transforms.single as Translate)
+          .toList();
+
+      expect(services.map((service) => service.y).take(3).toSet(), hasLength(1));
+      expect(services[0].x, closeTo(-85.85889726241993, 1e-9));
+      expect(services[1].x, closeTo(40.90168892184372, 1e-9));
+      expect(services[2].x, closeTo(168.85889726241993, 1e-9));
+      expect(services[3].x, closeTo(42.03541549731811, 1e-9));
+      expect(services[3].y - services[0].y, closeTo(186.70164581351315, 1e-9));
+    });
   });
 }
 

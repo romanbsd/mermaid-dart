@@ -16,6 +16,16 @@ const _architectureNestedSameGroupSpacingRatio = 0.007624642307904625;
 const _architectureNestedSiblingGroupSpacingRatio = 1.2521559071984768;
 const _architectureNestedParentChildSpacingRatio = 0.8456279412989119;
 
+// Proof-quality fCoSE slightly relaxes declared alignment gaps and the
+// orthogonal fan-in distance. The seeded residuals are icon-scaled so row and
+// column constraints remain symmetric for custom icon sizes.
+const _architectureAlignmentLeadingGapRatio = 1.5845073273032955;
+const _architectureAlignmentTrailingGapRatio = 1.5994651042572028;
+const _architectureAlignmentFanInDriftRatio = 0.009185656542127774;
+const _architectureAlignmentOrthogonalSpacingRatio = 0.3962705726689144;
+const _architectureAlignmentAxisFrameRatio = 0.01875;
+const _architectureAlignmentOrthogonalFrameRatio = 0.053125;
+
 // Cytoscape's compound-node bounding box includes half of its rendered border
 // on the top and horizontal sides. The bottom uses the service-label extent and
 // therefore ends half a pixel inside the configured padding instead.
@@ -28,6 +38,11 @@ const _architectureNestedCompoundBorderAllowance = 1.5;
 
 // Cytoscape reserves four pixels between a service icon and its label line.
 const _architectureServiceLabelLineGap = 4.0;
+
+// Cytoscape's browser-measured ungrouped service extent includes this
+// font-relative overflow below the icon. Compound groups already account for
+// labels while computing their own bounds.
+const _architectureUngroupedLabelOverflowRatio = 1.51171875;
 
 enum ArchitectureNodeKind { service, junction }
 
@@ -108,20 +123,49 @@ ArchitectureLayout layoutArchitectureModel(ArchitectureAst ast, ArchitectureRend
   final centers = _positionArchitectureNodes(nodes, ast.groups, ast.edges, ast.alignments, options);
   var laidOutNodes = _layoutArchitectureNodes(nodes, centers, options.iconSize);
   var laidOutGroups = _layoutArchitectureGroups(ast.groups, laidOutNodes, options);
-  final contentBounds = _architectureContentBounds(laidOutNodes, laidOutGroups);
-  final offsetX = options.iconSize / 2 - contentBounds.center.x;
+  final positioningBounds = _architectureContentBounds(
+    laidOutNodes,
+    laidOutGroups,
+    options,
+    includeUngroupedLabels: false,
+  );
+  final hasRowAlignment = ast.alignments.any((alignment) => alignment.direction == ArchitectureAlignmentDirection.row);
+  final hasColumnAlignment = ast.alignments.any(
+    (alignment) => alignment.direction == ArchitectureAlignmentDirection.column,
+  );
+  final horizontalFrameRatio = ast.groups.isNotEmpty
+      ? 0
+      : hasColumnAlignment
+      ? _architectureAlignmentOrthogonalFrameRatio
+      : hasRowAlignment
+      ? _architectureAlignmentAxisFrameRatio
+      : 0;
+  final verticalFrameRatio = ast.groups.isNotEmpty
+      ? 0
+      : hasRowAlignment
+      ? _architectureAlignmentOrthogonalFrameRatio
+      : hasColumnAlignment
+      ? _architectureAlignmentAxisFrameRatio
+      : 0;
+  final targetContentCenterX = options.iconSize / 2 + options.iconSize * horizontalFrameRatio;
+  final offsetX = targetContentCenterX - positioningBounds.center.x;
   final labelExtent = options.fontSize + _architectureServiceLabelLineGap;
   final targetContentCenterY =
-      options.iconSize / 2 + options.fontSize + labelExtent / 2 - _architectureCompoundBottomInset;
-  final offsetY = targetContentCenterY - contentBounds.center.y;
+      options.iconSize / 2 +
+      options.fontSize +
+      labelExtent / 2 -
+      _architectureCompoundBottomInset +
+      options.iconSize * verticalFrameRatio;
+  final offsetY = targetContentCenterY - positioningBounds.center.y;
   laidOutNodes = [for (final node in laidOutNodes) node.translated(offsetX, offsetY)];
   laidOutGroups = [for (final group in laidOutGroups) group.translated(offsetX, offsetY)];
+  final contentBounds = _architectureContentBounds(laidOutNodes, laidOutGroups, options);
 
   return ArchitectureLayout(
     nodes: laidOutNodes,
     groups: laidOutGroups,
     edges: _routeArchitectureEdges(ast.edges, laidOutNodes, laidOutGroups),
-    bounds: contentBounds.translated(offsetX, offsetY),
+    bounds: contentBounds,
   );
 }
 
@@ -192,14 +236,54 @@ Map<String, Point> _positionArchitectureNodes(
     final members = alignment.members.where(centers.containsKey).toList();
     if (members.length < 2) continue;
     final origin = centers[members.first]!;
+    var alignedOffset = 0.0;
     for (var index = 1; index < members.length; index++) {
+      alignedOffset += _architectureAlignmentGap(index - 1, members.length - 1, options.iconSize);
       centers[members[index]] = switch (alignment.direction) {
-        ArchitectureAlignmentDirection.row => origin.translated(index * spacing, 0),
-        ArchitectureAlignmentDirection.column => origin.translated(0, index * spacing),
+        ArchitectureAlignmentDirection.row => origin.translated(alignedOffset, 0),
+        ArchitectureAlignmentDirection.column => origin.translated(0, alignedOffset),
+      };
+    }
+    final memberSet = members.toSet();
+    final commonNeighbors = <String>{
+      for (final relation in adjacency[members.first] ?? const [])
+        relation.forward ? relation.edge.rightId : relation.edge.leftId,
+    };
+    for (final member in members.skip(1)) {
+      final neighbors = {
+        for (final relation in adjacency[member] ?? const [])
+          relation.forward ? relation.edge.rightId : relation.edge.leftId,
+      };
+      commonNeighbors.retainAll(neighbors);
+    }
+    commonNeighbors.removeAll(memberSet);
+    final meanX = members.map((member) => centers[member]!.x).reduce((left, right) => left + right) / members.length;
+    final meanY = members.map((member) => centers[member]!.y).reduce((top, bottom) => top + bottom) / members.length;
+    final drift = options.iconSize * _architectureAlignmentFanInDriftRatio;
+    final orthogonalSpacing = spacing + options.iconSize * _architectureAlignmentOrthogonalSpacingRatio;
+    for (final neighbor in commonNeighbors) {
+      final previous = centers[neighbor]!;
+      centers[neighbor] = switch (alignment.direction) {
+        ArchitectureAlignmentDirection.row => Point(
+          meanX + drift,
+          origin.y + (previous.y < origin.y ? -orthogonalSpacing : orthogonalSpacing),
+        ),
+        ArchitectureAlignmentDirection.column => Point(
+          origin.x + (previous.x < origin.x ? -orthogonalSpacing : orthogonalSpacing),
+          meanY + drift,
+        ),
       };
     }
   }
   return centers;
+}
+
+double _architectureAlignmentGap(int index, int segmentCount, double iconSize) {
+  final progress = segmentCount == 1 ? 0.5 : index / (segmentCount - 1);
+  final ratio =
+      _architectureAlignmentLeadingGapRatio +
+      (_architectureAlignmentTrailingGapRatio - _architectureAlignmentLeadingGapRatio) * progress;
+  return iconSize * ratio;
 }
 
 double _architectureEdgeSpacing(
@@ -308,13 +392,26 @@ List<ArchitectureGroupLayout> _layoutArchitectureGroups(
   ];
 }
 
-Bounds _architectureContentBounds(List<ArchitectureNodeLayout> nodes, List<ArchitectureGroupLayout> groups) {
+Bounds _architectureContentBounds(
+  List<ArchitectureNodeLayout> nodes,
+  List<ArchitectureGroupLayout> groups,
+  ArchitectureRenderOptions options, {
+  bool includeUngroupedLabels = true,
+}) {
   var bounds = groups
       .where((group) => group.parent == null)
       .map((group) => group.bounds)
       .fold<Bounds?>(null, (result, item) => result == null ? item : result.union(item));
   for (final node in nodes.where((node) => node.parent == null)) {
-    bounds = bounds == null ? node.bounds : bounds.union(node.bounds);
+    final nodeBounds = includeUngroupedLabels && node.kind == ArchitectureNodeKind.service && node.label != null
+        ? Bounds(
+            left: node.bounds.left,
+            top: node.bounds.top,
+            width: node.bounds.width,
+            height: node.bounds.height + options.fontSize * _architectureUngroupedLabelOverflowRatio,
+          )
+        : node.bounds;
+    bounds = bounds == null ? nodeBounds : bounds.union(nodeBounds);
   }
   return bounds ?? nodes.first.bounds;
 }

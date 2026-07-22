@@ -416,7 +416,8 @@ String _geometrySignature(XmlElement element, String transform, String styleShee
     ],
     'line' => [x(attribute('x1', '0')), y(attribute('y1', '0')), x(attribute('x2', '0')), y(attribute('y2', '0'))],
     'path' => [_translatedPath(attribute('d'), translation)],
-    'polygon' || 'polyline' => [_translatedPoints(attribute('points'), translation)],
+    'polygon' => [_translatedPolygonPoints(attribute('points'), translation)],
+    'polyline' => [_translatedPoints(attribute('points'), translation)],
     'rect' => [
       x(attribute('x', '0')),
       y(attribute('y', '0')),
@@ -610,10 +611,16 @@ String? _normalizedNumberList(String? value) {
 }
 
 String _formatNumber(double value) {
-  var formatted = value.toStringAsFixed(2).replaceFirst(RegExp(r'\.?0+$'), '');
+  final tieAdjusted = value + (value.isNegative ? -_numericComparisonTieEpsilon : _numericComparisonTieEpsilon);
+  var formatted = tieAdjusted.toStringAsFixed(2).replaceFirst(RegExp(r'\.?0+$'), '');
   if (formatted == '-0') formatted = '0';
   return formatted;
 }
+
+// Canonical SVG may truncate a value exactly onto a half-cent boundary before
+// this visual comparison runs. Bias ties by a negligible amount so both the
+// truncated and full-precision forms round in the same direction.
+const _numericComparisonTieEpsilon = 1e-9;
 
 String? _stylesheetFontSize(XmlElement element, String styleSheets) {
   String? fontSize;
@@ -690,6 +697,16 @@ String _translatedPoints(String points, _Translation? translation) {
       '${_formatNumber(values[index] + (translation?.dx ?? 0))},'
           '${_formatNumber(values[index + 1] + (translation?.dy ?? 0))}',
   ].join(' ');
+}
+
+String _translatedPolygonPoints(String points, _Translation? translation) {
+  final translated = _translatedPoints(points, translation).split(' ');
+  if (translated.length < 2) return translated.join(' ');
+  final rotations = [
+    for (var offset = 0; offset < translated.length; offset++)
+      [...translated.skip(offset), ...translated.take(offset)].join(' '),
+  ]..sort();
+  return rotations.first;
 }
 
 String _translatedPath(String path, _Translation? translation) {

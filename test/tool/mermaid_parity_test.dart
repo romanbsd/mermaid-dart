@@ -11,12 +11,14 @@ void main() {
     final manifest = ParityManifest.load(File('tool/mermaid_parity/fixtures.json'));
 
     expect(manifest.mermaidVersion, '11.16.0');
-    expect(manifest.fixtures.map((fixture) => fixture.id), hasLength(22));
-    expect(manifest.fixtures.map((fixture) => fixture.id).toSet(), hasLength(22));
+    expect(manifest.fixtures.map((fixture) => fixture.id), hasLength(24));
+    expect(manifest.fixtures.map((fixture) => fixture.id).toSet(), hasLength(24));
     expect(
       manifest.fixtures.map((fixture) => fixture.id),
       containsAll([
         'architecture-nested-routing',
+        'architecture-align-row',
+        'architecture-align-column',
         'event-modeling-unicode-multiline',
         'git-special-commits',
         'git-special-commits-tb',
@@ -392,6 +394,13 @@ void main() {
 
     expect(comparison.sameViewport, isTrue);
     expect(comparison.sameGeometry, isTrue);
+  });
+
+  test('normalizes equivalent cyclic polygon point order', () {
+    final first = SvgSnapshot.fromSvg('<svg><polygon points="0,0 10,0 5,10"/></svg>');
+    final rotated = SvgSnapshot.fromSvg('<svg><polygon points="10,0 5,10 0,0"/></svg>');
+
+    expect(SvgComparison.compare(first, rotated).sameGeometry, isTrue);
   });
 
   test('manifest rejects duplicate IDs', () {

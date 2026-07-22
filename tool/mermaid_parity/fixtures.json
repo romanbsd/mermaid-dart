@@ -12,6 +12,16 @@
       "source": "architecture-beta\ngroup api[API]\ngroup public[Public API] in api\ngroup private[Private API] in api\nservice serv1(server)[Server] in public\nservice serv2(server)[Server] in private\nservice db(database)[Database] in private\nservice gateway(internet)[Gateway] in api\nserv1:B -- T:serv2\nserv2:L -- R:db\nserv1:L -- R:gateway\n"
     },
     {
+      "id": "architecture-align-row",
+      "type": "architecture",
+      "source": "architecture-beta\nservice src1(server)[Source 1]\nservice src2(server)[Source 2]\nservice src3(server)[Source 3]\nservice proc(server)[Processor]\nsrc1:B --> T:proc\nsrc2:B --> T:proc\nsrc3:B --> T:proc\nalign row src1 src2 src3\n"
+    },
+    {
+      "id": "architecture-align-column",
+      "type": "architecture",
+      "source": "architecture-beta\ngroup api(cloud)[API]\nservice db1(database)[DB1] in api\nservice db2(database)[DB2] in api\nservice db3(database)[DB3] in api\nservice mcp(server)[MCP] in api\ndb1:R --> L:mcp\ndb2:R --> L:mcp\ndb3:R --> L:mcp\nalign column db1 db2 db3\n"
+    },
+    {
       "id": "cynefin-domains",
       "type": "cynefin",
       "source": "cynefin-beta\ncomplex \"Probe\"\ncomplicated \"Analyze\"\nclear \"Sense\"\nchaotic \"Act\"\nconfusion \"Collect\"\n",
