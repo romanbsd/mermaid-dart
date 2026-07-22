@@ -29,7 +29,7 @@ final Parser<Object?> _packetGrammar =
 /// Parses the Mermaid `packet` grammar.
 PacketAst parsePacket(String source) {
   final value = parseGrammar(_packetGrammar, source);
-  final metadata = commonMetadataFromParserValues(value);
+  final metadata = commonMetadataFromParserValues(value).withFallback(readCommonMetadata(source));
   return PacketAst(
     blocks: List.unmodifiable(flattenParserValues<PacketBlockAst>(value)),
     title: metadata.title,

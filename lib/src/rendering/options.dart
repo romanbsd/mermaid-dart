@@ -458,6 +458,9 @@ final class RailroadRenderOptions extends DiagramRenderOptions {
 }
 
 final class PacketRenderOptions extends DiagramRenderOptions {
+  /// Mermaid's packet renderer uses black title text independently of the global theme.
+  static const defaultTitleTextColor = Color(0, 0, 0);
+
   const PacketRenderOptions({
     this.rowHeight = 32,
     this.bitWidth = 32,
@@ -465,6 +468,7 @@ final class PacketRenderOptions extends DiagramRenderOptions {
     this.showBits = true,
     this.paddingX = 5,
     this.paddingY = 5,
+    this.titleText = defaultTitleTextColor,
   });
 
   final double rowHeight;
@@ -473,6 +477,7 @@ final class PacketRenderOptions extends DiagramRenderOptions {
   final bool showBits;
   final double paddingX;
   final double paddingY;
+  final Color titleText;
 }
 
 enum PieLegendPosition { top, bottom, left, right, center }

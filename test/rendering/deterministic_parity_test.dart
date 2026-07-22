@@ -997,6 +997,7 @@ void main() {
       expect(scene.bounds.height, 141);
       expect(title.position, const Point(513, 117.5));
       expect(title.style.fontSize, 14);
+      expect(title.style.color, PacketRenderOptions.defaultTitleTextColor);
       expect(title.baseline, TextBaseline.middle);
     });
 

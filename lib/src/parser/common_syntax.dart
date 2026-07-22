@@ -1,4 +1,5 @@
 import 'package:petitparser/petitparser.dart';
+import 'package:yaml/yaml.dart';
 
 import 'errors.dart';
 
@@ -54,6 +55,13 @@ final class CommonMetadata {
   final String? title;
   final String? accessibilityTitle;
   final String? accessibilityDescription;
+
+  /// Keeps explicitly parsed metadata and fills absent values from [fallback].
+  CommonMetadata withFallback(CommonMetadata fallback) => CommonMetadata(
+    title: title ?? fallback.title,
+    accessibilityTitle: accessibilityTitle ?? fallback.accessibilityTitle,
+    accessibilityDescription: accessibilityDescription ?? fallback.accessibilityDescription,
+  );
 }
 
 Object? parseGrammar(
@@ -148,7 +156,7 @@ int firstNonWhitespaceOffset(String source) => RegExp(r'\S').firstMatch(source)?
 String hideIgnoredSyntax(String source) {
   var result = source;
   for (final expression in [
-    RegExp(r'^[\t ]*(?:\r?\n[\t ]*)*---[\t ]*\r?\n(?:[\s\S]*?\r?\n)?---(?:\r?\n|(?!\S))'),
+    _frontmatterBlock,
     RegExp(r'[\t ]*%%\{[\s\S]*?\}%%(?:\r?\n|(?!\S))'),
     RegExp(r'[\t ]*%%[^\n\r]*'),
   ]) {
@@ -160,10 +168,19 @@ String hideIgnoredSyntax(String source) {
 }
 
 CommonMetadata readCommonMetadata(String source) => CommonMetadata(
-  title: _singleLineValue(source, 'title', separator: ' '),
+  title: _singleLineValue(source, 'title', separator: ' ') ?? _frontmatterTitle(source),
   accessibilityTitle: _singleLineValue(source, 'accTitle', separator: ':'),
   accessibilityDescription: _accessibilityDescriptionValue(source),
 );
+
+String? _frontmatterTitle(String source) {
+  final contents = _frontmatterBlock.firstMatch(source)?.group(1);
+  if (contents == null) return null;
+  final document = loadYaml(contents);
+  return document is YamlMap && document['title'] is String ? document['title'] as String : null;
+}
+
+final _frontmatterBlock = RegExp(r'^[\t ]*(?:\r?\n[\t ]*)*---[\t ]*\r?\n([\s\S]*?\r?\n)?---(?:\r?\n|(?!\S))');
 
 /// Replaces common metadata with spaces while preserving source offsets.
 String hideCommonMetadata(String source) {

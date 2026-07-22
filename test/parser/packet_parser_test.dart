@@ -38,6 +38,23 @@ accTitle: Packet
       expect(ast.blocks.single.label, 'A"B');
     });
 
+    test('uses a frontmatter title as common metadata', () {
+      final ast =
+          parse(DiagramType.packet, '''---
+title: Packet Diagram
+config:
+  packet:
+    showBits: false
+---
+packet
+0: "Flag"
+''')
+              as PacketAst;
+
+      expect(ast.title, 'Packet Diagram');
+      expect(ast.blocks.single, const PacketSingleBitBlockAst(bit: 0, label: 'Flag'));
+    });
+
     test('rejects malformed ranges', () {
       expect(() => parse(DiagramType.packet, 'packet\n7-: "Broken"'), throwsA(isA<MermaidParseException>()));
     });

@@ -16,6 +16,24 @@ void main() {
       expect(sourceLines(prepared.syntax).last.offset, source.indexOf('"Root"'));
     });
 
+    test('reads only the top-level title from YAML frontmatter', () {
+      const source = '''
+---
+title: "Packet Diagram"
+config:
+  title: Nested config value
+---
+packet
+0: "Flag"
+''';
+
+      final prepared = prepareDiagramSource(source, headers: const ['packet']);
+
+      expect(prepared.metadata.title, 'Packet Diagram');
+      expect(prepared.syntax.length, source.length);
+      expect(prepared.syntax.indexOf('0: "Flag"'), source.indexOf('0: "Flag"'));
+    });
+
     test('reports a missing header at the first visible token', () {
       const source = '\n  wrong';
 

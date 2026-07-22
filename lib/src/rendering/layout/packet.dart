@@ -103,7 +103,7 @@ _LayoutResult _layoutPacket(PacketAst ast, _LayoutContext context) {
         height - totalRowHeight / 2,
         anchor: TextAnchor.middle,
         baseline: TextBaseline.middle,
-        style: _mermaidTextStyle(context, _packetTitleFontSize),
+        style: _packetTextStyle(_packetTitleFontSize, color: config.titleText),
         cssClasses: const ['packetTitle'],
         role: SemanticRole.title,
       ),
@@ -112,5 +112,5 @@ _LayoutResult _layoutPacket(PacketAst ast, _LayoutContext context) {
   return _LayoutResult(width, height, elements);
 }
 
-SceneTextStyle _packetTextStyle(double fontSize) =>
-    SceneTextStyle(fontFamily: _mermaidFontFamily, fontSize: fontSize, color: _packetInk);
+SceneTextStyle _packetTextStyle(double fontSize, {Color color = _packetInk}) =>
+    SceneTextStyle(fontFamily: _mermaidFontFamily, fontSize: fontSize, color: color);

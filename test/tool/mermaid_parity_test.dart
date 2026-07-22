@@ -11,8 +11,8 @@ void main() {
     final manifest = ParityManifest.load(File('tool/mermaid_parity/fixtures.json'));
 
     expect(manifest.mermaidVersion, '11.16.0');
-    expect(manifest.fixtures.map((fixture) => fixture.id), hasLength(41));
-    expect(manifest.fixtures.map((fixture) => fixture.id).toSet(), hasLength(41));
+    expect(manifest.fixtures.map((fixture) => fixture.id), hasLength(42));
+    expect(manifest.fixtures.map((fixture) => fixture.id).toSet(), hasLength(42));
     expect(
       manifest.fixtures.map((fixture) => fixture.id),
       containsAll([
@@ -42,6 +42,7 @@ void main() {
         'tree-highlighted-styles',
         'tree-unicode-invalid-icon',
         'pie-donut',
+        'packet-complex-no-bits',
         'wardley-strategies',
       ]),
     );
@@ -512,6 +513,38 @@ void main() {
         'type': 'pie',
         'source': 'pie\n"Dogs": 1',
         'pieOptions': {'donutHole': 'wide'},
+      }),
+      throwsFormatException,
+    );
+  });
+
+  test('fixture packet options are typed and packet-only', () {
+    final configured = ParityFixture.fromJson({
+      'id': 'configured',
+      'type': 'packet',
+      'source': 'packet\n0: "Flag"',
+      'packetOptions': {'showBits': false},
+    });
+
+    expect(configured.renderOptions.packet.showBits, isFalse);
+    expect(configured.mermaidConfig, {
+      'packet': {'showBits': false},
+    });
+    expect(
+      () => ParityFixture.fromJson({
+        'id': 'configured',
+        'type': 'pie',
+        'source': 'pie\n"Dogs": 1',
+        'packetOptions': {'showBits': false},
+      }),
+      throwsFormatException,
+    );
+    expect(
+      () => ParityFixture.fromJson({
+        'id': 'configured',
+        'type': 'packet',
+        'source': 'packet\n0: "Flag"',
+        'packetOptions': {'showBits': 0},
       }),
       throwsFormatException,
     );

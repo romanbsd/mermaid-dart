@@ -215,6 +215,12 @@
       "source": "packet-beta\n0-7: \"Source\"\n8: \"Flag\"\n+16: \"Payload\"\n"
     },
     {
+      "id": "packet-complex-no-bits",
+      "type": "packet",
+      "source": "---\ntitle: \"Packet Diagram\"\nconfig:\n  packet:\n    showBits: false\n---\npacket\n0-15: \"Source Port\"\n16-31: \"Destination Port\"\n32-63: \"Sequence Number\"\n64-95: \"Acknowledgment Number\"\n96-99: \"Data Offset\"\n100-105: \"Reserved\"\n106: \"URG\"\n107: \"ACK\"\n108: \"PSH\"\n109: \"RST\"\n110: \"SYN\"\n111: \"FIN\"\n112-127: \"Window\"\n128-143: \"Checksum\"\n144-159: \"Urgent Pointer\"\n160-191: \"(Options and Padding)\"\n192-223: \"data\"\n",
+      "packetOptions": { "showBits": false }
+    },
+    {
       "id": "pie-usage",
       "type": "pie",
       "source": "pie showData\n\"Used\": 2\n\"Free\": 1\n",
