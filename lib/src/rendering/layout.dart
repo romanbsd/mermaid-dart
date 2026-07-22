@@ -39,6 +39,12 @@ const _palette = <Color>[
 ];
 const _mermaidFontFamily = '"trebuchet ms", verdana, arial, sans-serif';
 
+// Mermaid reserves a fixed header band for renderers that do not position
+// their own title. The baseline leaves the remaining space below the glyphs.
+const _diagramTitleBandHeight = 38.0;
+const _diagramTitleBaselineY = 24.0;
+const _minimumSceneExtent = 1.0;
+
 DiagramScene layoutDiagram(
   DiagramAst diagram, {
   RenderOptions options = const RenderOptions(),
@@ -61,7 +67,8 @@ DiagramScene layoutDiagram(
     WardleyAst ast => _layoutWardley(ast, context),
   };
 
-  final rendererPositionsTitle =
+  final rendererHandlesTitle =
+      diagram is ArchitectureAst ||
       diagram is PacketAst ||
       diagram is PieAst ||
       diagram is RadarAst ||
@@ -69,16 +76,33 @@ DiagramScene layoutDiagram(
       diagram is CynefinAst ||
       diagram is GitGraphAst ||
       diagram is WardleyAst;
-  final titleHeight = diagram.title == null || rendererPositionsTitle ? 0.0 : 38.0;
-  final List<SceneElement> translated = titleHeight == 0
+  final positionsSharedTitle = diagram.title != null && !rendererHandlesTitle;
+  final width = math.max(content.width, _minimumSceneExtent);
+  final height = math.max(content.height, _minimumSceneExtent);
+  final baseBounds = content.bounds ?? Bounds(left: 0, top: 0, width: width, height: height);
+  final SceneText? sharedTitle = positionsSharedTitle
+      ? _text(
+          context,
+          diagram.title!,
+          content.width / 2,
+          _diagramTitleBaselineY,
+          anchor: TextAnchor.middle,
+          role: SemanticRole.title,
+        )
+      : null;
+  final List<SceneElement> elements = sharedTitle == null
       ? content.elements
       : [
-          _text(context, diagram.title!, content.width / 2, 24, anchor: TextAnchor.middle, role: SemanticRole.title),
-          SceneGroup(id: context.id('content'), transforms: [Translate(0, titleHeight)], children: content.elements),
+          sharedTitle,
+          SceneGroup(
+            id: context.id('content'),
+            transforms: const [Translate(0, _diagramTitleBandHeight)],
+            children: content.elements,
+          ),
         ];
-  final width = math.max(content.width, 1.0);
-  final height = math.max(content.height + titleHeight, 1.0);
-  final contentBounds = content.bounds ?? Bounds(left: 0, top: 0, width: width, height: height);
+  final contentBounds = sharedTitle == null
+      ? baseBounds
+      : sharedTitle.bounds.union(baseBounds.translated(0, _diagramTitleBandHeight));
   final viewport = contentBounds.expand(options.padding + content.viewportPadding);
   return DiagramScene(
     viewport: viewport,
@@ -88,7 +112,7 @@ DiagramScene layoutDiagram(
     description: diagram.accessibilityDescription,
     accessibilityTitle: diagram.accessibilityTitle ?? diagram.title,
     accessibilityDescription: diagram.accessibilityDescription,
-    elements: translated,
+    elements: elements,
   );
 }
 

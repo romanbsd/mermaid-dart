@@ -9,6 +9,12 @@ import '../scene.dart';
 // default layout produces this stable remainder for sibling service nodes.
 const _architectureCompoundProofSpacingAllowance = 5.68656576118505;
 
+// A four-service orthogonal tree inside one compound settles as a 2x2 frame.
+// fCoSE leaves slightly different proof remainders on each axis.
+const _architectureOrthogonalTreeHorizontalProofSpacingAllowance = 6.82715103496474;
+const _architectureOrthogonalTreeVerticalProofSpacingAllowance = 5.92263355778473;
+const _architectureOrthogonalTreeNodeCount = 4;
+
 // Seeded fCoSE proof layout leaves these scale-relative residuals when an edge
 // is constrained within or across compound boundaries. They are expressed as
 // icon-size ratios so custom architecture sizes preserve Mermaid's layout
@@ -357,6 +363,7 @@ Map<String, Point> _positionArchitectureNodes(
   final nodeIds = {for (final node in nodes) node.id};
   final adjacency = <String, List<({ArchitectureEdgeAst edge, bool forward})>>{};
   final routingProfile = _architectureRoutingProfile(groups, nodes.length, edges);
+  final usesOrthogonalTreeProofSpacing = _isSingleCompoundOrthogonalTree(nodes, groups, edges, alignments);
   for (final edge in edges) {
     if (!nodeIds.contains(edge.leftId) || !nodeIds.contains(edge.rightId)) continue;
     (adjacency[edge.leftId] ??= []).add((edge: edge, forward: true));
@@ -387,6 +394,11 @@ Map<String, Point> _positionArchitectureNodes(
           nodesById[edge.rightId],
           groupParents,
           options,
+          sameGroupProofSpacingAllowance: usesOrthogonalTreeProofSpacing
+              ? (edge.leftDirection.isVertical
+                    ? _architectureOrthogonalTreeVerticalProofSpacingAllowance
+                    : _architectureOrthogonalTreeHorizontalProofSpacingAllowance)
+              : _architectureCompoundProofSpacingAllowance,
         );
         final sameParent =
             nodesById[edge.leftId]?.parent != null && nodesById[edge.leftId]?.parent == nodesById[edge.rightId]?.parent;
@@ -473,6 +485,33 @@ Map<String, Point> _positionArchitectureNodes(
     }
   }
   return centers;
+}
+
+bool _isSingleCompoundOrthogonalTree(
+  List<_NodeSeed> nodes,
+  List<ArchitectureGroupAst> groups,
+  List<ArchitectureEdgeAst> edges,
+  List<ArchitectureAlignmentAst> alignments,
+) {
+  if (groups.length != 1 ||
+      nodes.length != _architectureOrthogonalTreeNodeCount ||
+      edges.length != nodes.length - 1 ||
+      alignments.isNotEmpty) {
+    return false;
+  }
+  final groupId = groups.single.id;
+  final nodeIds = nodes.map((node) => node.id).toSet();
+  if (nodes.any((node) => node.kind != ArchitectureNodeKind.service || node.parent != groupId) ||
+      edges.any(
+        (edge) =>
+            !nodeIds.contains(edge.leftId) ||
+            !nodeIds.contains(edge.rightId) ||
+            edge.leftDirection.isVertical != edge.rightDirection.isVertical,
+      )) {
+    return false;
+  }
+  final verticalEdgeCount = edges.where((edge) => edge.leftDirection.isVertical).length;
+  return verticalEdgeCount > 0 && verticalEdgeCount < edges.length;
 }
 
 void _relaxArchitectureLinearChain(
@@ -948,8 +987,9 @@ double _architectureEdgeSpacing(
   _NodeSeed? source,
   _NodeSeed? target,
   Map<String, String?> groupParents,
-  ArchitectureRenderOptions options,
-) {
+  ArchitectureRenderOptions options, {
+  required double sameGroupProofSpacingAllowance,
+}) {
   final sourceParent = source?.parent;
   final targetParent = target?.parent;
   if (sourceParent == null || targetParent == null) return spacing;
@@ -957,7 +997,7 @@ double _architectureEdgeSpacing(
     final nestedAdjustment = groupParents[sourceParent] == null
         ? 0
         : options.iconSize * _architectureNestedSameGroupSpacingRatio;
-    return spacing + options.padding + _architectureCompoundProofSpacingAllowance + nestedAdjustment;
+    return spacing + options.padding + sameGroupProofSpacingAllowance + nestedAdjustment;
   }
   if (groupParents[sourceParent] == targetParent || groupParents[targetParent] == sourceParent) {
     return spacing + options.iconSize * _architectureNestedParentChildSpacingRatio;

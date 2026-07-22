@@ -11,13 +11,14 @@ void main() {
     final manifest = ParityManifest.load(File('tool/mermaid_parity/fixtures.json'));
 
     expect(manifest.mermaidVersion, '11.16.0');
-    expect(manifest.fixtures.map((fixture) => fixture.id), hasLength(36));
-    expect(manifest.fixtures.map((fixture) => fixture.id).toSet(), hasLength(36));
+    expect(manifest.fixtures.map((fixture) => fixture.id), hasLength(37));
+    expect(manifest.fixtures.map((fixture) => fixture.id).toSet(), hasLength(37));
     expect(
       manifest.fixtures.map((fixture) => fixture.id),
       containsAll([
         'architecture-nested-routing',
         'architecture-fallback-icon',
+        'architecture-title-accessibility',
         'architecture-align-row',
         'architecture-align-column',
         'architecture-junction-group-edge',

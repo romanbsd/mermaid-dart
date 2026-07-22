@@ -62,6 +62,71 @@ void main() {
       expect(root.findAllElements('text').single.getAttribute('x'), '10');
     });
 
+    test('architecture titles preserve geometry and accessibility metadata', () {
+      const source = '''architecture-beta
+title Simple Architecture Diagram
+accTitle: Accessibility Title
+accDescr: Accessibility Description
+group api(cloud)[API]
+service db(database)[Database] in api
+service disk1(disk)[Storage] in api
+service disk2(disk)[Storage] in api
+service server(server)[Server] in api
+db:L -- R:server
+disk1:T -- B:server
+disk2:T -- B:db
+''';
+      const sourceWithoutTitle = '''architecture-beta
+group api(cloud)[API]
+service db(database)[Database] in api
+service disk1(disk)[Storage] in api
+service disk2(disk)[Storage] in api
+service server(server)[Server] in api
+db:L -- R:server
+disk1:T -- B:server
+disk2:T -- B:db
+''';
+
+      final scene = layoutDiagram(parse(DiagramType.architecture, source));
+      final untitled = layoutDiagram(parse(DiagramType.architecture, sourceWithoutTitle));
+
+      expect(scene.title, 'Simple Architecture Diagram');
+      expect(scene.accessibilityTitle, 'Accessibility Title');
+      expect(scene.accessibilityDescription, 'Accessibility Description');
+      expect(
+        _flatten(scene.elements).whereType<SceneText>().where((element) => element.role == SemanticRole.title),
+        isEmpty,
+      );
+      expect(scene.bounds, untitled.bounds);
+      // Mermaid 11.16's seeded fCoSE proof layout leaves distinct horizontal
+      // and vertical residuals for this single-compound orthogonal tree.
+      expect(scene.bounds.width, closeTo(201.82715103496474 + 165, 1e-9));
+      expect(scene.bounds.height, closeTo(200.92263355778473 + 182, 1e-9));
+
+      final document = XmlDocument.parse(renderSvg(scene));
+      final root = document.rootElement;
+      expect(root.getAttribute('aria-labelledby'), 'diagram-title');
+      expect(root.getAttribute('aria-describedby'), 'diagram-description');
+      expect(root.findElements('title').single.innerText, 'Accessibility Title');
+      expect(root.findElements('desc').single.innerText, 'Accessibility Description');
+    });
+
+    test('shared title bands include translated content in scene bounds', () {
+      final scene = layoutDiagram(const RailroadAst(title: 'Grammar'));
+      final untitled = layoutDiagram(const RailroadAst());
+      final content = scene.elements.whereType<SceneGroup>().singleWhere(
+        (element) => element.id.startsWith('content-'),
+      );
+      final translation = content.transforms.single as Translate;
+
+      expect(
+        scene.elements.whereType<SceneText>().singleWhere((element) => element.role == SemanticRole.title).text,
+        'Grammar',
+      );
+      expect(translation.y, greaterThan(0));
+      expect(scene.bounds.bottom, untitled.bounds.bottom + translation.y);
+    });
+
     test('serializes fractional geometry without replacement artifacts', () {
       const scene = DiagramScene(
         viewport: Bounds(left: 0, top: 0, width: 10.5, height: 5.25),
