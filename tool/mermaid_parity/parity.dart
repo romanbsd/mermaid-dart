@@ -91,6 +91,7 @@ final class ParityFixture {
       packet: PacketRenderOptions(showBits: diagramConfig['showBits'] as bool? ?? packetDefaults.showBits),
       pie: PieRenderOptions(
         donutHole: (diagramConfig['donutHole'] as num?)?.toDouble() ?? pieDefaults.donutHole,
+        highlightSlice: diagramConfig['highlightSlice'] as String? ?? pieDefaults.highlightSlice,
         textPosition: (diagramConfig['textPosition'] as num?)?.toDouble() ?? pieDefaults.textPosition,
         legendPosition: switch (diagramConfig['legendPosition']) {
           final String value => _pieLegendPosition(value),
@@ -161,6 +162,7 @@ Map<String, Object> _pieConfig(Object? value) {
   for (final MapEntry(:key, :value) in value.entries) {
     final valid = switch ((key, value)) {
       ('donutHole', final num option) => option,
+      ('highlightSlice', final String option) when option.isNotEmpty => option,
       ('textPosition', final num option) => option,
       ('legendPosition', final String option) when _pieLegendPositionNames.contains(option) => option,
       _ => null,
@@ -171,7 +173,7 @@ Map<String, Object> _pieConfig(Object? value) {
   return Map.unmodifiable(result);
 }
 
-const _pieConfigKeys = {'donutHole', 'textPosition', 'legendPosition'};
+const _pieConfigKeys = {'donutHole', 'highlightSlice', 'textPosition', 'legendPosition'};
 const _pieLegendPositionNames = {'top', 'bottom', 'left', 'right', 'center'};
 
 PieLegendPosition _pieLegendPosition(String value) => switch (value) {
@@ -322,7 +324,8 @@ List<String> _elementSignatures(
   void visit(XmlElement element, String inheritedTransform) {
     if (!_isComparableGeometryElement(element, root)) return;
     final ownTransform = element.getAttribute('transform') ?? '';
-    final transform = [inheritedTransform, ownTransform].where((value) => value.isNotEmpty).join(' ');
+    final stylesheetScale = _stylesheetScaleTransform(element, styleSheets);
+    final transform = [inheritedTransform, ownTransform, stylesheetScale].where((value) => value.isNotEmpty).join(' ');
     final isEmptyText =
         (element.name.local == 'text' || element.name.local == 'foreignObject') && element.innerText.trim().isEmpty;
     if (_visibleElements.contains(element.name.local) && !isEmptyText) {
@@ -335,6 +338,18 @@ List<String> _elementSignatures(
 
   visit(root, '');
   return signatures..sort();
+}
+
+/// Converts Mermaid's static CSS `scale` property into the equivalent SVG
+/// transform so stylesheet-driven and explicitly positioned geometry compare
+/// identically. Interactive pseudo-class rules do not match until activated.
+String _stylesheetScaleTransform(XmlElement element, String styleSheets) {
+  final value = _stylesheetProperty(
+    element,
+    styleSheets,
+    'scale',
+  )?.replaceFirst(RegExp(r'\s*!important\s*$', caseSensitive: false), '').trim();
+  return value == null || value.isEmpty || value == 'none' ? '' : 'scale($value)';
 }
 
 // SVG presentation properties that materially affect the visible paint while
@@ -553,7 +568,13 @@ String _geometrySignature(XmlElement element, String transform, String styleShee
       number(attribute('ry', '0')),
     ],
     'line' => [x(attribute('x1', '0')), y(attribute('y1', '0')), x(attribute('x2', '0')), y(attribute('y2', '0'))],
-    'path' => [_translatedPath(attribute('d'), translation)],
+    'path' => [
+      _translatedPath(
+        attribute('d'),
+        translation,
+        roundingBias: _hasScaleTransform(transform) ? _scaledPathRoundingBias : _numericComparisonTieEpsilon,
+      ),
+    ],
     'polygon' => [_translatedPolygonPoints(attribute('points'), translation)],
     'polyline' => [_translatedPoints(attribute('points'), translation)],
     'rect' => [
@@ -748,17 +769,21 @@ String? _normalizedNumberList(String? value) {
       .join(' ');
 }
 
-String _formatNumber(double value) {
-  final tieAdjusted = value + (value.isNegative ? -_numericComparisonTieEpsilon : _numericComparisonTieEpsilon);
+String _formatNumber(double value, {double roundingBias = _numericComparisonTieEpsilon}) {
+  final tieAdjusted = value + (value.isNegative ? -roundingBias : roundingBias);
   var formatted = tieAdjusted.toStringAsFixed(2).replaceFirst(RegExp(r'\.?0+$'), '');
   if (formatted == '-0') formatted = '0';
   return formatted;
 }
 
 // Canonical SVG may truncate a value exactly onto a half-cent boundary before
-// this visual comparison runs. Bias ties by a negligible amount so both the
-// truncated and full-precision forms round in the same direction.
+// this visual comparison runs. Bias exact ties by a negligible amount.
 const _numericComparisonTieEpsilon = 1e-9;
+
+// Mermaid's D3 paths use three fractional digits while the Dart serializer
+// retains four. Scaled paths can therefore straddle a centipixel boundary;
+// half of one millipixel covers the serializers' maximum rounding delta.
+const _scaledPathRoundingBias = .0005;
 
 String? _stylesheetFontSize(XmlElement element, String styleSheets) {
   String? fontSize;
@@ -813,17 +838,26 @@ bool _matchesSimpleSelector(XmlElement element, String selector) {
 
 bool _matchesSelectorPart(XmlElement element, String selector) {
   selector = selector.replaceFirst(RegExp(r':.*$'), '');
-  if (selector.startsWith('#')) {
-    return element.getAttribute('id') == selector.substring(1) ||
-        (element.name.local == 'svg' && element.parentElement == null);
+  if (selector == '*') return true;
+  final tokens = _simpleSelectorToken.allMatches(selector).toList();
+  if (tokens.isEmpty || tokens.map((token) => token[0]).join() != selector) return false;
+  final classes = (element.getAttribute('class') ?? '').split(RegExp(r'\s+')).toSet();
+  for (final token in tokens) {
+    final prefix = token[1]!;
+    final value = token[2]!;
+    final matches = switch (prefix) {
+      '' => element.name.local == value,
+      '.' => classes.contains(value),
+      '#' => element.getAttribute('id') == value || (element.name.local == 'svg' && element.parentElement == null),
+      _ => false,
+    };
+    if (!matches) return false;
   }
-  if (selector.startsWith('.')) {
-    return (element.getAttribute('class') ?? '').split(RegExp(r'\s+')).contains(selector.substring(1));
-  }
-  return element.name.local == selector;
+  return true;
 }
 
 final _cssRule = RegExp(r'([^{}]+)\{([^{}]*)\}');
+final _simpleSelectorToken = RegExp(r'([.#]?)([A-Za-z_][\w-]*)');
 final _cssFontSize = RegExp(r'font-size\s*:\s*(-?(?:\d+\.?\d*|\.\d+))px', caseSensitive: false);
 final _cssBaseline = RegExp(r'dominant-baseline\s*:\s*([\w-]+)', caseSensitive: false);
 final _cssTextAnchor = RegExp(r'text-anchor\s*:\s*([\w-]+)', caseSensitive: false);
@@ -847,7 +881,7 @@ String _translatedPolygonPoints(String points, _Translation? translation) {
   return rotations.first;
 }
 
-String _translatedPath(String path, _Translation? translation) {
+String _translatedPath(String path, _Translation? translation, {double roundingBias = _numericComparisonTieEpsilon}) {
   final canonicalPath = _canonicalAxisAlignedCommands(path);
   final tokens = _pathToken.allMatches(canonicalPath).map((match) => match[0]!).toList();
   final result = <String>[];
@@ -882,11 +916,14 @@ String _translatedPath(String path, _Translation? translation) {
             },
             _ => 0,
           };
-    result.add(_formatNumber(value + offset));
+    result.add(_formatNumber(value + offset, roundingBias: roundingBias));
     parameter++;
   }
   return result.join(' ');
 }
+
+bool _hasScaleTransform(String transform) =>
+    _transformFunction.allMatches(transform).any((match) => match[1]!.toLowerCase() == 'scale');
 
 String _canonicalAxisAlignedCommands(String path) {
   final tokens = _pathToken.allMatches(path).map((match) => match[0]!).toList();

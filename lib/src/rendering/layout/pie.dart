@@ -14,6 +14,10 @@ const _pieMaximumDonutRatio = .9;
 const _pieTitleY = 25.0;
 const _fullCircleTolerance = 1e-9;
 
+/// Mermaid's `.pieCircle.highlighted` stylesheet enlarges the selected slice
+/// by five percent. The scene records that visual state as explicit geometry.
+const _pieHighlightScale = 1.05;
+
 _LayoutResult _layoutPie(PieAst ast, _LayoutContext context) {
   final config = context.options.optionsFor(const PieRenderOptions());
   final textStyle = _mermaidTextStyle(context, _pieLabelFontSize);
@@ -92,24 +96,31 @@ _LayoutResult _layoutPie(PieAst ast, _LayoutContext context) {
     final sweep = section.value.toDouble() / arcTotal * math.pi * 2;
     final end = angle + sweep;
     final classes = <String>['pieCircle'];
+    final isHighlighted = config.highlightSlice == section.label;
     if (config.highlightSlice == 'hover') {
       classes.add('highlightedOnHover');
-    } else if (config.highlightSlice == section.label) {
+    } else if (isHighlighted) {
       classes.add('highlighted');
     }
+    final sectionOpacity = isHighlighted ? 1.0 : config.sectionOpacity;
+    final path = ScenePath(
+      id: context.id('pie-section'),
+      commands: _pieArcCommands(isHighlighted ? const Point(0, 0) : center, radius, innerRadius, angle, end),
+      fill: SolidFill(_colorWithOpacity(_pieSectionColor(config, entry.index), sectionOpacity)),
+      stroke: SceneStroke(color: _colorWithOpacity(config.sectionStroke, sectionOpacity), width: _pieStrokeWidth),
+      role: SemanticRole.node,
+      cssClasses: classes,
+      label: section.label,
+    );
     elements.add(
-      ScenePath(
-        id: context.id('pie-section'),
-        commands: _pieArcCommands(center, radius, innerRadius, angle, end),
-        fill: SolidFill(_colorWithOpacity(_pieSectionColor(config, entry.index), config.sectionOpacity)),
-        stroke: SceneStroke(
-          color: _colorWithOpacity(config.sectionStroke, config.sectionOpacity),
-          width: _pieStrokeWidth,
-        ),
-        role: SemanticRole.node,
-        cssClasses: classes,
-        label: section.label,
-      ),
+      isHighlighted
+          ? SceneGroup(
+              id: context.id('pie-highlight'),
+              transforms: [Translate(center.x, center.y), const Scale(_pieHighlightScale)],
+              cssClasses: const ['pie-highlight-transform'],
+              children: [path],
+            )
+          : path,
     );
     final middle = angle + sweep / 2;
     final labelRadius = radius * config.textPosition.clamp(0, 1);

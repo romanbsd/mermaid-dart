@@ -11,8 +11,8 @@ void main() {
     final manifest = ParityManifest.load(File('tool/mermaid_parity/fixtures.json'));
 
     expect(manifest.mermaidVersion, '11.16.0');
-    expect(manifest.fixtures.map((fixture) => fixture.id), hasLength(47));
-    expect(manifest.fixtures.map((fixture) => fixture.id).toSet(), hasLength(47));
+    expect(manifest.fixtures.map((fixture) => fixture.id), hasLength(48));
+    expect(manifest.fixtures.map((fixture) => fixture.id).toSet(), hasLength(48));
     expect(
       manifest.fixtures.map((fixture) => fixture.id),
       containsAll([
@@ -43,6 +43,7 @@ void main() {
         'tree-unicode-invalid-icon',
         'pie-donut',
         'pie-bottom-legend',
+        'pie-highlighted-slice',
         'pie-text-position',
         'packet-complex-no-bits',
         'railroad-abnf-sequence',
@@ -135,6 +136,26 @@ void main() {
     expect(comparison.samePaint, isFalse);
     expect(comparison.visualParity, isFalse);
     expect(comparison.summary, 'paint');
+  });
+
+  test('comparison resolves stylesheet scale into geometry transforms', () {
+    final stylesheet = SvgSnapshot.fromSvg('''
+<svg>
+  <style>.pieCircle.highlighted { scale: 1.05; opacity: 1; }</style>
+  <g transform="translate(225 225)">
+    <path class="pieCircle highlighted" d="M0 -185 L0 0 Z" fill="#fff" opacity="0.7"/>
+  </g>
+</svg>
+''');
+    final explicit = SvgSnapshot.fromSvg('''
+<svg>
+  <g transform="translate(225 225) scale(1.05)">
+    <path class="pieCircle highlighted" d="M0 -185 L0 0 Z" fill="#fff" opacity="1"/>
+  </g>
+</svg>
+''');
+
+    expect(SvgComparison.compare(stylesheet, explicit).visualParity, isTrue);
   });
 
   test('paint comparison ignores fill properties that cannot affect lines', () {
@@ -414,8 +435,11 @@ void main() {
   test('tolerates sub-centipixel geometry differences', () {
     final left = SvgSnapshot.fromSvg('<svg><path d="M0 0L264.263 1"/></svg>');
     final right = SvgSnapshot.fromSvg('<svg><path d="M0 0L264.264 1"/></svg>');
+    final negativeLeft = SvgSnapshot.fromSvg('<svg><g transform="scale(1.05)"><path d="M0 0L-160.2147 1"/></g></svg>');
+    final negativeRight = SvgSnapshot.fromSvg('<svg><g transform="scale(1.05)"><path d="M0 0L-160.215 1"/></g></svg>');
 
     expect(SvgComparison.compare(left, right).sameGeometry, isTrue);
+    expect(SvgComparison.compare(negativeLeft, negativeRight).sameGeometry, isTrue);
   });
 
   test('normalizes viewport and untransformed size precision consistently', () {
@@ -499,14 +523,15 @@ void main() {
       'id': 'configured',
       'type': 'pie',
       'source': 'pie\n"Dogs": 1',
-      'pieOptions': {'donutHole': 0.4, 'legendPosition': 'bottom', 'textPosition': 0.9},
+      'pieOptions': {'donutHole': 0.4, 'highlightSlice': 'Dogs', 'legendPosition': 'bottom', 'textPosition': 0.9},
     });
 
     expect(configured.renderOptions.pie.donutHole, 0.4);
+    expect(configured.renderOptions.pie.highlightSlice, 'Dogs');
     expect(configured.renderOptions.pie.legendPosition, PieLegendPosition.bottom);
     expect(configured.renderOptions.pie.textPosition, 0.9);
     expect(configured.mermaidConfig, {
-      'pie': {'donutHole': 0.4, 'legendPosition': 'bottom', 'textPosition': 0.9},
+      'pie': {'donutHole': 0.4, 'highlightSlice': 'Dogs', 'legendPosition': 'bottom', 'textPosition': 0.9},
     });
     expect(
       () => ParityFixture.fromJson({

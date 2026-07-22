@@ -16,7 +16,7 @@ const _packetBitLabelOffset = 2.0;
 _LayoutResult _layoutPacket(PacketAst ast, _LayoutContext context) {
   final config = context.options.optionsFor(const PacketRenderOptions());
   final labelStyle = _packetTextStyle(_packetLabelFontSize);
-  final bitStyle = _mermaidTextStyle(context, _packetBitFontSize);
+  final bitStyle = _packetTextStyle(_packetBitFontSize);
   final paddingY = config.paddingY + (config.showBits ? _packetBitLabelPadding : 0);
   final width = config.bitWidth * config.bitsPerRow + _packetOuterWidth;
   final elements = <SceneElement>[];

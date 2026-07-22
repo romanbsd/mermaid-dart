@@ -265,6 +265,16 @@
       }
     },
     {
+      "id": "pie-highlighted-slice",
+      "type": "pie",
+      "source": "pie\n\"Dogs\": 50\n\"Cats\": 25\n",
+      "pieOptions": { "highlightSlice": "Dogs" },
+      "textMeasurements": {
+        "Dogs": { "width": 34.96875, "height": 20 },
+        "Cats": { "width": 32.734375, "height": 20 }
+      }
+    },
+    {
       "id": "radar-comparison",
       "type": "radar",
       "source": "radar-beta\naxis speed[\"Speed\"], quality, cost[\"Cost\"]\ncurve current[\"Current\"] { 3, 4, 2 }\n"

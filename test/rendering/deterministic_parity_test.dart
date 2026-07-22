@@ -946,7 +946,7 @@ void main() {
             .whereType<SceneText>()
             .where((element) => element.cssClasses.contains('packetByte'))
             .map((element) => element.style.color),
-        everyElement(const Color(51, 51, 51)),
+        everyElement(const Color(0, 0, 0)),
       );
       expect(
         elements
@@ -1069,11 +1069,17 @@ void main() {
       );
       final elements = _flatten(scene.elements).toList();
       final paths = elements.whereType<ScenePath>().toList();
+      final highlightGroup = scene.elements.whereType<SceneGroup>().singleWhere(
+        (element) => element.cssClasses.contains('pie-highlight-transform'),
+      );
 
       expect(scene.bounds.height, 494);
       expect(paths, hasLength(2));
       expect(paths.every((path) => path.commands.whereType<ArcTo>().length == 2), isTrue);
       expect(paths.first.cssClasses, contains('highlighted'));
+      expect(paths.first.fill, const SolidFill(Color(236, 236, 255)));
+      expect(paths.first.stroke?.color, const Color(0, 0, 0));
+      expect(highlightGroup.transforms, const [Translate(225, 225), Scale(1.05)]);
     });
 
     test('pie owns its title position inside the chart frame', () {
