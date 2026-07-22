@@ -1,6 +1,10 @@
 /// Base type for syntax trees produced by Mermaid parsers.
 sealed class DiagramAst {
-  const DiagramAst();
+  const DiagramAst({this.title, this.accessibilityTitle, this.accessibilityDescription});
+
+  final String? title;
+  final String? accessibilityTitle;
+  final String? accessibilityDescription;
 }
 
 enum WardleyStrategy { build, buy, outsource, market }
@@ -22,9 +26,9 @@ final class WardleyAst extends DiagramAst {
     this.annotationsBox,
     this.annotations = const [],
     this.markers = const [],
-    this.title,
-    this.accessibilityTitle,
-    this.accessibilityDescription,
+    super.title,
+    super.accessibilityTitle,
+    super.accessibilityDescription,
   });
 
   final WardleySizeAst? size;
@@ -38,9 +42,6 @@ final class WardleyAst extends DiagramAst {
   final WardleyPositionAst? annotationsBox;
   final List<WardleyAnnotationAst> annotations;
   final List<WardleyMarkerAst> markers;
-  final String? title;
-  final String? accessibilityTitle;
-  final String? accessibilityDescription;
 }
 
 mixin _WardleyValueEquality {
@@ -206,12 +207,9 @@ final class WardleyDeacceleratorAst extends WardleyMarkerAst {
 
 /// Syntax tree for a `treemap` diagram.
 final class TreemapAst extends DiagramAst {
-  const TreemapAst({this.rows = const [], this.title, this.accessibilityTitle, this.accessibilityDescription});
+  const TreemapAst({this.rows = const [], super.title, super.accessibilityTitle, super.accessibilityDescription});
 
   final List<TreemapRowAst> rows;
-  final String? title;
-  final String? accessibilityTitle;
-  final String? accessibilityDescription;
 
   @override
   bool operator ==(Object other) =>
@@ -293,12 +291,9 @@ final class TreemapLeafAst extends TreemapItemAst {
 
 /// Renderer-ready syntax tree shared by all railroad grammar frontends.
 final class RailroadAst extends DiagramAst {
-  const RailroadAst({this.rules = const [], this.title, this.accessibilityTitle, this.accessibilityDescription});
+  const RailroadAst({this.rules = const [], super.title, super.accessibilityTitle, super.accessibilityDescription});
 
   final List<RailroadRuleAst> rules;
-  final String? title;
-  final String? accessibilityTitle;
-  final String? accessibilityDescription;
 
   @override
   bool operator ==(Object other) =>
@@ -418,11 +413,7 @@ final class RailroadSpecialAst extends RailroadNodeAst {
 
 /// Syntax tree for an `info` diagram.
 final class InfoAst extends DiagramAst {
-  const InfoAst({this.title, this.accessibilityTitle, this.accessibilityDescription});
-
-  final String? title;
-  final String? accessibilityTitle;
-  final String? accessibilityDescription;
+  const InfoAst({super.title, super.accessibilityTitle, super.accessibilityDescription});
 
   @override
   bool operator ==(Object other) =>
@@ -446,16 +437,13 @@ final class PieAst extends DiagramAst {
   const PieAst({
     this.showData = false,
     this.sections = const [],
-    this.title,
-    this.accessibilityTitle,
-    this.accessibilityDescription,
+    super.title,
+    super.accessibilityTitle,
+    super.accessibilityDescription,
   });
 
   final bool showData;
   final List<PieSectionAst> sections;
-  final String? title;
-  final String? accessibilityTitle;
-  final String? accessibilityDescription;
 }
 
 /// A labeled numeric section in a [PieAst].
@@ -478,12 +466,9 @@ final class PieSectionAst {
 
 /// Syntax tree for a `packet` diagram.
 final class PacketAst extends DiagramAst {
-  const PacketAst({this.blocks = const [], this.title, this.accessibilityTitle, this.accessibilityDescription});
+  const PacketAst({this.blocks = const [], super.title, super.accessibilityTitle, super.accessibilityDescription});
 
   final List<PacketBlockAst> blocks;
-  final String? title;
-  final String? accessibilityTitle;
-  final String? accessibilityDescription;
 }
 
 /// A bit range or relative-width block in a [PacketAst].
@@ -513,17 +498,14 @@ final class RadarAst extends DiagramAst {
     this.axes = const [],
     this.curves = const [],
     this.options = const [],
-    this.title,
-    this.accessibilityTitle,
-    this.accessibilityDescription,
+    super.title,
+    super.accessibilityTitle,
+    super.accessibilityDescription,
   });
 
   final List<RadarAxisAst> axes;
   final List<RadarCurveAst> curves;
   final List<RadarOptionAst> options;
-  final String? title;
-  final String? accessibilityTitle;
-  final String? accessibilityDescription;
 }
 
 final class RadarAxisAst {
@@ -602,16 +584,13 @@ final class CynefinAst extends DiagramAst {
   const CynefinAst({
     this.domains = const [],
     this.transitions = const [],
-    this.title,
-    this.accessibilityTitle,
-    this.accessibilityDescription,
+    super.title,
+    super.accessibilityTitle,
+    super.accessibilityDescription,
   });
 
   final List<CynefinDomainAst> domains;
   final List<CynefinTransitionAst> transitions;
-  final String? title;
-  final String? accessibilityTitle;
-  final String? accessibilityDescription;
 }
 
 final class CynefinDomainAst {
@@ -664,16 +643,13 @@ final class GitGraphAst extends DiagramAst {
   const GitGraphAst({
     this.direction,
     this.statements = const [],
-    this.title,
-    this.accessibilityTitle,
-    this.accessibilityDescription,
+    super.title,
+    super.accessibilityTitle,
+    super.accessibilityDescription,
   });
 
   final GitGraphDirection? direction;
   final List<GitGraphStatementAst> statements;
-  final String? title;
-  final String? accessibilityTitle;
-  final String? accessibilityDescription;
 }
 
 sealed class GitGraphStatementAst {
@@ -775,9 +751,9 @@ final class ArchitectureAst extends DiagramAst {
     this.junctions = const [],
     this.edges = const [],
     this.alignments = const [],
-    this.title,
-    this.accessibilityTitle,
-    this.accessibilityDescription,
+    super.title,
+    super.accessibilityTitle,
+    super.accessibilityDescription,
   });
 
   final List<ArchitectureGroupAst> groups;
@@ -785,9 +761,6 @@ final class ArchitectureAst extends DiagramAst {
   final List<ArchitectureJunctionAst> junctions;
   final List<ArchitectureEdgeAst> edges;
   final List<ArchitectureAlignmentAst> alignments;
-  final String? title;
-  final String? accessibilityTitle;
-  final String? accessibilityDescription;
 }
 
 final class ArchitectureGroupAst {
@@ -906,12 +879,9 @@ final class ArchitectureAlignmentAst {
 }
 
 final class TreeViewAst extends DiagramAst {
-  const TreeViewAst({this.nodes = const [], this.title, this.accessibilityTitle, this.accessibilityDescription});
+  const TreeViewAst({this.nodes = const [], super.title, super.accessibilityTitle, super.accessibilityDescription});
 
   final List<TreeViewNodeAst> nodes;
-  final String? title;
-  final String? accessibilityTitle;
-  final String? accessibilityDescription;
 }
 
 final class TreeViewNodeAst {
@@ -948,9 +918,9 @@ final class EventModelingAst extends DiagramAst {
     this.dataEntities = const [],
     this.notes = const [],
     this.scenarios = const [],
-    this.title,
-    this.accessibilityTitle,
-    this.accessibilityDescription,
+    super.title,
+    super.accessibilityTitle,
+    super.accessibilityDescription,
   });
 
   final List<EventModelEntityAst> modelEntities;
@@ -958,9 +928,6 @@ final class EventModelingAst extends DiagramAst {
   final List<EventModelDataEntityAst> dataEntities;
   final List<EventModelNoteAst> notes;
   final List<EventModelScenarioAst> scenarios;
-  final String? title;
-  final String? accessibilityTitle;
-  final String? accessibilityDescription;
 }
 
 final class EventModelEntityAst {
