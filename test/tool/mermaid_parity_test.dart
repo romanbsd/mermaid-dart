@@ -11,8 +11,8 @@ void main() {
     final manifest = ParityManifest.load(File('tool/mermaid_parity/fixtures.json'));
 
     expect(manifest.mermaidVersion, '11.16.0');
-    expect(manifest.fixtures.map((fixture) => fixture.id), hasLength(39));
-    expect(manifest.fixtures.map((fixture) => fixture.id).toSet(), hasLength(39));
+    expect(manifest.fixtures.map((fixture) => fixture.id), hasLength(40));
+    expect(manifest.fixtures.map((fixture) => fixture.id).toSet(), hasLength(40));
     expect(
       manifest.fixtures.map((fixture) => fixture.id),
       containsAll([
@@ -31,6 +31,7 @@ void main() {
         'architecture-edge-labels',
         'architecture-simple-junctions',
         'architecture-edge-length-default',
+        'architecture-no-icon-edge-lengths',
         'architecture-edge-length-3',
         'architecture-reasonable-height',
         'architecture-deeply-nested',
@@ -362,6 +363,13 @@ void main() {
     expect(comparison.sameGeometry, isTrue);
     expect(comparison.visualParity, isTrue);
     expect(comparison.exact, isFalse);
+  });
+
+  test('normalizes horizontal and vertical path commands to line segments', () {
+    final axisCommands = SvgSnapshot.fromSvg('<svg><path d="M1 2H5V7h-2v-3Z"/></svg>');
+    final lines = SvgSnapshot.fromSvg('<svg><path d="M1 2L5 2L5 7l-2 0l0-3Z"/></svg>');
+
+    expect(SvgComparison.compare(axisCommands, lines).sameGeometry, isTrue);
   });
 
   test('ignores paint-equivalent sibling order in geometry comparison', () {

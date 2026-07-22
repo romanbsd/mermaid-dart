@@ -50,9 +50,34 @@ disk2:T -- B:db
 server:T -- B:gateway
 ''';
       final scene = layoutDiagram(parse(DiagramType.architecture, source));
-
       expect(scene.bounds.width, closeTo(367.2142487159315, 1e-9));
       expect(scene.bounds.height, closeTo(580.0184756092636, 1e-9));
+    });
+
+    test('architecture plain services use proof spacing and outline paths', () {
+      const source = '''architecture-beta
+service cell[Table Cell]
+service colspan[colspan]
+service rowspan[rowspan]
+cell:R --> L:colspan
+cell:B --> T:rowspan
+''';
+      final scene = layoutDiagram(parse(DiagramType.architecture, source));
+      final elements = _flatten(scene.elements).toList();
+      final services = elements
+          .whereType<SceneGroup>()
+          .where((element) => element.cssClasses.contains('architecture-service'))
+          .toList();
+      final cell = services.singleWhere((element) => element.label == 'Table Cell').transforms.single as Translate;
+      final colspan = services.singleWhere((element) => element.label == 'colspan').transforms.single as Translate;
+      final rowspan = services.singleWhere((element) => element.label == 'rowspan').transforms.single as Translate;
+      final outlines = elements.whereType<ScenePath>().where(
+        (element) => element.cssClasses.contains('architecture-node-background'),
+      );
+
+      expect(colspan.x - cell.x, closeTo(200.92563261830128, 1e-9));
+      expect(rowspan.y - cell.y, closeTo(200.92563261830128, 1e-9));
+      expect(outlines, hasLength(3));
     });
 
     test('geometry primitives translate and create centered bounds', () {

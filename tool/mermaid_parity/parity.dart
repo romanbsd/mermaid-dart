@@ -769,7 +769,8 @@ String _translatedPolygonPoints(String points, _Translation? translation) {
 }
 
 String _translatedPath(String path, _Translation? translation) {
-  final tokens = _pathToken.allMatches(path).map((match) => match[0]!).toList();
+  final canonicalPath = _canonicalAxisAlignedCommands(path);
+  final tokens = _pathToken.allMatches(canonicalPath).map((match) => match[0]!).toList();
   final result = <String>[];
   String? command;
   var parameter = 0;
@@ -807,6 +808,84 @@ String _translatedPath(String path, _Translation? translation) {
   }
   return result.join(' ');
 }
+
+String _canonicalAxisAlignedCommands(String path) {
+  final tokens = _pathToken.allMatches(path).map((match) => match[0]!).toList();
+  final result = <String>[];
+  var cursor = 0;
+  String? command;
+  var currentX = 0.0;
+  var currentY = 0.0;
+  var subpathX = 0.0;
+  var subpathY = 0.0;
+  var consumedMove = false;
+  while (cursor < tokens.length) {
+    if (_isPathCommand(tokens[cursor])) {
+      command = tokens[cursor++];
+      consumedMove = false;
+      if (command.toUpperCase() == 'Z') {
+        result.add(command);
+        currentX = subpathX;
+        currentY = subpathY;
+        continue;
+      }
+    }
+    if (command == null) return path;
+    final upper = command.toUpperCase();
+    final arity = _pathCommandArity(upper);
+    if (arity == 0 || cursor + arity > tokens.length || _isPathCommand(tokens[cursor])) return path;
+    final values = [for (var index = 0; index < arity; index++) double.parse(tokens[cursor++])];
+    final relative = command == command.toLowerCase();
+    if (upper == 'H') {
+      final x = relative ? currentX + values.single : values.single;
+      result.addAll([
+        relative ? 'l' : 'L',
+        relative ? values.single.toString() : x.toString(),
+        relative ? '0' : currentY.toString(),
+      ]);
+      currentX = x;
+      continue;
+    }
+    if (upper == 'V') {
+      final y = relative ? currentY + values.single : values.single;
+      result.addAll([
+        relative ? 'l' : 'L',
+        relative ? '0' : currentX.toString(),
+        relative ? values.single.toString() : y.toString(),
+      ]);
+      currentY = y;
+      continue;
+    }
+    final emittedCommand = upper == 'M' && consumedMove ? (relative ? 'l' : 'L') : command;
+    result.add(emittedCommand);
+    result.addAll(values.map((value) => value.toString()));
+    final end = switch (upper) {
+      'M' || 'L' || 'T' => (values[arity - 2], values[arity - 1]),
+      'C' || 'S' || 'Q' => (values[arity - 2], values[arity - 1]),
+      'A' => (values[5], values[6]),
+      _ => (currentX, currentY),
+    };
+    currentX = relative ? currentX + end.$1 : end.$1;
+    currentY = relative ? currentY + end.$2 : end.$2;
+    if (upper == 'M' && !consumedMove) {
+      subpathX = currentX;
+      subpathY = currentY;
+      consumedMove = true;
+    }
+  }
+  return result.join(' ');
+}
+
+bool _isPathCommand(String token) => token.length == 1 && RegExp(r'[A-Za-z]').hasMatch(token);
+
+int _pathCommandArity(String command) => switch (command) {
+  'H' || 'V' => 1,
+  'M' || 'L' || 'T' => 2,
+  'S' || 'Q' => 4,
+  'C' => 6,
+  'A' => 7,
+  _ => 0,
+};
 
 bool _listEquals<T>(List<T> left, List<T> right) {
   if (left.length != right.length) return false;

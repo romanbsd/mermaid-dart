@@ -13,6 +13,7 @@ const _architectureGroupStrokeDash = 8.0;
 const _architectureGroupLabelBaseOffset = 2.0;
 const _architectureGroupIconLabelCorrection = 3.0;
 const _architectureDiagonalEdgeLabelRotation = 45.0;
+const _architecturePlainServiceCornerRadius = 5.0;
 
 _LayoutResult _layoutArchitecture(ArchitectureAst ast, _LayoutContext context) {
   final config = context.options.optionsFor(const ArchitectureRenderOptions());
@@ -208,16 +209,7 @@ SceneElement _architectureNodeElement(
         cssClasses: const ['architecture-service-icon'],
       )
     else
-      SceneRect(
-        id: context.id('architecture-node-background'),
-        bounds: localBounds,
-        radiusX: 5,
-        radiusY: 5,
-        fill: SolidFill(context.options.theme.primary),
-        stroke: _stroke(context),
-        role: SemanticRole.background,
-        cssClasses: const ['architecture-node-background', 'node-bkg'],
-      ),
+      _architecturePlainServiceOutline(context, config, localBounds),
     if (node.iconText case final iconText?)
       _text(
         context,
@@ -249,6 +241,34 @@ SceneElement _architectureNodeElement(
     cssClasses: const ['architecture-service', 'node-service'],
   );
 }
+
+ScenePath _architecturePlainServiceOutline(_LayoutContext context, ArchitectureRenderOptions config, Bounds bounds) =>
+    ScenePath(
+      id: context.id('architecture-node-background'),
+      commands: [
+        MoveTo(Point(bounds.left, bounds.bottom)),
+        LineTo(Point(bounds.left, bounds.top + _architecturePlainServiceCornerRadius)),
+        QuadraticTo(
+          Point(bounds.left, bounds.top),
+          Point(bounds.left + _architecturePlainServiceCornerRadius, bounds.top),
+        ),
+        LineTo(Point(bounds.right - _architecturePlainServiceCornerRadius, bounds.top)),
+        QuadraticTo(
+          Point(bounds.right, bounds.top),
+          Point(bounds.right, bounds.top + _architecturePlainServiceCornerRadius),
+        ),
+        LineTo(Point(bounds.right, bounds.bottom)),
+        const ClosePath(),
+      ],
+      fill: const NoFill(),
+      stroke: SceneStroke(
+        color: config.groupBorderColor,
+        width: _architectureGroupStrokeWidth,
+        dashes: const [_architectureGroupStrokeDash],
+      ),
+      role: SemanticRole.background,
+      cssClasses: const ['architecture-node-background', 'node-bkg'],
+    );
 
 ScenePolygon _architectureArrow(
   _LayoutContext context,

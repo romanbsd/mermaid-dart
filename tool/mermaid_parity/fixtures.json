@@ -89,6 +89,16 @@
       "source": "architecture-beta\nservice a(server)[A]\nservice b(server)[B]\nservice c(server)[C]\na:R --> L:b\nb:R --> L:c\n"
     },
     {
+      "id": "architecture-no-icon-edge-lengths",
+      "type": "architecture",
+      "source": "architecture-beta\nservice cell[Table Cell]\nservice colspan[colspan]\nservice rowspan[rowspan]\ncell:R --> L:colspan\ncell:B --> T:rowspan\n",
+      "textMeasurements": {
+        "Table Cell": { "width": 70.59729766845703, "height": 19.00095558166504 },
+        "colspan": { "width": 53.73707962036133, "height": 19.00095558166504 },
+        "rowspan": { "width": 59.22172927856445, "height": 19.00095558166504 }
+      }
+    },
+    {
       "id": "architecture-edge-length-3",
       "type": "architecture",
       "source": "architecture-beta\nservice a(server)[A]\nservice b(server)[B]\nservice c(server)[C]\na:R --> L:b\nb:R --> L:c\n",

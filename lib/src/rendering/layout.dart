@@ -267,14 +267,6 @@ SceneText _text(
   );
 }
 
-SceneStroke _stroke(_LayoutContext context, {double width = 1.5, List<double> dashes = const []}) => SceneStroke(
-  color: context.options.theme.line,
-  width: width,
-  dashes: dashes,
-  cap: StrokeCap.round,
-  join: StrokeJoin.round,
-);
-
 // Scene colors store alpha as an eight-bit channel while Mermaid options use
 // normalized CSS opacity values.
 const _colorAlphaMaximum = 255;
