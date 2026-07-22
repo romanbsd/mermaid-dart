@@ -234,6 +234,12 @@ final class RailroadRenderOptions extends DiagramRenderOptions {
     this.strokeWidth = 2,
     this.showMarkers = true,
     this.markerRadius = 5,
+    this.terminalFill = const Color(255, 255, 222),
+    this.terminalBorder = const Color(238, 238, 188),
+    this.terminalText = const Color(0, 0, 33),
+    this.nonTerminalFill = const Color(236, 236, 255),
+    this.nonTerminalBorder = const Color(199, 199, 241),
+    this.nonTerminalText = const Color(19, 19, 0),
   });
 
   final bool compactMode;
@@ -246,6 +252,12 @@ final class RailroadRenderOptions extends DiagramRenderOptions {
   final double strokeWidth;
   final bool showMarkers;
   final double markerRadius;
+  final Color terminalFill;
+  final Color terminalBorder;
+  final Color terminalText;
+  final Color nonTerminalFill;
+  final Color nonTerminalBorder;
+  final Color nonTerminalText;
 }
 
 final class PacketRenderOptions extends DiagramRenderOptions {
@@ -302,6 +314,24 @@ final class RadarRenderOptions extends DiagramRenderOptions {
     this.axisScaleFactor = 1,
     this.axisLabelFactor = 1.05,
     this.curveTension = .17,
+    this.graticuleColor = const Color(222, 222, 222),
+    this.graticuleOpacity = .3,
+    this.axisColor = const Color(51, 51, 51),
+    this.seriesOpacity = .5,
+    this.seriesColors = const [
+      Color(134, 134, 255),
+      Color(255, 255, 120),
+      Color(215, 255, 134),
+      Color(194, 134, 255),
+      Color(255, 134, 255),
+      Color(255, 134, 194),
+      Color(255, 134, 134),
+      Color(255, 194, 134),
+      Color(194, 255, 134),
+      Color(134, 255, 194),
+      Color(134, 255, 255),
+      Color(134, 194, 255),
+    ],
   });
 
   final double width;
@@ -314,6 +344,11 @@ final class RadarRenderOptions extends DiagramRenderOptions {
   final double axisScaleFactor;
   final double axisLabelFactor;
   final double curveTension;
+  final Color graticuleColor;
+  final double graticuleOpacity;
+  final Color axisColor;
+  final double seriesOpacity;
+  final List<Color> seriesColors;
 }
 
 final class RenderOptions {

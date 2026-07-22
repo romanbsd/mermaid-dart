@@ -130,7 +130,24 @@ void main() {
         (element) => element.cssClasses.contains('railroad-terminal'),
       );
       final terminalRect = terminal.children.whereType<SceneRect>().single;
+      final terminalLabel = terminal.children.whereType<SceneText>().single;
       expect(terminalRect.fill, SolidFill(const Color(255, 255, 222)));
+      expect(terminalRect.stroke?.color, const Color(238, 238, 188));
+      expect(terminalLabel.style.color, const Color(0, 0, 33));
+      final nonterminal = elements.whereType<SceneGroup>().singleWhere(
+        (element) => element.cssClasses.contains('railroad-nonterminal'),
+      );
+      final nonterminalRect = nonterminal.children.whereType<SceneRect>().single;
+      final nonterminalLabel = nonterminal.children.whereType<SceneText>().single;
+      expect(nonterminalRect.fill, const SolidFill(Color(236, 236, 255)));
+      expect(nonterminalRect.stroke?.color, const Color(199, 199, 241));
+      expect(nonterminalLabel.style.color, const Color(19, 19, 0));
+      final railStrokes = elements
+          .whereType<ScenePath>()
+          .where((element) => element.cssClasses.contains('railroad-line'))
+          .map((element) => element.stroke);
+      expect(railStrokes.map((stroke) => stroke?.cap), everyElement(StrokeCap.butt));
+      expect(railStrokes.map((stroke) => stroke?.join), everyElement(StrokeJoin.miter));
       expectSvgGolden('railroad_choice', renderSvg(scene));
     });
 
@@ -967,18 +984,28 @@ void main() {
       );
       final elements = _flatten(scene.elements).toList();
 
-      expect(
-        elements.whereType<SceneCircle>().where((element) => element.cssClasses.contains('radarGraticule')),
-        hasLength(3),
-      );
+      final graticules = elements
+          .whereType<SceneCircle>()
+          .where((element) => element.cssClasses.contains('radarGraticule'))
+          .toList();
+      expect(graticules, hasLength(3));
+      expect(graticules.map((ring) => ring.fill), everyElement(const SolidFill(Color(222, 222, 222, 77))));
+      expect(graticules.map((ring) => ring.stroke?.color), everyElement(const Color(222, 222, 222)));
+      expect(graticules.map((ring) => ring.stroke?.width), everyElement(1));
+      final axes = elements.whereType<SceneLine>().where((element) => element.cssClasses.contains('radarAxisLine'));
+      expect(axes.map((axis) => axis.stroke?.color), everyElement(const Color(51, 51, 51)));
+      expect(axes.map((axis) => axis.stroke?.width), everyElement(2));
       final curve = elements.whereType<ScenePath>().singleWhere(
         (element) => element.cssClasses.contains('radarCurve-0'),
       );
       expect(curve.commands.whereType<CubicTo>(), hasLength(3));
-      expect(
-        elements.whereType<SceneRect>().where((element) => element.cssClasses.contains('radarLegendBox-0')),
-        hasLength(1),
+      expect(curve.fill, const SolidFill(Color(134, 134, 255, 128)));
+      expect(curve.stroke?.color, const Color(134, 134, 255));
+      final legendBox = elements.whereType<SceneRect>().singleWhere(
+        (element) => element.cssClasses.contains('radarLegendBox-0'),
       );
+      expect(legendBox.fill, const SolidFill(Color(134, 134, 255, 128)));
+      expect(legendBox.stroke?.color, const Color(134, 134, 255));
       expect(
         elements
             .whereType<SceneText>()
@@ -1017,7 +1044,7 @@ void main() {
           ],
         ),
         textMeasurer: measurer,
-        options: const RenderOptions(padding: 0),
+        options: const RenderOptions(padding: 0, radar: RadarRenderOptions(seriesColors: [])),
       );
       final elements = _flatten(scene.elements).toList();
 

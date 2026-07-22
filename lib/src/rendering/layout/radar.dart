@@ -1,12 +1,33 @@
 part of '../layout.dart';
 
+// Mermaid radar presentation and spacing defaults. Keeping them named makes
+// the D3-derived geometry below readable and keeps style changes localized.
+const _radarLabelFontSize = 12.0;
+const _radarTitleFontSize = 16.0;
+const _radarDefaultTicks = 5;
+const _radarMinimumTicks = 1;
+const _radarMaximumTicks = 1000;
+const _radarGraticuleStrokeWidth = 1.0;
+const _radarAxisStrokeWidth = 2.0;
+const _radarSeriesStrokeWidth = 2.0;
+const _radarLegendStrokeWidth = 1.0;
+const _radarAxisLabelOffset = 4.0;
+const _radarLegendBoxSize = 12.0;
+const _radarLegendTextOffset = 16.0;
+const _radarLegendRowHeight = 20.0;
+const _radarLegendPositionRatio = 3 / 4;
+const _colorAlphaMaximum = 255;
+
 _LayoutResult _layoutRadar(RadarAst ast, _LayoutContext context) {
   final config = context.options.optionsFor(const RadarRenderOptions());
-  final labelStyle = _mermaidTextStyle(context, 12);
+  final labelStyle = _mermaidTextStyle(context, _radarLabelFontSize);
   final radius = config.radius ?? math.min(config.width, config.height) / 2;
   final center = Point(config.marginLeft + config.width / 2, config.marginTop + config.height / 2);
   final count = ast.axes.length;
-  final ticks = (ast.options.whereType<RadarTicksOptionAst>().lastOrNull?.value.toInt() ?? 5).clamp(1, 1000);
+  final ticks = (ast.options.whereType<RadarTicksOptionAst>().lastOrNull?.value.toInt() ?? _radarDefaultTicks).clamp(
+    _radarMinimumTicks,
+    _radarMaximumTicks,
+  );
   final graticule = ast.options.whereType<RadarGraticuleOptionAst>().lastOrNull?.value ?? RadarGraticule.circle;
   final showLegend = ast.options.whereType<RadarShowLegendOptionAst>().lastOrNull?.value ?? true;
   final elements = <SceneElement>[];
@@ -23,15 +44,15 @@ _LayoutResult _layoutRadar(RadarAst ast, _LayoutContext context) {
           id: context.id('radar-graticule'),
           center: center,
           radius: radius * scale,
-          fill: const NoFill(),
-          stroke: _stroke(context, width: .7),
+          fill: SolidFill(_withOpacity(config.graticuleColor, config.graticuleOpacity)),
+          stroke: SceneStroke(color: config.graticuleColor, width: _radarGraticuleStrokeWidth),
           cssClasses: const ['radarGraticule'],
         ),
         RadarGraticule.polygon => ScenePolygon(
           id: context.id('radar-graticule'),
           points: [for (var i = 0; i < count; i++) polar(i, scale)],
-          fill: const NoFill(),
-          stroke: _stroke(context, width: .7),
+          fill: SolidFill(_withOpacity(config.graticuleColor, config.graticuleOpacity)),
+          stroke: SceneStroke(color: config.graticuleColor, width: _radarGraticuleStrokeWidth),
           cssClasses: const ['radarGraticule'],
         ),
       });
@@ -47,14 +68,14 @@ _LayoutResult _layoutRadar(RadarAst ast, _LayoutContext context) {
         id: context.id('radar-axis'),
         start: center,
         end: end,
-        stroke: _stroke(context, width: .7),
+        stroke: SceneStroke(color: config.axisColor, width: _radarAxisStrokeWidth),
         role: SemanticRole.edge,
         cssClasses: const ['radarAxisLine'],
       ),
     );
     final labelPoint = Point(
-      center.x + radius * config.axisLabelFactor * cosine + 4 * cosine,
-      center.y + radius * config.axisLabelFactor * sine + 4 * sine,
+      center.x + radius * config.axisLabelFactor * cosine + _radarAxisLabelOffset * cosine,
+      center.y + radius * config.axisLabelFactor * sine + _radarAxisLabelOffset * sine,
     );
     elements.add(
       _text(
@@ -91,9 +112,9 @@ _LayoutResult _layoutRadar(RadarAst ast, _LayoutContext context) {
           : ((entry.value.toDouble() - minValue) / (maxValue - minValue)).clamp(0, 1).toDouble();
       points.add(polar(i, normalized));
     }
-    final color = _palette[curveIndex % _palette.length];
-    final fill = SolidFill(Color(color.red, color.green, color.blue, 80));
-    final stroke = SceneStroke(color: color, width: 2);
+    final color = _radarSeriesColor(config, curveIndex);
+    final fill = SolidFill(_withOpacity(color, config.seriesOpacity));
+    final stroke = SceneStroke(color: color, width: _radarSeriesStrokeWidth);
     elements.add(switch (graticule) {
       RadarGraticule.circle => ScenePath(
         id: context.id('radar-curve'),
@@ -116,15 +137,17 @@ _LayoutResult _layoutRadar(RadarAst ast, _LayoutContext context) {
     });
   }
   if (showLegend) {
-    final legendX = center.x + ((config.width / 2 + config.marginRight) * 3) / 4;
-    final legendY = center.y - ((config.height / 2 + config.marginTop) * 3) / 4;
+    final legendX = center.x + (config.width / 2 + config.marginRight) * _radarLegendPositionRatio;
+    final legendY = center.y - (config.height / 2 + config.marginTop) * _radarLegendPositionRatio;
     for (var i = 0; i < ast.curves.length; i++) {
-      final y = legendY + i * 20;
+      final y = legendY + i * _radarLegendRowHeight;
+      final color = _radarSeriesColor(config, i);
       elements.add(
         SceneRect(
           id: context.id('radar-legend-box'),
-          bounds: Bounds(left: legendX, top: y, width: 12, height: 12),
-          fill: SolidFill(_palette[i % _palette.length]),
+          bounds: Bounds(left: legendX, top: y, width: _radarLegendBoxSize, height: _radarLegendBoxSize),
+          fill: SolidFill(_withOpacity(color, config.seriesOpacity)),
+          stroke: SceneStroke(color: color, width: _radarLegendStrokeWidth),
           role: SemanticRole.legend,
           cssClasses: ['radarLegendBox-$i'],
         ),
@@ -133,7 +156,7 @@ _LayoutResult _layoutRadar(RadarAst ast, _LayoutContext context) {
         _text(
           context,
           ast.curves[i].label ?? ast.curves[i].name,
-          legendX + 16,
+          legendX + _radarLegendTextOffset,
           y,
           baseline: TextBaseline.hanging,
           role: SemanticRole.legend,
@@ -153,7 +176,7 @@ _LayoutResult _layoutRadar(RadarAst ast, _LayoutContext context) {
         anchor: TextAnchor.middle,
         baseline: TextBaseline.hanging,
         role: SemanticRole.title,
-        style: _mermaidTextStyle(context, 16),
+        style: _mermaidTextStyle(context, _radarTitleFontSize),
         cssClasses: const ['radarTitle'],
       ),
     );
@@ -163,6 +186,14 @@ _LayoutResult _layoutRadar(RadarAst ast, _LayoutContext context) {
     config.height + config.marginTop + config.marginBottom,
     elements,
   );
+}
+
+Color _withOpacity(Color color, double opacity) =>
+    Color(color.red, color.green, color.blue, (opacity.clamp(0, 1) * _colorAlphaMaximum).round());
+
+Color _radarSeriesColor(RadarRenderOptions config, int index) {
+  final colors = config.seriesColors.isEmpty ? const RadarRenderOptions().seriesColors : config.seriesColors;
+  return colors[index % colors.length];
 }
 
 List<PathCommand> _closedRoundCurve(List<Point> points, double tension) {

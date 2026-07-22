@@ -1,5 +1,8 @@
 part of '../layout.dart';
 
+// Mermaid renders special railroad nodes with a regular five-unit dash/gap.
+const _railSpecialDashLength = 5.0;
+
 final class _RailBox {
   const _RailBox(this.width, this.height, this.up, this.down, this.elements);
   final double width;
@@ -19,19 +22,23 @@ _RailBox _railNode(RailroadNodeAst node, _LayoutContext context) => switch (node
   RailroadRepetitionAst(:final element, :final min, :final max) => _railRepetition(element, min, max, context),
 };
 
-SceneTextStyle _railTextStyle(_LayoutContext context, {FontWeight weight = FontWeight.normal}) {
+SceneTextStyle _railTextStyle(_LayoutContext context, {FontWeight weight = FontWeight.normal, Color? color}) {
   final config = context.options.optionsFor(const RailroadRenderOptions());
   return SceneTextStyle(
     fontFamily: config.fontFamily,
     fontSize: config.fontSize,
     weight: weight,
-    color: context.options.theme.primaryText,
+    color: color ?? context.options.theme.primaryText,
   );
 }
 
-SceneStroke _railStroke(_LayoutContext context, {bool dashed = false}) {
+SceneStroke _railStroke(_LayoutContext context, {bool dashed = false, Color? color}) {
   final config = context.options.optionsFor(const RailroadRenderOptions());
-  return _stroke(context, width: config.strokeWidth, dashes: dashed ? const [5, 5] : const []);
+  return SceneStroke(
+    color: color ?? context.options.theme.line,
+    width: config.strokeWidth,
+    dashes: dashed ? const [_railSpecialDashLength, _railSpecialDashLength] : const [],
+  );
 }
 
 ScenePath _railPath(_LayoutContext context, List<PathCommand> commands) => ScenePath(
@@ -45,7 +52,10 @@ ScenePath _railPath(_LayoutContext context, List<PathCommand> commands) => Scene
 
 _RailBox _railLeaf(String label, _LayoutContext context, bool terminal, {bool special = false}) {
   final config = context.options.optionsFor(const RailroadRenderOptions());
-  final style = _railTextStyle(context);
+  final fillColor = terminal ? config.terminalFill : config.nonTerminalFill;
+  final borderColor = terminal ? config.terminalBorder : config.nonTerminalBorder;
+  final textColor = terminal ? config.terminalText : config.nonTerminalText;
+  final style = _railTextStyle(context, color: textColor);
   final measured = context.measurer.measure(label, style);
   final width = measured.width + config.padding * 2;
   final height = measured.height + config.padding * 2;
@@ -60,10 +70,10 @@ _RailBox _railLeaf(String label, _LayoutContext context, bool terminal, {bool sp
         SceneRect(
           id: context.id('railroad-node'),
           bounds: Bounds(left: 0, top: 0, width: width, height: height),
-          radiusX: terminal ? 10 : 0,
-          radiusY: terminal ? 10 : 0,
-          fill: SolidFill(terminal ? context.options.theme.secondary : context.options.theme.primary),
-          stroke: _railStroke(context, dashed: special),
+          radiusX: terminal ? config.arcRadius : 0,
+          radiusY: terminal ? config.arcRadius : 0,
+          fill: SolidFill(fillColor),
+          stroke: _railStroke(context, dashed: special, color: borderColor),
           role: SemanticRole.node,
           label: label,
         ),
