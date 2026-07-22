@@ -27,6 +27,11 @@
       "source": "architecture-beta\ngroup left\ngroup right\nservice left_disk(disk)[Disk] in left\nservice top_disk(disk)[Disk] in left\nservice bottom_disk(disk)[Disk] in left\nservice top_gateway(internet)[Gateway] in right\nservice bottom_gateway(internet)[Gateway] in right\njunction juncC in left\njunction juncR in right\nleft_disk:R -- L:juncC\ntop_disk:B -- T:juncC\nbottom_disk:T -- B:juncC\ntop_gateway:B --> T:juncR\nbottom_gateway:T --> B:juncR\njuncC{group}:R --> L:juncR{group}\n"
     },
     {
+      "id": "architecture-align-grid",
+      "type": "architecture",
+      "source": "architecture-beta\ngroup tier1(cloud)[Tier 1]\nservice a1(server)[A1] in tier1\nservice a2(server)[A2] in tier1\nservice a3(server)[A3] in tier1\ngroup tier2(database)[Tier 2]\nservice b1(database)[B1] in tier2\nservice b2(database)[B2] in tier2\nservice b3(database)[B3] in tier2\na1:B --> T:b1\na2:B --> T:b2\na3:B --> T:b3\nalign row a1 a2 a3\nalign row b1 b2 b3\nalign column a1 b1\nalign column a2 b2\nalign column a3 b3\n"
+    },
+    {
       "id": "cynefin-domains",
       "type": "cynefin",
       "source": "cynefin-beta\ncomplex \"Probe\"\ncomplicated \"Analyze\"\nclear \"Sense\"\nchaotic \"Act\"\nconfusion \"Collect\"\n",

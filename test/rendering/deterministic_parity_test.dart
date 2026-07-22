@@ -1719,6 +1719,48 @@ void main() {
       expect(services[3].x, closeTo(42.03541549731811, 1e-9));
       expect(services[3].y - services[0].y, closeTo(186.70164581351315, 1e-9));
     });
+
+    test('architecture combines row and column constraints into a compound grid', () {
+      final ast =
+          parse(
+                DiagramType.architecture,
+                'architecture-beta\n'
+                'group tier1(cloud)[Tier 1]\n'
+                'service a1(server)[A1] in tier1\n'
+                'service a2(server)[A2] in tier1\n'
+                'service a3(server)[A3] in tier1\n'
+                'group tier2(database)[Tier 2]\n'
+                'service b1(database)[B1] in tier2\n'
+                'service b2(database)[B2] in tier2\n'
+                'service b3(database)[B3] in tier2\n'
+                'a1:B --> T:b1\n'
+                'a2:B --> T:b2\n'
+                'a3:B --> T:b3\n'
+                'align row a1 a2 a3\n'
+                'align row b1 b2 b3\n'
+                'align column a1 b1\n'
+                'align column a2 b2\n'
+                'align column a3 b3\n',
+              )
+              as ArchitectureAst;
+      final scene = layoutDiagram(ast, textMeasurer: measurer, options: const RenderOptions(padding: 0));
+      final services = {
+        for (final service in _flatten(
+          scene.elements,
+        ).whereType<SceneGroup>().where((element) => element.cssClasses.contains('architecture-service')))
+          service.label!: service.transforms.single as Translate,
+      };
+
+      expect(services['A1']!.y, closeTo(services['A2']!.y, 1e-9));
+      expect(services['A2']!.y, closeTo(services['A3']!.y, 1e-9));
+      expect(services['B1']!.y, closeTo(services['B2']!.y, 1e-9));
+      expect(services['B2']!.y, closeTo(services['B3']!.y, 1e-9));
+      expect(services['A1']!.x, closeTo(services['B1']!.x, 1e-9));
+      expect(services['A2']!.x, closeTo(services['B2']!.x, 1e-9));
+      expect(services['A3']!.x, closeTo(services['B3']!.x, 1e-9));
+      expect(services['A2']!.x - services['A1']!.x, closeTo(157.62032405276386, 1e-9));
+      expect(services['B1']!.y - services['A1']!.y, closeTo(250.87339226640756, 1e-9));
+    });
   });
 }
 

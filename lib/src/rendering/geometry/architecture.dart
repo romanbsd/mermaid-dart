@@ -30,6 +30,13 @@ const _architectureAlignmentOrthogonalSpacingRatio = 0.3962705726689144;
 const _architectureAlignmentAxisFrameRatio = 0.01875;
 const _architectureAlignmentOrthogonalFrameRatio = 0.053125;
 
+// A grid that constrains rows inside sibling compound groups makes fCoSE
+// expand both axes to satisfy compound non-overlap alongside the declared
+// relative-placement constraints. These seeded Mermaid 11.16 ratios preserve
+// that proof-layout expansion instead of treating each hint independently.
+const _architectureCompoundGridRowGapRatio = 1.9702540506595483;
+const _architectureCompoundGridColumnGapRatio = 3.1359174033300945;
+
 // Cytoscape's compound-node bounding box includes half of its rendered border
 // on the top and horizontal sides. The bottom uses the service-label extent and
 // therefore ends half a pixel inside the configured padding instead.
@@ -210,6 +217,11 @@ Map<String, Point> _positionArchitectureNodes(
     (adjacency[edge.rightId] ??= []).add((edge: edge, forward: false));
   }
   final centers = <String, Point>{};
+  final hasRowAlignment = alignments.any((alignment) => alignment.direction == ArchitectureAlignmentDirection.row);
+  final hasColumnAlignment = alignments.any(
+    (alignment) => alignment.direction == ArchitectureAlignmentDirection.column,
+  );
+  final isCompoundGrid = groups.isNotEmpty && hasRowAlignment && hasColumnAlignment;
   var component = 0;
   for (final root in nodes) {
     if (centers.containsKey(root.id)) continue;
@@ -256,7 +268,13 @@ Map<String, Point> _positionArchitectureNodes(
     final origin = centers[members.first]!;
     var alignedOffset = 0.0;
     for (var index = 1; index < members.length; index++) {
-      alignedOffset += _architectureAlignmentGap(index - 1, members.length - 1, options.iconSize);
+      alignedOffset += isCompoundGrid
+          ? options.iconSize *
+                switch (alignment.direction) {
+                  ArchitectureAlignmentDirection.row => _architectureCompoundGridRowGapRatio,
+                  ArchitectureAlignmentDirection.column => _architectureCompoundGridColumnGapRatio,
+                }
+          : _architectureAlignmentGap(index - 1, members.length - 1, options.iconSize);
       centers[members[index]] = switch (alignment.direction) {
         ArchitectureAlignmentDirection.row => origin.translated(alignedOffset, 0),
         ArchitectureAlignmentDirection.column => origin.translated(0, alignedOffset),
