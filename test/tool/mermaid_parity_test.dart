@@ -11,11 +11,18 @@ void main() {
     final manifest = ParityManifest.load(File('tool/mermaid_parity/fixtures.json'));
 
     expect(manifest.mermaidVersion, '11.16.0');
-    expect(manifest.fixtures.map((fixture) => fixture.id), hasLength(18));
-    expect(manifest.fixtures.map((fixture) => fixture.id).toSet(), hasLength(18));
+    expect(manifest.fixtures.map((fixture) => fixture.id), hasLength(20));
+    expect(manifest.fixtures.map((fixture) => fixture.id).toSet(), hasLength(20));
     expect(
       manifest.fixtures.map((fixture) => fixture.id),
-      containsAll(['git-special-commits', 'git-special-commits-tb', 'git-special-commits-bt', 'wardley-strategies']),
+      containsAll([
+        'event-modeling-unicode-multiline',
+        'git-special-commits',
+        'git-special-commits-tb',
+        'git-special-commits-bt',
+        'tree-unicode-invalid-icon',
+        'wardley-strategies',
+      ]),
     );
     final railroad = manifest.fixtures.singleWhere((fixture) => fixture.id == 'railroad-sequence');
     expect(railroad.textMeasurements['a'], const Size(8.40625, 19));

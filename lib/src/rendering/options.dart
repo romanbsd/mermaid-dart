@@ -272,12 +272,21 @@ final class GitGraphRenderOptions extends DiagramRenderOptions {
 }
 
 final class TreeViewRenderOptions extends DiagramRenderOptions {
-  const TreeViewRenderOptions({this.rowIndent = 10, this.paddingX = 5, this.paddingY = 5, this.lineThickness = 1});
+  const TreeViewRenderOptions({
+    this.rowIndent = 10,
+    this.paddingX = 5,
+    this.paddingY = 5,
+    this.lineThickness = 1,
+    this.descriptionColor = const Color(106, 153, 85),
+  });
 
   final double rowIndent;
   final double paddingX;
   final double paddingY;
   final double lineThickness;
+
+  /// Mermaid's default secondary text color for node descriptions.
+  final Color descriptionColor;
 }
 
 enum TreemapValueFormat { plain, grouped, currencyGrouped }

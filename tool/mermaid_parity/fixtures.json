@@ -29,6 +29,15 @@
       }
     },
     {
+      "id": "event-modeling-unicode-multiline",
+      "type": "eventmodeling",
+      "source": "eventmodeling\ntimeframe 01 command Cart.Update\ntf 02 evt Cart.Updated ->> 01 `jsobj`{ status: café, owner: 👩‍💻 }\n",
+      "textMeasurements": {
+        "Update": { "width": 116, "height": 20 },
+        "Updated\n\nstatus: café, owner: 👩‍💻": { "width": 284.6666666666667, "height": 60 }
+      }
+    },
+    {
       "id": "git-branches",
       "type": "gitGraph",
       "source": "gitGraph\ncommit id: \"A\"\nbranch develop\ncheckout develop\ncommit id: \"B\"\n",
@@ -130,6 +139,16 @@
         "src": { "width": 21, "height": 19 },
         "index.js": { "width": 56, "height": 19 },
         "app.dart": { "width": 62, "height": 19 }
+      }
+    },
+    {
+      "id": "tree-unicode-invalid-icon",
+      "type": "treeView",
+      "source": "treeView-beta\n\"café 👩‍💻.dart\" icon(missing:unknown) ## é Unicode\n",
+      "textMeasurements": {
+        "/": { "width": 5, "height": 19 },
+        "café 👩‍💻.dart": { "width": 91.546875, "height": 22 },
+        "é Unicode": { "width": 70.890625, "height": 19 }
       }
     },
     {

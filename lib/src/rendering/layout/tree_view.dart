@@ -22,6 +22,14 @@ SceneStroke _treeStroke(double width) => SceneStroke(color: _treeInk, width: wid
 _LayoutResult _layoutTree(TreeViewAst ast, _LayoutContext context) {
   final config = context.options.optionsFor(const TreeViewRenderOptions());
   final textStyle = _treeTextStyle(context);
+  final descriptionStyle = SceneTextStyle(
+    fontFamily: textStyle.fontFamily,
+    fontSize: textStyle.fontSize,
+    weight: textStyle.weight,
+    style: textStyle.style,
+    color: config.descriptionColor,
+    lineHeight: textStyle.lineHeight,
+  );
   final elements = <SceneElement>[];
   final indentStack = <int>[];
   final depths = <int>[];
@@ -112,13 +120,13 @@ _LayoutResult _layoutTree(TreeViewAst ast, _LayoutContext context) {
           descriptionX,
           rowTops[i] + rowHeights[i] / 2,
           baseline: TextBaseline.middle,
-          style: textStyle,
+          style: descriptionStyle,
           cssClasses: const ['treeView-node-description'],
         ),
       );
       totalWidth = math.max(
         totalWidth,
-        descriptionX + context.measurer.measure(description, textStyle).width + config.paddingX,
+        descriptionX + context.measurer.measure(description, descriptionStyle).width + config.paddingX,
       );
     }
   }

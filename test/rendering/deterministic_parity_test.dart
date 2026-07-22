@@ -86,7 +86,7 @@ void main() {
       expect(labels.map((label) => label.baseline), everyElement(TextBaseline.middle));
       expect(labels.map((label) => label.style.color), everyElement(const Color(0, 0, 0)));
       expect(descriptions.map((description) => description.position.x).toSet(), hasLength(1));
-      expect(descriptions.map((description) => description.style.color), everyElement(const Color(0, 0, 0)));
+      expect(descriptions.map((description) => description.style.color), everyElement(const Color(106, 153, 85)));
       expect(highlight.bounds.right, scene.bounds.width - 2);
       expect(lines, hasLength(6));
       expect(lines.map((line) => line.stroke?.color), everyElement(const Color(0, 0, 0)));

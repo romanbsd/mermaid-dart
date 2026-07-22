@@ -142,12 +142,23 @@ rule <- "a" b? ;
     test('tree icons use a placeholder when application resolution fails', () {
       final scene = layoutDiagram(
         const TreeViewAst(
-          nodes: [TreeViewNodeAst(name: 'Inbox', icon: 'unknown:inbox')],
+          nodes: [TreeViewNodeAst(name: 'Inbox', icon: 'unknown:inbox', description: 'Missing icon')],
         ),
       );
-      final icon = _flatten(scene.elements).whereType<SceneIcon>().single;
+      final elements = _flatten(scene.elements).toList();
+      final icon = elements.whereType<SceneIcon>().single;
+      final description = elements.whereType<SceneText>().singleWhere(
+        (element) => element.cssClasses.contains('treeView-node-description'),
+      );
       expect(icon.label, 'unknown:inbox');
       expect(icon.geometry.paths, isNotEmpty);
+      expect(description.style.color, const Color(106, 153, 85));
+      expect(
+        XmlDocument.parse(
+          renderSvg(scene),
+        ).findAllElements('g').where((element) => element.getAttribute('aria-label') == 'unknown:inbox'),
+        hasLength(2),
+      );
     });
 
     test('treemap layout preserves nested section geometry', () {
