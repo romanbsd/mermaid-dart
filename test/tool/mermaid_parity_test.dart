@@ -108,6 +108,59 @@ void main() {
     expect(comparison.exact, isFalse);
   });
 
+  test('compares translated local geometry with absolute geometry', () {
+    final local = SvgSnapshot.fromSvg(
+      '<svg><g transform="translate(10, 20)">'
+      '<circle cx="1" cy="2" r="3"/>'
+      '<rect x="1" y="2" width="4" height="5"/>'
+      '<text x="1" y="2">Label</text>'
+      '<path d="M0 0L2 2A3 4 0 0 1 5 6Z"/>'
+      '</g></svg>',
+    );
+    final absolute = SvgSnapshot.fromSvg(
+      '<svg>'
+      '<circle cx="11" cy="22" r="3"/>'
+      '<rect x="11" y="22" width="4" height="5"/>'
+      '<text x="11" y="22">Label</text>'
+      '<path d="M10 20L12 22A3 4 0 0 1 15 26Z"/>'
+      '</svg>',
+    );
+
+    final comparison = SvgComparison.compare(local, absolute);
+    expect(comparison.sameGeometry, isTrue);
+    expect(comparison.visualParity, isTrue);
+    expect(comparison.exact, isFalse);
+  });
+
+  test('ignores paint-equivalent sibling order in geometry comparison', () {
+    final shapesFirst = SvgSnapshot.fromSvg(
+      '<svg><circle cx="1" cy="2" r="3"/><rect x="4" y="5" width="6" height="7"/></svg>',
+    );
+    final reverseOrder = SvgSnapshot.fromSvg(
+      '<svg><rect x="4" y="5" width="6" height="7"/><circle cx="1" cy="2" r="3"/></svg>',
+    );
+
+    final comparison = SvgComparison.compare(shapesFirst, reverseOrder);
+    expect(comparison.sameGeometry, isTrue);
+    expect(comparison.exact, isFalse);
+  });
+
+  test('resolves simple stylesheet font sizes for text geometry', () {
+    final stylesheet = SvgSnapshot.fromSvg(
+      '<svg><style>.label { font-size: 17px; }</style><text class="label">A</text></svg>',
+    );
+    final attribute = SvgSnapshot.fromSvg('<svg><text class="label" font-size="17">A</text></svg>');
+
+    expect(SvgComparison.compare(stylesheet, attribute).sameGeometry, isTrue);
+  });
+
+  test('tolerates sub-centipixel geometry differences', () {
+    final left = SvgSnapshot.fromSvg('<svg><path d="M0 0L264.263 1"/></svg>');
+    final right = SvgSnapshot.fromSvg('<svg><path d="M0 0L264.264 1"/></svg>');
+
+    expect(SvgComparison.compare(left, right).sameGeometry, isTrue);
+  });
+
   test('manifest rejects duplicate IDs', () {
     expect(
       () => ParityManifest.fromJson({

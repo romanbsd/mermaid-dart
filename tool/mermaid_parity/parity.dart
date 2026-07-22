@@ -123,6 +123,11 @@ const _visibleElements = {'circle', 'ellipse', 'foreignObject', 'line', 'path', 
 
 List<String> _geometrySignatures(XmlElement root) {
   final signatures = <String>[];
+  final styleSheets = root.descendants
+      .whereType<XmlElement>()
+      .where((element) => element.name.local == 'style')
+      .map((element) => element.innerText)
+      .join('\n');
 
   void visit(XmlElement element, String inheritedTransform) {
     final ownTransform = element.getAttribute('transform') ?? '';
@@ -130,7 +135,7 @@ List<String> _geometrySignatures(XmlElement root) {
     final isEmptyText =
         (element.name.local == 'text' || element.name.local == 'foreignObject') && element.innerText.trim().isEmpty;
     if (_visibleElements.contains(element.name.local) && !isEmptyText) {
-      signatures.add(_geometrySignature(element, transform));
+      signatures.add(_geometrySignature(element, transform, styleSheets));
     }
     for (final child in element.childElements) {
       visit(child, transform);
@@ -138,36 +143,39 @@ List<String> _geometrySignatures(XmlElement root) {
   }
 
   visit(root, '');
-  return signatures;
+  return signatures..sort();
 }
 
-String _geometrySignature(XmlElement element, String transform) {
+String _geometrySignature(XmlElement element, String transform, String styleSheets) {
   final styles = <String, String>{
     for (final declaration in (element.getAttribute('style') ?? '').split(';'))
       if (declaration.split(':') case [final name, final value]) name.trim(): value.trim(),
   };
   String attribute(String name, [String fallback = '']) => element.getAttribute(name) ?? styles[name] ?? fallback;
+  final translation = _Translation.parse(transform);
+  String x(String value) => translation == null ? value : _translatedNumber(value, translation.dx);
+  String y(String value) => translation == null ? value : _translatedNumber(value, translation.dy);
   final name = element.name.local;
   final values = switch (name) {
-    'circle' => [attribute('cx', '0'), attribute('cy', '0'), attribute('r', '0')],
-    'ellipse' => [attribute('cx', '0'), attribute('cy', '0'), attribute('rx', '0'), attribute('ry', '0')],
-    'line' => [attribute('x1', '0'), attribute('y1', '0'), attribute('x2', '0'), attribute('y2', '0')],
-    'path' => [attribute('d')],
-    'polygon' || 'polyline' => [attribute('points')],
+    'circle' => [x(attribute('cx', '0')), y(attribute('cy', '0')), attribute('r', '0')],
+    'ellipse' => [x(attribute('cx', '0')), y(attribute('cy', '0')), attribute('rx', '0'), attribute('ry', '0')],
+    'line' => [x(attribute('x1', '0')), y(attribute('y1', '0')), x(attribute('x2', '0')), y(attribute('y2', '0'))],
+    'path' => [_translatedPath(attribute('d'), translation)],
+    'polygon' || 'polyline' => [_translatedPoints(attribute('points'), translation)],
     'rect' || 'foreignObject' => [
-      attribute('x', '0'),
-      attribute('y', '0'),
+      x(attribute('x', '0')),
+      y(attribute('y', '0')),
       attribute('width', '0'),
       attribute('height', '0'),
       attribute('rx', '0'),
       attribute('ry', '0'),
     ],
     'text' => [
-      attribute('x', '0'),
-      attribute('y', '0'),
-      attribute('font-size', '16'),
+      x(attribute('x', '0')),
+      y(attribute('y', '0')),
+      attribute('font-size', _stylesheetFontSize(element, styleSheets) ?? '16'),
       attribute('text-anchor', 'start'),
-      switch (attribute('dominant-baseline', 'alphabetic')) {
+      switch (attribute('dominant-baseline', _stylesheetBaseline(element, styleSheets) ?? 'alphabetic')) {
         'auto' => 'alphabetic',
         final baseline => baseline,
       },
@@ -178,7 +186,149 @@ String _geometrySignature(XmlElement element, String transform) {
   final text = name == 'text' || name == 'foreignObject'
       ? element.innerText.trim().replaceAll(RegExp(r'\s+'), ' ')
       : '';
-  return [kind, transform, ...values, text].join('|');
+  return [kind, if (translation == null) transform else '', ...values, text].join('|');
+}
+
+final class _Translation {
+  const _Translation(this.dx, this.dy);
+
+  static _Translation? parse(String transform) {
+    if (transform.trim().isEmpty) return const _Translation(0, 0);
+    final matches = _translate.allMatches(transform).toList();
+    if (matches.isEmpty || transform.replaceAll(_translate, '').trim().isNotEmpty) return null;
+    var dx = 0.0;
+    var dy = 0.0;
+    for (final match in matches) {
+      dx += double.parse(match[1]!);
+      dy += double.parse(match[2] ?? '0');
+    }
+    return _Translation(dx, dy);
+  }
+
+  final double dx;
+  final double dy;
+}
+
+final _translate = RegExp(
+  r'translate\(\s*(-?(?:\d+\.?\d*|\.\d+)(?:e[+-]?\d+)?)'
+  r'(?:\s*[, ]\s*(-?(?:\d+\.?\d*|\.\d+)(?:e[+-]?\d+)?))?\s*\)',
+  caseSensitive: false,
+);
+final _pathToken = RegExp(r'[A-Za-z]|-?(?:\d+\.?\d*|\.\d+)(?:e[+-]?\d+)?', caseSensitive: false);
+
+String _translatedNumber(String value, double offset) => _formatNumber(double.parse(value) + offset);
+
+String _formatNumber(double value) {
+  var formatted = value.toStringAsFixed(2).replaceFirst(RegExp(r'\.?0+$'), '');
+  if (formatted == '-0') formatted = '0';
+  return formatted;
+}
+
+String? _stylesheetFontSize(XmlElement element, String styleSheets) {
+  String? fontSize;
+  for (final rule in _cssRule.allMatches(styleSheets)) {
+    final declaration = _cssFontSize.firstMatch(rule[2]!);
+    if (declaration == null) continue;
+    for (final selector in rule[1]!.split(',')) {
+      if (_matchesSimpleSelector(element, selector.trim())) {
+        fontSize = _formatNumber(double.parse(declaration[1]!));
+      }
+    }
+  }
+  return fontSize;
+}
+
+String? _stylesheetBaseline(XmlElement element, String styleSheets) =>
+    _stylesheetValue(element, styleSheets, _cssBaseline);
+
+String? _stylesheetValue(XmlElement element, String styleSheets, RegExp declarationPattern) {
+  String? value;
+  for (final rule in _cssRule.allMatches(styleSheets)) {
+    final declaration = declarationPattern.firstMatch(rule[2]!);
+    if (declaration == null) continue;
+    for (final selector in rule[1]!.split(',')) {
+      if (_matchesSimpleSelector(element, selector.trim())) value = declaration[1];
+    }
+  }
+  return value;
+}
+
+bool _matchesSimpleSelector(XmlElement element, String selector) {
+  final parts = selector.split(RegExp(r'\s+'));
+  if (parts.first.startsWith('#')) parts.removeAt(0);
+  if (parts.isEmpty) return true;
+  if (!_matchesSelectorPart(element, parts.last)) return false;
+  var ancestor = element.parentElement;
+  for (var index = parts.length - 2; index >= 0; index--) {
+    while (ancestor != null && !_matchesSelectorPart(ancestor, parts[index])) {
+      ancestor = ancestor.parentElement;
+    }
+    if (ancestor == null) return false;
+    ancestor = ancestor.parentElement;
+  }
+  return true;
+}
+
+bool _matchesSelectorPart(XmlElement element, String selector) {
+  selector = selector.replaceFirst(RegExp(r':.*$'), '');
+  if (selector.startsWith('#')) return element.getAttribute('id') == selector.substring(1);
+  if (selector.startsWith('.')) {
+    return (element.getAttribute('class') ?? '').split(RegExp(r'\s+')).contains(selector.substring(1));
+  }
+  return element.name.local == selector;
+}
+
+final _cssRule = RegExp(r'([^{}]+)\{([^{}]*)\}');
+final _cssFontSize = RegExp(r'font-size\s*:\s*(-?(?:\d+\.?\d*|\.\d+))px', caseSensitive: false);
+final _cssBaseline = RegExp(r'dominant-baseline\s*:\s*([\w-]+)', caseSensitive: false);
+
+String _translatedPoints(String points, _Translation? translation) {
+  final values = _pathToken.allMatches(points).map((match) => double.parse(match[0]!)).toList();
+  return [
+    for (var index = 0; index < values.length; index += 2)
+      '${_formatNumber(values[index] + (translation?.dx ?? 0))},'
+          '${_formatNumber(values[index + 1] + (translation?.dy ?? 0))}',
+  ].join(' ');
+}
+
+String _translatedPath(String path, _Translation? translation) {
+  final tokens = _pathToken.allMatches(path).map((match) => match[0]!).toList();
+  final result = <String>[];
+  String? command;
+  var parameter = 0;
+  for (final token in tokens) {
+    if (RegExp(r'^[A-Za-z]$').hasMatch(token)) {
+      command = token;
+      parameter = 0;
+      result.add(token);
+      continue;
+    }
+    final value = double.parse(token);
+    final offset = command == null || command == command.toLowerCase()
+        ? 0.0
+        : switch (command.toUpperCase()) {
+            'H' => translation?.dx ?? 0,
+            'V' => translation?.dy ?? 0,
+            'M' || 'L' || 'T' => parameter.isEven ? translation?.dx ?? 0 : translation?.dy ?? 0,
+            'C' => switch (parameter % 6) {
+              0 || 2 || 4 => translation?.dx ?? 0,
+              _ => translation?.dy ?? 0,
+            },
+            'S' || 'Q' => switch (parameter % 4) {
+              0 || 2 => translation?.dx ?? 0,
+              _ => translation?.dy ?? 0,
+            },
+            'A' => switch (parameter % 7) {
+              5 => translation?.dx ?? 0,
+              6 => translation?.dy ?? 0,
+              _ => 0,
+            },
+            _ => 0,
+          };
+    result.add(_formatNumber(value + offset));
+    parameter++;
+  }
+  return result.join(' ');
 }
 
 bool _listEquals<T>(List<T> left, List<T> right) {

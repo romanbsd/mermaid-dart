@@ -26,6 +26,7 @@ const _palette = <Color>[
   Color(72, 169, 197),
   Color(222, 190, 73),
 ];
+const _mermaidFontFamily = '"trebuchet ms", verdana, arial, sans-serif';
 
 DiagramScene layoutDiagram(
   DiagramAst diagram, {
@@ -151,13 +152,12 @@ SceneStroke _stroke(_LayoutContext context, {double width = 1.5, List<double> da
   join: StrokeJoin.round,
 );
 
+SceneTextStyle _mermaidTextStyle(_LayoutContext context, double fontSize) =>
+    SceneTextStyle(fontFamily: _mermaidFontFamily, fontSize: fontSize, color: context.options.theme.primaryText);
+
 _LayoutResult _layoutInfo(InfoAst ast, _LayoutContext context) {
   final config = context.options.optionsFor(const InfoRenderOptions());
-  final style = SceneTextStyle(
-    fontFamily: '"trebuchet ms", verdana, arial, sans-serif',
-    fontSize: 32,
-    color: context.options.theme.primaryText,
-  );
+  final style = _mermaidTextStyle(context, 32);
   return _LayoutResult(400, 100, [
     _text(
       context,
@@ -174,6 +174,8 @@ _LayoutResult _layoutInfo(InfoAst ast, _LayoutContext context) {
 
 _LayoutResult _layoutPacket(PacketAst ast, _LayoutContext context) {
   final config = context.options.optionsFor(const PacketRenderOptions());
+  final labelStyle = _mermaidTextStyle(context, 12);
+  final bitStyle = _mermaidTextStyle(context, 10);
   final paddingY = config.paddingY + (config.showBits ? 10 : 0);
   final width = config.bitWidth * config.bitsPerRow + 2;
   final elements = <SceneElement>[];
@@ -211,6 +213,7 @@ _LayoutResult _layoutPacket(PacketAst ast, _LayoutContext context) {
           y + config.rowHeight / 2,
           anchor: TextAnchor.middle,
           baseline: TextBaseline.middle,
+          style: labelStyle,
           cssClasses: const ['packetLabel'],
         ),
       );
@@ -224,6 +227,7 @@ _LayoutResult _layoutPacket(PacketAst ast, _LayoutContext context) {
             y - 2,
             anchor: single ? TextAnchor.middle : TextAnchor.start,
             baseline: TextBaseline.alphabetic,
+            style: bitStyle,
             cssClasses: const ['packetByte', 'start'],
           ),
         );
@@ -236,6 +240,7 @@ _LayoutResult _layoutPacket(PacketAst ast, _LayoutContext context) {
               y - 2,
               anchor: TextAnchor.end,
               baseline: TextBaseline.alphabetic,
+              style: bitStyle,
               cssClasses: const ['packetByte', 'end'],
             ),
           );
@@ -256,6 +261,8 @@ _LayoutResult _layoutPacket(PacketAst ast, _LayoutContext context) {
         width / 2,
         height - totalRowHeight / 2,
         anchor: TextAnchor.middle,
+        baseline: TextBaseline.middle,
+        style: _mermaidTextStyle(context, 14),
         cssClasses: const ['packetTitle'],
         role: SemanticRole.title,
       ),
@@ -266,6 +273,8 @@ _LayoutResult _layoutPacket(PacketAst ast, _LayoutContext context) {
 
 _LayoutResult _layoutPie(PieAst ast, _LayoutContext context) {
   final config = context.options.optionsFor(const PieRenderOptions());
+  final textStyle = _mermaidTextStyle(context, 17);
+  final titleStyle = _mermaidTextStyle(context, 25);
   final radius = config.radius ?? config.size / 2 - config.margin;
   final total = ast.sections.fold<double>(0, (sum, section) => sum + math.max(0, section.value.toDouble()));
   final rendered = <({int index, PieSectionAst section})>[
@@ -281,7 +290,7 @@ _LayoutResult _layoutPie(PieAst ast, _LayoutContext context) {
     for (final section in ast.sections) '${section.label}${ast.showData ? ' [${section.value}]' : ''}',
   ];
   final longestLegend = legendLabels
-      .map((label) => context.measurer.measure(label, context.textStyle).width)
+      .map((label) => context.measurer.measure(label, textStyle).width)
       .fold(0.0, math.max);
   final legendWidth = legendRectSize + legendSpacing + longestLegend;
   final totalLegendHeight = ast.sections.length * legendLineHeight;
@@ -354,6 +363,8 @@ _LayoutResult _layoutPie(PieAst ast, _LayoutContext context) {
         center.x + math.cos(middle) * labelRadius,
         center.y + math.sin(middle) * labelRadius,
         anchor: TextAnchor.middle,
+        baseline: TextBaseline.alphabetic,
+        style: textStyle,
         cssClasses: const ['slice'],
       ),
     );
@@ -384,6 +395,7 @@ _LayoutResult _layoutPie(PieAst ast, _LayoutContext context) {
           legendTop + i * legendLineHeight + legendRectSize - legendSpacing,
           role: SemanticRole.legend,
           baseline: TextBaseline.alphabetic,
+          style: textStyle,
           cssClasses: const ['legendText'],
         ),
       );
@@ -397,7 +409,9 @@ _LayoutResult _layoutPie(PieAst ast, _LayoutContext context) {
         config.size / 2,
         25,
         anchor: TextAnchor.middle,
+        baseline: TextBaseline.alphabetic,
         role: SemanticRole.title,
+        style: titleStyle,
         cssClasses: const ['pieTitleText'],
       ),
     );
@@ -438,6 +452,7 @@ List<PathCommand> _pieArcCommands(Point center, double outer, double inner, doub
 
 _LayoutResult _layoutRadar(RadarAst ast, _LayoutContext context) {
   final config = context.options.optionsFor(const RadarRenderOptions());
+  final labelStyle = _mermaidTextStyle(context, 12);
   final radius = config.radius ?? math.min(config.width, config.height) / 2;
   final center = Point(config.marginLeft + config.width / 2, config.marginTop + config.height / 2);
   final count = ast.axes.length;
@@ -499,6 +514,7 @@ _LayoutResult _layoutRadar(RadarAst ast, _LayoutContext context) {
         labelPoint.y,
         anchor: cosine > .01 ? TextAnchor.start : (cosine < -.01 ? TextAnchor.end : TextAnchor.middle),
         baseline: sine > .01 ? TextBaseline.hanging : (sine < -.01 ? TextBaseline.alphabetic : TextBaseline.middle),
+        style: labelStyle,
         cssClasses: const ['radarAxisLabel'],
       ),
     );
@@ -569,8 +585,9 @@ _LayoutResult _layoutRadar(RadarAst ast, _LayoutContext context) {
           ast.curves[i].label ?? ast.curves[i].name,
           legendX + 16,
           y,
-          baseline: TextBaseline.alphabetic,
+          baseline: TextBaseline.hanging,
           role: SemanticRole.legend,
+          style: labelStyle,
           cssClasses: const ['radarLegendText'],
         ),
       );
@@ -584,7 +601,9 @@ _LayoutResult _layoutRadar(RadarAst ast, _LayoutContext context) {
         center.x,
         center.y - config.height / 2 - config.marginTop,
         anchor: TextAnchor.middle,
+        baseline: TextBaseline.hanging,
         role: SemanticRole.title,
+        style: _mermaidTextStyle(context, 16),
         cssClasses: const ['radarTitle'],
       ),
     );

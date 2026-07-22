@@ -560,6 +560,14 @@ void main() {
       expect(scene.bounds, const Bounds(left: 0, top: 0, width: 1026, height: 62));
       expect(elements.whereType<SceneRect>().map((block) => block.bounds.top), everyElement(15));
       expect(labels.map((label) => label.baseline), everyElement(TextBaseline.middle));
+      expect(labels.map((label) => label.style.fontSize), everyElement(12));
+      expect(
+        elements
+            .whereType<SceneText>()
+            .where((element) => element.cssClasses.contains('packetByte'))
+            .map((element) => element.style.fontSize),
+        everyElement(10),
+      );
     });
 
     test('packet applies typed sizing options and can hide bit labels', () {
@@ -601,6 +609,8 @@ void main() {
 
       expect(scene.bounds.height, 141);
       expect(title.position, const Point(513, 117.5));
+      expect(title.style.fontSize, 14);
+      expect(title.baseline, TextBaseline.middle);
     });
 
     test('pie filters sub-one-percent slices and places percentage labels', () {
@@ -628,10 +638,17 @@ void main() {
         elements
             .whereType<SceneText>()
             .where((element) => element.cssClasses.contains('slice'))
-            .map((element) => element.text),
-        ['100%'],
+            .map((element) => (element.text, element.style.fontSize, element.baseline)),
+        [('100%', 17, TextBaseline.alphabetic)],
       );
       expect(elements.whereType<SceneRect>().where((element) => element.cssClasses.contains('legend')), hasLength(2));
+      expect(
+        elements
+            .whereType<SceneText>()
+            .where((element) => element.cssClasses.contains('legendText'))
+            .map((element) => element.style.fontSize),
+        everyElement(17),
+      );
       expectSvgGolden('pie_filtered', renderSvg(scene));
     });
 
@@ -673,6 +690,8 @@ void main() {
 
       expect(scene.bounds.height, 450);
       expect(title.position, const Point(225, 25));
+      expect(title.style.fontSize, 25);
+      expect(title.baseline, TextBaseline.alphabetic);
     });
 
     test('radar honors ticks and circular curve interpolation', () {
@@ -709,6 +728,18 @@ void main() {
         elements.whereType<SceneRect>().where((element) => element.cssClasses.contains('radarLegendBox-0')),
         hasLength(1),
       );
+      expect(
+        elements
+            .whereType<SceneText>()
+            .where((element) => element.cssClasses.contains('radarAxisLabel'))
+            .map((element) => element.style.fontSize),
+        everyElement(12),
+      );
+      final legend = elements.whereType<SceneText>().singleWhere(
+        (element) => element.cssClasses.contains('radarLegendText'),
+      );
+      expect(legend.style.fontSize, 12);
+      expect(legend.baseline, TextBaseline.hanging);
       expectSvgGolden('radar_circle', renderSvg(scene));
     });
 
