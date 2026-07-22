@@ -147,11 +147,11 @@ void main() {
           .where((element) => element.cssClasses.contains('treemapLeaf'))
           .toList();
 
-      expect(scene.bounds, const Bounds(left: 0, top: 0, width: 960, height: 530));
+      expect(scene.bounds, const Bounds(left: 10, top: 5, width: 980, height: 415));
       expect(leaves, hasLength(2));
       expect(leaves[0].label, 'Large');
-      expect(leaves[0].bounds, const Bounds(left: 10, top: 65, width: 703, height: 455));
-      expect(leaves[1].bounds, const Bounds(left: 723, top: 65, width: 227, height: 455));
+      expect(leaves[0].bounds, const Bounds(left: 20, top: 100, width: 718, height: 310));
+      expect(leaves[1].bounds, const Bounds(left: 748, top: 100, width: 232, height: 310));
       expect(
         elements
             .whereType<SceneText>()
@@ -160,6 +160,46 @@ void main() {
         ['3', '1'],
       );
       expectSvgGolden('treemap_squarified', renderSvg(scene));
+    });
+
+    test('treemap matches Mermaid synthetic-root section geometry', () {
+      final ast =
+          parse(
+                DiagramType.treemap,
+                'treemap\n'
+                '"Products"\n'
+                '  "Large": 3\n'
+                '  "Small": 1\n',
+              )
+              as TreemapAst;
+      final scene = layoutDiagram(ast, textMeasurer: measurer, options: const RenderOptions(padding: 0));
+      final elements = _flatten(scene.elements).toList();
+      final section = elements.whereType<SceneRect>().singleWhere(
+        (element) => element.cssClasses.contains('treemapSection'),
+      );
+      final leaves = elements
+          .whereType<SceneRect>()
+          .where((element) => element.cssClasses.contains('treemapLeaf'))
+          .toList();
+      final labels = elements.whereType<SceneText>().toList();
+
+      expect(section.label, 'Products');
+      expect(section.bounds, const Bounds(left: 10, top: 35, width: 980, height: 355));
+      expect(leaves.map((leaf) => leaf.bounds), const [
+        Bounds(left: 20, top: 70, width: 718, height: 310),
+        Bounds(left: 748, top: 70, width: 232, height: 310),
+      ]);
+      expect(labels.map((label) => label.text), ['Products', '4', 'Large', '3', 'Small', '1']);
+      expect(labels.map((label) => label.position), const [
+        Point(16, 47.5),
+        Point(980, 47.5),
+        Point(379, 225),
+        Point(379, 246),
+        Point(864, 225),
+        Point(864, 246),
+      ]);
+      expect(scene.bounds, const Bounds(left: 10, top: 35, width: 980, height: 355));
+      expect(scene.viewport, const Bounds(left: 2, top: 27, width: 996, height: 371));
     });
 
     test('treemap typed options hide values and preserve class selectors', () {
@@ -184,7 +224,7 @@ void main() {
         (element) => element.cssClasses.contains('treemapLeafGroup'),
       );
 
-      expect(scene.bounds, const Bounds(left: 0, top: 0, width: 400, height: 240));
+      expect(scene.bounds, const Bounds(left: 10, top: 35, width: 380, height: 195));
       expect(leaf.cssClasses, contains('important'));
       expect(elements.whereType<SceneText>().where((element) => element.cssClasses.contains('treemapValue')), isEmpty);
     });

@@ -162,11 +162,12 @@ enum TreemapValueFormat { plain, grouped, currencyGrouped }
 
 final class TreemapRenderOptions extends DiagramRenderOptions {
   const TreemapRenderOptions({
-    this.width = 960,
-    this.height = 500,
+    this.width = 1000,
+    this.height = 400,
     this.innerPadding = 10,
     this.sectionPadding = 10,
     this.sectionHeaderHeight = 25,
+    this.diagramPadding = 8,
     this.showValues = true,
     this.valueFormat = TreemapValueFormat.grouped,
   });
@@ -176,6 +177,7 @@ final class TreemapRenderOptions extends DiagramRenderOptions {
   final double innerPadding;
   final double sectionPadding;
   final double sectionHeaderHeight;
+  final double diagramPadding;
   final bool showValues;
   final TreemapValueFormat valueFormat;
 }

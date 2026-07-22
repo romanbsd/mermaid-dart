@@ -220,7 +220,10 @@ bool _isComparableGeometryElement(XmlElement element, XmlElement root) {
     final classes = (ancestor.getAttribute('class') ?? '').split(RegExp(r'\s+'));
     if (ancestor.name.local == 'svg' ||
         ancestor.name.local == 'defs' ||
+        ancestor.name.local == 'clipPath' ||
+        _isDisplayNone(ancestor) ||
         ancestor.getAttribute('data-role') == 'icon' ||
+        classes.contains('treemapSectionHeader') ||
         classes.contains('em-arrowhead')) {
       return false;
     }
@@ -231,6 +234,12 @@ bool _isComparableGeometryElement(XmlElement element, XmlElement root) {
     return false;
   }
   return true;
+}
+
+bool _isDisplayNone(XmlElement element) {
+  if (element.getAttribute('display') == 'none') return true;
+  final style = element.getAttribute('style') ?? '';
+  return RegExp(r'(?:^|;)\s*display\s*:\s*none\s*(?:;|$)', caseSensitive: false).hasMatch(style);
 }
 
 double? _numberAttribute(XmlElement element, String name) => double.tryParse(element.getAttribute(name) ?? '');
@@ -301,6 +310,7 @@ List<String> _textGeometryValues(
   final baseline = switch (rawBaseline) {
     'auto' => 'alphabetic',
     'start' => 'hanging',
+    'middle' || 'central' => 'central',
     final value => value,
   };
   return [

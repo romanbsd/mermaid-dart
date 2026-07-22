@@ -162,7 +162,7 @@ rule <- "a" b? ;
         ),
       );
       final rectangles = _flatten(scene.elements).whereType<SceneRect>().toList();
-      expect(rectangles.where((element) => element.role == SemanticRole.group), hasLength(1));
+      expect(rectangles.where((element) => element.role == SemanticRole.group), hasLength(2));
       expect(rectangles.where((element) => element.role == SemanticRole.node), hasLength(2));
       expect(rectangles.every((element) => element.bounds.width >= 0 && element.bounds.height >= 0), isTrue);
     });

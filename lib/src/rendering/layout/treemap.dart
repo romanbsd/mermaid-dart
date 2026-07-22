@@ -1,5 +1,38 @@
 part of '../layout.dart';
 
+// Mermaid treemap renderer constants from renderer.ts. These values describe
+// visible typography and spacing rather than the configurable D3 tile padding.
+const _treemapTitleHeight = 30.0;
+const _treemapSectionLabelInset = 6.0;
+const _treemapSectionValueInset = 10.0;
+const _treemapSectionStrokeWidth = 2.0;
+const _treemapSectionLabelFontSize = 12.0;
+const _treemapSectionValueFontSize = 10.0;
+const _treemapLeafStrokeWidth = 3.0;
+const _treemapComplexityThreshold = 20;
+const _treemapValueScaleFactor = 0.6;
+const _treemapValueBottomPadding = 4.0;
+
+const _simpleTreemapLabels = (
+  padding: 4.0,
+  minimumLabelSize: 8.0,
+  minimumValueSize: 6.0,
+  displayThreshold: 10.0,
+  initialLabelSize: 38.0,
+  maximumValueSize: 28.0,
+  spacing: 2.0,
+);
+
+const _complexTreemapLabels = (
+  padding: 2.0,
+  minimumLabelSize: 4.0,
+  minimumValueSize: 4.0,
+  displayThreshold: 8.0,
+  initialLabelSize: 16.0,
+  maximumValueSize: 14.0,
+  spacing: 1.0,
+);
+
 _LayoutResult _layoutTreemap(TreemapAst ast, _LayoutContext context) {
   final config = context.options.optionsFor(const TreemapRenderOptions());
   final classStyles = <String, _TreemapClassStyle>{
@@ -34,24 +67,29 @@ _LayoutResult _layoutTreemap(TreemapAst ast, _LayoutContext context) {
     node.children.sort((left, right) => right.value.compareTo(left.value));
   }
 
-  final root = artificialRoot.children.length == 1 ? artificialRoot.children.single : artificialRoot;
+  // Mermaid's database always wraps top-level nodes in an unnamed synthetic
+  // root. Its hidden header still contributes one level of layout padding.
+  final root = artificialRoot;
   sortByValue(root);
-  final titleHeight = ast.title == null ? 0.0 : 30.0;
+  final labelMetrics = _countTreemapLeaves(root) > _treemapComplexityThreshold
+      ? _complexTreemapLabels
+      : _simpleTreemapLabels;
+  final titleHeight = ast.title == null ? 0.0 : _treemapTitleHeight;
   final width = config.width;
   final height = config.height;
   final elements = <SceneElement>[];
+  SceneText? titleElement;
   if (ast.title case final title?) {
-    elements.add(
-      _text(
-        context,
-        title,
-        width / 2,
-        titleHeight / 2,
-        anchor: TextAnchor.middle,
-        role: SemanticRole.title,
-        cssClasses: const ['treemapTitle'],
-      ),
+    titleElement = _text(
+      context,
+      title,
+      width / 2,
+      titleHeight / 2,
+      anchor: TextAnchor.middle,
+      role: SemanticRole.title,
+      cssClasses: const ['treemapTitle'],
     );
+    elements.add(titleElement);
   }
 
   final container = <SceneElement>[];
@@ -67,34 +105,37 @@ _LayoutResult _layoutTreemap(TreemapAst ast, _LayoutContext context) {
         id: context.id('treemap-leaf'),
         bounds: bounds,
         fill: SolidFill(fillColor),
-        stroke: SceneStroke(color: strokeColor, width: 3),
+        stroke: SceneStroke(color: strokeColor, width: _treemapLeafStrokeWidth),
         role: SemanticRole.node,
         cssClasses: const ['treemapLeaf'],
         label: leaf.label,
       ),
     ];
-    final complex = _countTreemapLeaves(root) > 20;
-    final labelPadding = complex ? 2.0 : 4.0;
-    final minimum = complex ? 4.0 : 8.0;
-    final threshold = complex ? 8.0 : 10.0;
-    final availableWidth = bounds.width - labelPadding * 2;
-    final availableHeight = bounds.height - labelPadding * 2;
-    var labelSize = complex ? 16.0 : 38.0;
+    final availableWidth = bounds.width - labelMetrics.padding * 2;
+    final availableHeight = bounds.height - labelMetrics.padding * 2;
+    var labelSize = labelMetrics.initialLabelSize;
     final labelColor = customStyle?.text ?? context.options.theme.primaryText;
     SceneTextStyle labelStyle() =>
         SceneTextStyle(fontFamily: context.options.theme.fontFamily, fontSize: labelSize, color: labelColor);
-    while (labelSize > minimum && context.measurer.measure(leaf.label, labelStyle()).width > availableWidth) {
+    while (labelSize > labelMetrics.minimumLabelSize &&
+        context.measurer.measure(leaf.label, labelStyle()).width > availableWidth) {
       labelSize--;
     }
-    final spacing = complex ? 1.0 : 2.0;
-    var valueSize = math.max(complex ? 4.0 : 6.0, math.min(complex ? 14.0 : 28.0, (labelSize * .6).roundToDouble()));
-    while (labelSize > minimum && labelSize + spacing + valueSize > availableHeight) {
+    var valueSize = math.max(
+      labelMetrics.minimumValueSize,
+      math.min(labelMetrics.maximumValueSize, (labelSize * _treemapValueScaleFactor).roundToDouble()),
+    );
+    while (labelSize > labelMetrics.minimumLabelSize &&
+        labelSize + labelMetrics.spacing + valueSize > availableHeight) {
       labelSize--;
-      valueSize = math.max(complex ? 4.0 : 6.0, math.min(complex ? 14.0 : 28.0, (labelSize * .6).roundToDouble()));
+      valueSize = math.max(
+        labelMetrics.minimumValueSize,
+        math.min(labelMetrics.maximumValueSize, (labelSize * _treemapValueScaleFactor).roundToDouble()),
+      );
     }
     final labelFits =
-        availableWidth >= threshold &&
-        availableHeight >= threshold &&
+        availableWidth >= labelMetrics.displayThreshold &&
+        availableHeight >= labelMetrics.displayThreshold &&
         context.measurer.measure(leaf.label, labelStyle()).width <= availableWidth &&
         labelSize <= availableHeight;
     if (labelFits) {
@@ -116,9 +157,9 @@ _LayoutResult _layoutTreemap(TreemapAst ast, _LayoutContext context) {
           fontSize: valueSize,
           color: labelColor,
         );
-        final valueY = bounds.center.y + labelSize / 2 + spacing;
+        final valueY = bounds.center.y + labelSize / 2 + labelMetrics.spacing;
         if (context.measurer.measure(value, valueStyle).width <= availableWidth &&
-            valueY + valueSize <= bounds.bottom - 4) {
+            valueY + valueSize <= bounds.bottom - _treemapValueBottomPadding) {
           groupChildren.add(
             _text(
               context,
@@ -177,7 +218,7 @@ _LayoutResult _layoutTreemap(TreemapAst ast, _LayoutContext context) {
           id: context.id('treemap-section'),
           bounds: bounds,
           fill: SolidFill(fillColor),
-          stroke: SceneStroke(color: strokeColor, width: 2),
+          stroke: SceneStroke(color: strokeColor, width: _treemapSectionStrokeWidth),
           role: SemanticRole.group,
           cssClasses: ['treemapSection', 'section$nextColor', if (child.cssClass != null) child.cssClass!],
           label: child.label,
@@ -187,11 +228,11 @@ _LayoutResult _layoutTreemap(TreemapAst ast, _LayoutContext context) {
         _text(
           context,
           child.label,
-          bounds.left + 6,
+          bounds.left + _treemapSectionLabelInset,
           bounds.top + config.sectionHeaderHeight / 2,
           style: SceneTextStyle(
             fontFamily: context.options.theme.fontFamily,
-            fontSize: 12,
+            fontSize: _treemapSectionLabelFontSize,
             weight: FontWeight.bold,
             color: textColor,
           ),
@@ -203,12 +244,12 @@ _LayoutResult _layoutTreemap(TreemapAst ast, _LayoutContext context) {
           _text(
             context,
             _formatTreemapValue(child.value, config.valueFormat),
-            bounds.right - 10,
+            bounds.right - _treemapSectionValueInset,
             bounds.top + config.sectionHeaderHeight / 2,
             anchor: TextAnchor.end,
             style: SceneTextStyle(
               fontFamily: context.options.theme.fontFamily,
-              fontSize: 10,
+              fontSize: _treemapSectionValueFontSize,
               style: FontStyle.italic,
               color: textColor,
             ),
@@ -228,7 +269,20 @@ _LayoutResult _layoutTreemap(TreemapAst ast, _LayoutContext context) {
   elements.add(
     SceneGroup(id: context.id('treemap-container'), children: container, cssClasses: const ['treemapContainer']),
   );
-  return _LayoutResult(width, height + titleHeight, elements);
+  final geometryBounds = _sceneGeometryBounds(elements);
+  final contentBounds = switch ((geometryBounds, titleElement)) {
+    (final geometry?, final title?) => geometry.union(title.bounds),
+    (final geometry?, null) => geometry,
+    (null, final title?) => title.bounds,
+    (null, null) => Bounds(left: 0, top: 0, width: width, height: height + titleHeight),
+  };
+  return _LayoutResult(
+    width,
+    height + titleHeight,
+    elements,
+    bounds: contentBounds,
+    viewportPadding: config.diagramPadding,
+  );
 }
 
 int _countTreemapLeaves(_TreemapLayoutNode node) =>

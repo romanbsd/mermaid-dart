@@ -154,6 +154,24 @@ void main() {
     expect(comparison.sameGeometry, isTrue);
   });
 
+  test('ignores hidden and clipping-only treemap geometry', () {
+    final mermaid = SvgSnapshot.fromSvg(
+      '<svg><g style="display: none"><rect width="100" height="40"/>'
+      '<text>hidden</text></g><clipPath><rect width="90" height="30"/></clipPath>'
+      '<rect class="treemapSectionHeader" fill="none" width="80" height="25"/>'
+      '<rect x="10" y="20" width="70" height="50"/><text x="20" y="30">shown</text></svg>',
+    );
+    final scene = SvgSnapshot.fromSvg(
+      '<svg><rect x="10" y="20" width="70" height="50"/>'
+      '<text x="20" y="30">shown</text></svg>',
+    );
+
+    final comparison = SvgComparison.compare(scene, mermaid);
+    expect(comparison.sameText, isTrue);
+    expect(comparison.sameElementCounts, isTrue);
+    expect(comparison.sameGeometry, isTrue);
+  });
+
   test('ignores backend-specific event-modeling arrowhead representations', () {
     final marker = SvgSnapshot.fromSvg(
       '<svg><defs><marker><polygon points="0 0,10 3.5,0 7"/></marker></defs>'
@@ -173,6 +191,13 @@ void main() {
     final explicit = SvgSnapshot.fromSvg('<svg><rect x="1" y="2" width="3" height="4" rx="5" ry="5"/></svg>');
 
     expect(SvgComparison.compare(explicit, implicit).sameGeometry, isTrue);
+  });
+
+  test('normalizes equivalent centered text baselines', () {
+    final middle = SvgSnapshot.fromSvg('<svg><text x="1" y="2" dominant-baseline="middle">Label</text></svg>');
+    final central = SvgSnapshot.fromSvg('<svg><text x="1" y="2" dominant-baseline="central">Label</text></svg>');
+
+    expect(SvgComparison.compare(central, middle).sameGeometry, isTrue);
   });
 
   test('compares translated local geometry with absolute geometry', () {
