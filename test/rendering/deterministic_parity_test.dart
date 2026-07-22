@@ -1652,6 +1652,35 @@ void main() {
       );
       expectSvgGolden('architecture_nested', renderSvg(scene));
     });
+
+    test('architecture separates services across nested compound groups like Mermaid fCoSE', () {
+      final ast =
+          parse(
+                DiagramType.architecture,
+                'architecture-beta\n'
+                'group api[API]\n'
+                'group public[Public API] in api\n'
+                'group private[Private API] in api\n'
+                'service serv1(server)[Server] in public\n'
+                'service serv2(server)[Server] in private\n'
+                'service db(database)[Database] in private\n'
+                'service gateway(internet)[Gateway] in api\n'
+                'serv1:B -- T:serv2\n'
+                'serv2:L -- R:db\n'
+                'serv1:L -- R:gateway\n',
+              )
+              as ArchitectureAst;
+      final scene = layoutDiagram(ast, textMeasurer: measurer, options: const RenderOptions(padding: 0));
+      final services = _flatten(scene.elements)
+          .whereType<SceneGroup>()
+          .where((element) => element.cssClasses.contains('architecture-service'))
+          .map((service) => service.transforms.single as Translate)
+          .toList();
+
+      expect(services[1].y - services[0].y, closeTo(255.17247257587814, 1e-9));
+      expect(services[1].x - services[2].x, closeTo(201.29653714581747, 1e-9));
+      expect(services[0].x - services[3].x, closeTo(222.65023530391295, 1e-9));
+    });
   });
 }
 

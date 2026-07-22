@@ -101,7 +101,7 @@ final class SvgSnapshot {
     );
     return SvgSnapshot._(
       canonicalSvg: canonicalSvg,
-      viewBox: document.rootElement.getAttribute('viewBox'),
+      viewBox: _normalizedNumberList(document.rootElement.getAttribute('viewBox')),
       text: [for (final element in textElements) _normalizedVisibleText(element)]..sort(),
       elementCounts: {
         for (final name in elementNames)
@@ -402,22 +402,28 @@ String _geometrySignature(XmlElement element, String transform, String styleShee
   };
   String attribute(String name, [String fallback = '']) => element.getAttribute(name) ?? styles[name] ?? fallback;
   final translation = _Translation.parse(transform);
-  String x(String value) => translation == null ? value : _translatedNumber(value, translation.dx);
-  String y(String value) => translation == null ? value : _translatedNumber(value, translation.dy);
+  String number(String value) => _translatedNumber(value, 0);
+  String x(String value) => _translatedNumber(value, translation?.dx ?? 0);
+  String y(String value) => _translatedNumber(value, translation?.dy ?? 0);
   final name = element.name.local;
   final values = switch (name) {
-    'circle' => [x(attribute('cx', '0')), y(attribute('cy', '0')), attribute('r', '0')],
-    'ellipse' => [x(attribute('cx', '0')), y(attribute('cy', '0')), attribute('rx', '0'), attribute('ry', '0')],
+    'circle' => [x(attribute('cx', '0')), y(attribute('cy', '0')), number(attribute('r', '0'))],
+    'ellipse' => [
+      x(attribute('cx', '0')),
+      y(attribute('cy', '0')),
+      number(attribute('rx', '0')),
+      number(attribute('ry', '0')),
+    ],
     'line' => [x(attribute('x1', '0')), y(attribute('y1', '0')), x(attribute('x2', '0')), y(attribute('y2', '0'))],
     'path' => [_translatedPath(attribute('d'), translation)],
     'polygon' || 'polyline' => [_translatedPoints(attribute('points'), translation)],
     'rect' => [
       x(attribute('x', '0')),
       y(attribute('y', '0')),
-      attribute('width', '0'),
-      attribute('height', '0'),
-      attribute('rx', '0'),
-      attribute('ry', attribute('rx', '0')),
+      number(attribute('width', '0')),
+      number(attribute('height', '0')),
+      number(attribute('rx', '0')),
+      number(attribute('ry', attribute('rx', '0'))),
     ],
     'foreignObject' => _foreignObjectGeometryValues(element, translation),
     'text' => _textGeometryValues(element, translation, styleSheets, attribute),
@@ -592,6 +598,16 @@ final _pathToken = RegExp(r'[A-Za-z]|-?(?:\d+\.?\d*|\.\d+)(?:e[+-]?\d+)?', caseS
 final _transformFunction = RegExp(r'([A-Za-z]+)\s*\(([^)]*)\)');
 
 String _translatedNumber(String value, double offset) => _formatNumber(double.parse(value) + offset);
+
+String? _normalizedNumberList(String? value) {
+  if (value == null) return null;
+  return value
+      .trim()
+      .split(RegExp(r'[\s,]+'))
+      .where((part) => part.isNotEmpty)
+      .map((part) => _formatNumber(double.parse(part)))
+      .join(' ');
+}
 
 String _formatNumber(double value) {
   var formatted = value.toStringAsFixed(2).replaceFirst(RegExp(r'\.?0+$'), '');

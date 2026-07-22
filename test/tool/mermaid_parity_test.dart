@@ -11,11 +11,12 @@ void main() {
     final manifest = ParityManifest.load(File('tool/mermaid_parity/fixtures.json'));
 
     expect(manifest.mermaidVersion, '11.16.0');
-    expect(manifest.fixtures.map((fixture) => fixture.id), hasLength(21));
-    expect(manifest.fixtures.map((fixture) => fixture.id).toSet(), hasLength(21));
+    expect(manifest.fixtures.map((fixture) => fixture.id), hasLength(22));
+    expect(manifest.fixtures.map((fixture) => fixture.id).toSet(), hasLength(22));
     expect(
       manifest.fixtures.map((fixture) => fixture.id),
       containsAll([
+        'architecture-nested-routing',
         'event-modeling-unicode-multiline',
         'git-special-commits',
         'git-special-commits-tb',
@@ -376,6 +377,21 @@ void main() {
     final right = SvgSnapshot.fromSvg('<svg><path d="M0 0L264.264 1"/></svg>');
 
     expect(SvgComparison.compare(left, right).sameGeometry, isTrue);
+  });
+
+  test('normalizes viewport and untransformed size precision consistently', () {
+    final left = SvgSnapshot.fromSvg(
+      '<svg viewBox="-224.6483 -234.5862 529.2965 600.1725">'
+      '<rect width="366.2965" height="520.1725"/></svg>',
+    );
+    final right = SvgSnapshot.fromSvg(
+      '<svg viewBox="-224.648269 -234.586243 529.296509 600.172486">'
+      '<rect width="366.296537" height="520.172473"/></svg>',
+    );
+    final comparison = SvgComparison.compare(left, right);
+
+    expect(comparison.sameViewport, isTrue);
+    expect(comparison.sameGeometry, isTrue);
   });
 
   test('manifest rejects duplicate IDs', () {
