@@ -1060,7 +1060,7 @@ void main() {
         208,
       );
       expect(
-        elements.whereType<ScenePath>().where((element) => element.cssClasses.contains('wardley-link')),
+        elements.whereType<SceneLine>().where((element) => element.cssClasses.contains('wardley-link')),
         hasLength(1),
       );
       expect(
@@ -1084,6 +1084,39 @@ void main() {
         const Point(250, 20),
       );
       expectSvgGolden('wardley_semantics', renderSvg(scene));
+    });
+
+    test('wardley matches Mermaid line and text geometry', () {
+      final ast =
+          parse(
+                DiagramType.wardley,
+                'wardley-beta\n'
+                'component API [0.6, 0.5]\n'
+                'component Database [0.3, 0.8]\n'
+                'API -> Database\n',
+              )
+              as WardleyAst;
+      final scene = layoutDiagram(ast, textMeasurer: measurer, options: const RenderOptions(padding: 0));
+      final elements = _flatten(scene.elements).toList();
+      final link = elements.whereType<SceneLine>().singleWhere(
+        (element) => element.cssClasses.contains('wardley-link'),
+      );
+      final axisLabels = elements.whereType<SceneText>().where(
+        (element) => element.cssClasses.contains('wardley-axis-label'),
+      );
+      final nodeLabels = elements.whereType<SceneText>().where(
+        (element) => element.cssClasses.contains('wardley-node-label'),
+      );
+
+      expect(link.start.x, closeTo(455.084, 1e-3));
+      expect(link.start.y, closeTo(252.787, 1e-3));
+      expect(link.end.x, closeTo(686.116, 1e-3));
+      expect(link.end.y, closeTo(397.613, 1e-3));
+      expect(elements.whereType<ScenePath>().where((element) => element.cssClasses.contains('wardley-link')), isEmpty);
+      expect(axisLabels.map((label) => label.baseline), everyElement(TextBaseline.alphabetic));
+      expect(nodeLabels.map((label) => label.baseline), everyElement(TextBaseline.alphabetic));
+      expect(scene.bounds, const Bounds(left: 0, top: 0, width: 900, height: 600));
+      expect(scene.viewport, const Bounds(left: 0, top: 0, width: 900, height: 600));
     });
 
     test('wardley pipelines position their parent and filter child-to-parent links', () {

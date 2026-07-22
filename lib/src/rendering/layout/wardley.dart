@@ -44,6 +44,7 @@ _LayoutResult _layoutWardley(WardleyAst ast, _LayoutContext context) {
         width / 2,
         config.padding / 2,
         anchor: TextAnchor.middle,
+        baseline: TextBaseline.alphabetic,
         role: SemanticRole.title,
         style: SceneTextStyle(
           fontFamily: context.options.theme.fontFamily,
@@ -79,6 +80,7 @@ _LayoutResult _layoutWardley(WardleyAst ast, _LayoutContext context) {
       config.padding + chartWidth / 2,
       height - config.padding / 4,
       anchor: TextAnchor.middle,
+      baseline: TextBaseline.alphabetic,
       style: SceneTextStyle(
         fontFamily: axisStyle.fontFamily,
         fontSize: axisStyle.fontSize,
@@ -101,6 +103,7 @@ _LayoutResult _layoutWardley(WardleyAst ast, _LayoutContext context) {
           yLabelCenter.x,
           yLabelCenter.y,
           anchor: TextAnchor.middle,
+          baseline: TextBaseline.alphabetic,
           style: SceneTextStyle(
             fontFamily: axisStyle.fontFamily,
             fontSize: axisStyle.fontSize,
@@ -244,10 +247,10 @@ _LayoutResult _layoutWardley(WardleyAst ast, _LayoutContext context) {
     final start = Point(source.x + dx / distance * sourceRadius, source.y + dy / distance * sourceRadius);
     final end = Point(target.x - dx / distance * targetRadius, target.y - dy / distance * targetRadius);
     elements.add(
-      ScenePath(
+      SceneLine(
         id: context.id('wardley-link'),
-        commands: [MoveTo(start), LineTo(end)],
-        fill: const NoFill(),
+        start: start,
+        end: end,
         stroke: SceneStroke(
           color: config.linkStroke,
           dashes: link.style == WardleyLinkStyle.dashed ? const [6, 6] : const [],
@@ -295,6 +298,7 @@ _LayoutResult _layoutWardley(WardleyAst ast, _LayoutContext context) {
           labelPoint.x,
           labelPoint.y,
           anchor: TextAnchor.middle,
+          baseline: TextBaseline.alphabetic,
           style: labelStyle,
           cssClasses: const ['wardley-link-label'],
         ),
@@ -422,6 +426,7 @@ _LayoutResult _layoutWardley(WardleyAst ast, _LayoutContext context) {
         labelX,
         labelY,
         anchor: isAnchor ? TextAnchor.middle : TextAnchor.start,
+        baseline: TextBaseline.alphabetic,
         style: SceneTextStyle(
           fontFamily: labelStyle.fontFamily,
           fontSize: labelStyle.fontSize,
