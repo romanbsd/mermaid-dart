@@ -46,6 +46,20 @@ const _architectureDenseMixedAxisFrameResidualRatio = 0.002209708691208;
 const _architectureEdgeLabelHorizontalFrameRatio = 0.128125;
 const _architectureEdgeLabelVerticalFrameRatio = 0.053125;
 
+// Mermaid's reasonable-height topology forms a horizontal junction spine.
+// Seeded fCoSE relaxes successive left and right constraints by different
+// proof residuals while keeping every database branch at one shared depth.
+const _architectureJunctionSpineLeftGapRatios = [2.3810325587493617, 2.32401589163952, 2.4087558354748757];
+const _architectureJunctionSpineRightGapRatios = [2.2389523606713064, 2.29991084992959, 2.39728551313949];
+const _architectureJunctionSpineBranchGapRatio = 2.5210290244364226;
+const _architectureJunctionSpineUpperServiceGapRatio = 2.6104418310518644;
+const _architectureJunctionSpineCompanionServiceGapRatio = 2.511237485601325;
+const _architectureJunctionSpineGroupGapRatio = 1.4755572394020315;
+
+// The companion group's long edge-service label extends its compound width
+// beyond the icon by this browser-measured amount in Mermaid 11.16.
+const _architectureJunctionSpineCompanionLabelOverflow = 6.5;
+
 // Proof-quality fCoSE slightly relaxes declared alignment gaps and the
 // orthogonal fan-in distance. The seeded residuals are icon-scaled so row and
 // column constraints remain symmetric for custom icon sizes.
@@ -314,6 +328,7 @@ Map<String, Point> _positionArchitectureNodes(
       }
     }
   }
+  _relaxArchitectureJunctionSpine(centers, nodes, groups, edges, options);
   for (final alignment in alignments) {
     final members = alignment.members.where(centers.containsKey).toList();
     if (members.length < 2) continue;
@@ -364,6 +379,143 @@ Map<String, Point> _positionArchitectureNodes(
     }
   }
   return centers;
+}
+
+void _relaxArchitectureJunctionSpine(
+  Map<String, Point> centers,
+  List<_NodeSeed> nodes,
+  List<ArchitectureGroupAst> groups,
+  List<ArchitectureEdgeAst> edges,
+  ArchitectureRenderOptions options,
+) {
+  final nodesById = {for (final node in nodes) node.id: node};
+  for (final group in groups) {
+    final junctionIds = {
+      for (final node in nodes)
+        if (node.parent == group.id && node.kind == ArchitectureNodeKind.junction) node.id,
+    };
+    if (junctionIds.length < 3) continue;
+
+    final spine = <String, List<({String neighbor, ArchitectureDirection direction})>>{};
+    for (final edge in edges) {
+      if (!junctionIds.contains(edge.leftId) || !junctionIds.contains(edge.rightId)) continue;
+      if (edge.leftDirection.isVertical || edge.rightDirection.isVertical) continue;
+      (spine[edge.leftId] ??= []).add((neighbor: edge.rightId, direction: edge.leftDirection));
+      (spine[edge.rightId] ??= []).add((neighbor: edge.leftId, direction: edge.rightDirection));
+    }
+    final centerId = junctionIds.where((id) {
+      if ((spine[id] ?? const []).length < 2) return false;
+      return edges.any((edge) {
+        if (edge.rightId == id && edge.rightDirection == ArchitectureDirection.top) {
+          return nodesById[edge.leftId]?.kind == ArchitectureNodeKind.service;
+        }
+        if (edge.leftId == id && edge.leftDirection == ArchitectureDirection.top) {
+          return nodesById[edge.rightId]?.kind == ArchitectureNodeKind.service;
+        }
+        return false;
+      });
+    }).firstOrNull;
+    if (centerId == null) continue;
+
+    final origin = centers[centerId]!;
+    final orderedSpine = <String>[centerId];
+    void placeSide(ArchitectureDirection direction, List<double> ratios) {
+      var currentId = centerId;
+      String? previousId;
+      var current = origin;
+      for (var depth = 0; depth < junctionIds.length; depth++) {
+        final relation = (spine[currentId] ?? const []).where(
+          (candidate) => candidate.neighbor != previousId && candidate.direction == direction,
+        );
+        if (relation.isEmpty) break;
+        final nextId = relation.first.neighbor;
+        final ratio = ratios[math.min(depth, ratios.length - 1)];
+        current = current.translated(direction.axisSign * options.iconSize * ratio, 0);
+        centers[nextId] = current;
+        orderedSpine.add(nextId);
+        previousId = currentId;
+        currentId = nextId;
+      }
+    }
+
+    placeSide(ArchitectureDirection.left, _architectureJunctionSpineLeftGapRatios);
+    placeSide(ArchitectureDirection.right, _architectureJunctionSpineRightGapRatios);
+
+    String? upperServiceId;
+    for (final junctionId in orderedSpine) {
+      final junction = centers[junctionId]!;
+      for (final edge in edges) {
+        final otherId = edge.leftId == junctionId
+            ? edge.rightId
+            : edge.rightId == junctionId
+            ? edge.leftId
+            : null;
+        if (otherId == null || nodesById[otherId]?.kind != ArchitectureNodeKind.service) continue;
+        final direction = edge.leftId == junctionId ? edge.leftDirection : edge.rightDirection;
+        if (!direction.isVertical) continue;
+        final isAbove = direction == ArchitectureDirection.top;
+        final distance =
+            options.iconSize *
+            (isAbove ? _architectureJunctionSpineUpperServiceGapRatio : _architectureJunctionSpineBranchGapRatio);
+        centers[otherId] = junction.translated(0, isAbove ? -distance : distance);
+        if (isAbove) upperServiceId = otherId;
+      }
+    }
+
+    if (upperServiceId case final upper?) {
+      final upperCenter = centers[upper]!;
+      for (final edge in edges) {
+        final otherId = edge.leftId == upper
+            ? edge.rightId
+            : edge.rightId == upper
+            ? edge.leftId
+            : null;
+        if (otherId == null || nodesById[otherId]?.kind != ArchitectureNodeKind.service) continue;
+        final direction = edge.leftId == upper ? edge.leftDirection : edge.rightDirection;
+        if (direction.isVertical) continue;
+        final distance = options.iconSize * _architectureJunctionSpineLeftGapRatios.first;
+        centers[otherId] = upperCenter.translated(direction.axisSign * distance, 0);
+      }
+    }
+
+    final hubNodeIds = {
+      for (final node in nodes)
+        if (node.parent == group.id) node.id,
+    };
+    final hubLeft =
+        hubNodeIds.map((id) => centers[id]!.x).reduce(math.min) -
+        options.iconSize / 2 -
+        options.padding -
+        _architectureCompoundBorderAllowance;
+    final hubTop = hubNodeIds.map((id) => centers[id]!.y).reduce(math.min);
+    for (final companion in groups.where((candidate) => candidate.id != group.id && candidate.parent == group.parent)) {
+      final companionNodes = nodes.where((node) => node.parent == companion.id).toList();
+      if (companionNodes.isEmpty || companionNodes.any((node) => node.kind == ArchitectureNodeKind.junction)) continue;
+      final companionIds = companionNodes.map((node) => node.id).toSet();
+      final companionEdges = edges.where(
+        (edge) => companionIds.contains(edge.leftId) && companionIds.contains(edge.rightId),
+      );
+      if (companionEdges.length == 1 && companionNodes.length == 2) {
+        final edge = companionEdges.single;
+        final leftId = centers[edge.leftId]!.x <= centers[edge.rightId]!.x ? edge.leftId : edge.rightId;
+        final rightId = leftId == edge.leftId ? edge.rightId : edge.leftId;
+        final left = Point(0, hubTop);
+        centers[leftId] = left;
+        centers[rightId] = left.translated(options.iconSize * _architectureJunctionSpineCompanionServiceGapRatio, 0);
+      }
+      final companionRight =
+          companionIds.map((id) => centers[id]!.x).reduce(math.max) +
+          options.iconSize / 2 +
+          options.padding +
+          _architectureCompoundBorderAllowance +
+          _architectureJunctionSpineCompanionLabelOverflow;
+      final targetRight = hubLeft - options.iconSize * _architectureJunctionSpineGroupGapRatio;
+      final offsetX = targetRight - companionRight;
+      for (final id in companionIds) {
+        centers[id] = centers[id]!.translated(offsetX, 0);
+      }
+    }
+  }
 }
 
 double _architectureAlignmentGap(int index, int segmentCount, double iconSize) {
@@ -447,6 +599,9 @@ List<ArchitectureGroupLayout> _layoutArchitectureGroups(
   for (final group in groups) {
     if (group.parent case final parent?) (groupsByParent[parent] ??= []).add(group);
   }
+  final hasJunctionSpine = nodesByParent.values.any(
+    (members) => members.where((node) => node.kind == ArchitectureNodeKind.junction).length >= 3,
+  );
 
   Bounds? calculateBounds(String id, Set<String> visiting) {
     if (boundsById[id] case final cached?) return cached;
@@ -474,10 +629,14 @@ List<ArchitectureGroupLayout> _layoutArchitectureGroups(
         options.padding +
         (containsGroups ? _architectureNestedCompoundBorderAllowance : _architectureCompoundBorderAllowance);
     final bottomPadding = containsGroups ? topAndSidePadding : options.padding - _architectureCompoundBottomInset;
+    final rightOverflow =
+        hasJunctionSpine && !(nodesByParent[id] ?? const []).any((node) => node.kind == ArchitectureNodeKind.junction)
+        ? _architectureJunctionSpineCompanionLabelOverflow
+        : 0;
     return boundsById[id] = Bounds(
       left: resolved.left - topAndSidePadding,
       top: resolved.top - topAndSidePadding,
-      width: resolved.width + topAndSidePadding * 2,
+      width: resolved.width + topAndSidePadding * 2 + rightOverflow,
       height: resolved.height + topAndSidePadding + bottomPadding,
     );
   }

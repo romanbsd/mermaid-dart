@@ -1896,6 +1896,59 @@ void main() {
         {-45, 45},
       );
     });
+
+    test('architecture bounds a junction spine and packs its companion group', () {
+      final ast =
+          parse(
+                DiagramType.architecture,
+                'architecture-beta\n'
+                'group companion[Companion]\n'
+                'service first(server)[First] in companion\n'
+                'service second(server)[Second] in companion\n'
+                'first:R -- L:second\n'
+                'group hub[Hub]\n'
+                'service firewall(server)[Firewall] in hub\n'
+                'service server(server)[Server] in hub\n'
+                'firewall:R -- L:server\n'
+                'service db1(database)[DB1] in hub\n'
+                'service db2(database)[DB2] in hub\n'
+                'junction mid in hub\n'
+                'server:B -- T:mid\n'
+                'junction left in hub\n'
+                'left:R -- L:mid\n'
+                'left:B -- T:db1\n'
+                'junction right in hub\n'
+                'mid:R -- L:right\n'
+                'right:B -- T:db2\n',
+              )
+              as ArchitectureAst;
+      final scene = layoutDiagram(ast, textMeasurer: measurer, options: const RenderOptions(padding: 0));
+      final flattened = _flatten(scene.elements).toList();
+      final junctions = {
+        for (final junction in flattened.whereType<SceneRect>().where(
+          (element) => element.cssClasses.contains('architecture-junction'),
+        ))
+          junction.label!: junction.bounds.center,
+      };
+      final services = {
+        for (final service in flattened.whereType<SceneGroup>().where(
+          (element) => element.cssClasses.contains('architecture-service'),
+        ))
+          service.label!: service.transforms.single as Translate,
+      };
+      final groups = {
+        for (final group in flattened.whereType<SceneRect>().where(
+          (element) => element.cssClasses.contains('architecture-group'),
+        ))
+          group.label!: group.bounds,
+      };
+
+      expect(junctions['mid']!.x - junctions['left']!.x, closeTo(190.48260469994892, 1e-9));
+      expect(junctions['right']!.x - junctions['mid']!.x, closeTo(179.1161888537045, 1e-9));
+      expect(services['DB1']!.y - junctions['left']!.y, closeTo(201.68232195491382, 1e-9));
+      expect(junctions['mid']!.y - services['Server']!.y, closeTo(208.83534648414917, 1e-9));
+      expect(groups['Hub']!.left - groups['Companion']!.right, closeTo(118.04457915216253, 1e-9));
+    });
   });
 }
 
