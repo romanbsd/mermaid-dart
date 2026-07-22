@@ -11,8 +11,8 @@ void main() {
     final manifest = ParityManifest.load(File('tool/mermaid_parity/fixtures.json'));
 
     expect(manifest.mermaidVersion, '11.16.0');
-    expect(manifest.fixtures.map((fixture) => fixture.id), hasLength(13));
-    expect(manifest.fixtures.map((fixture) => fixture.id).toSet(), hasLength(13));
+    expect(manifest.fixtures.map((fixture) => fixture.id), hasLength(14));
+    expect(manifest.fixtures.map((fixture) => fixture.id).toSet(), hasLength(14));
     final railroad = manifest.fixtures.singleWhere((fixture) => fixture.id == 'railroad-sequence');
     expect(railroad.textMeasurements['a'], const Size(8.40625, 19));
     expect(railroad.textMeasurements['rule ='], const Size(41.625, 19));
@@ -63,6 +63,40 @@ void main() {
     expect(comparison.sameGeometry, isFalse);
     expect(comparison.visualParity, isFalse);
     expect(comparison.summary, 'viewport, text, elements, geometry');
+  });
+
+  test('comparison normalizes equivalent paint and detects paint differences', () {
+    final attributes = SvgSnapshot.fromSvg(
+      '<svg><rect class="node" fill="#ff0000" stroke="#000" '
+      'stroke-width="2" opacity="0.5" width="10" height="10"/></svg>',
+    );
+    final stylesheet = SvgSnapshot.fromSvg(
+      '<svg><style>.node { fill: hsl(0, 100%, 50%) !important; '
+      'stroke: rgb(0, 0, 0); '
+      'stroke-width: 2px; opacity: .5; }</style>'
+      '<rect class="node" width="10" height="10"/></svg>',
+    );
+    final different = SvgSnapshot.fromSvg(
+      '<svg><rect fill="#00ff00" stroke="#000" stroke-width="2" '
+      'opacity="0.5" width="10" height="10"/></svg>',
+    );
+
+    final equivalent = SvgComparison.compare(attributes, stylesheet);
+    expect(equivalent.samePaint, isTrue);
+    expect(equivalent.visualParity, isTrue);
+
+    final comparison = SvgComparison.compare(attributes, different);
+    expect(comparison.sameGeometry, isTrue);
+    expect(comparison.samePaint, isFalse);
+    expect(comparison.visualParity, isFalse);
+    expect(comparison.summary, 'paint');
+  });
+
+  test('paint comparison ignores fill properties that cannot affect lines', () {
+    final left = SvgSnapshot.fromSvg('<svg fill="#ff0000"><line x1="0" y1="0" x2="10" y2="10" stroke="#000"/></svg>');
+    final right = SvgSnapshot.fromSvg('<svg fill="#00ff00"><line x1="0" y1="0" x2="10" y2="10" stroke="#000"/></svg>');
+
+    expect(SvgComparison.compare(left, right).samePaint, isTrue);
   });
 
   test('treats foreignObject and SVG text as equivalent visible text', () {

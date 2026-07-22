@@ -90,6 +90,11 @@
       "source": "treemap\n\"Products\"\n  \"Large\": 3\n  \"Small\": 1\n"
     },
     {
+      "id": "treemap-nested-styled",
+      "type": "treemap",
+      "source": "treemap-beta\n\"Products\"\n  \"Electronics\"\n    \"Phones\": 50\n    \"Computers\": 30\n  \"Clothing\":::important\n    \"Men\": 20\n    \"Women\": 20\nclassDef important fill:#ff9966,stroke:#333333,color:#ffffff;\n"
+    },
+    {
       "id": "wardley-components",
       "type": "wardley",
       "source": "wardley-beta\ncomponent API [0.6, 0.5]\ncomponent Database [0.3, 0.8]\nAPI -> Database\n"

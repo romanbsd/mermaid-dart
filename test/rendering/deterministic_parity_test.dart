@@ -77,15 +77,21 @@ void main() {
           .whereType<SceneText>()
           .where((element) => element.cssClasses.contains('treeView-node-label'))
           .toList();
+      final lines = elements
+          .whereType<SceneLine>()
+          .where((element) => element.cssClasses.contains('treeView-node-line'))
+          .toList();
 
       expect(labels.map((label) => label.text), ['/', 'root', 'child', 'peer']);
       expect(labels.map((label) => label.baseline), everyElement(TextBaseline.middle));
+      expect(labels.map((label) => label.style.color), everyElement(const Color(0, 0, 0)));
       expect(descriptions.map((description) => description.position.x).toSet(), hasLength(1));
+      expect(descriptions.map((description) => description.style.color), everyElement(const Color(0, 0, 0)));
       expect(highlight.bounds.right, scene.bounds.width - 2);
-      expect(
-        elements.whereType<SceneLine>().where((element) => element.cssClasses.contains('treeView-node-line')),
-        hasLength(6),
-      );
+      expect(lines, hasLength(6));
+      expect(lines.map((line) => line.stroke?.color), everyElement(const Color(0, 0, 0)));
+      expect(lines.map((line) => line.stroke?.cap), everyElement(StrokeCap.butt));
+      expect(lines.map((line) => line.stroke?.join), everyElement(StrokeJoin.miter));
       expect(elements.whereType<SceneCircle>(), isEmpty);
       expectSvgGolden('tree_descriptions', renderSvg(scene));
     });
@@ -200,6 +206,55 @@ void main() {
       ]);
       expect(scene.bounds, const Bounds(left: 10, top: 35, width: 980, height: 355));
       expect(scene.viewport, const Bounds(left: 2, top: 27, width: 996, height: 371));
+    });
+
+    test('treemap preserves nested section geometry and custom styles', () {
+      final ast =
+          parse(
+                DiagramType.treemap,
+                'treemap-beta\n'
+                '"Products"\n'
+                '  "Electronics"\n'
+                '    "Phones": 50\n'
+                '    "Computers": 30\n'
+                '  "Clothing":::important\n'
+                '    "Men": 20\n'
+                '    "Women": 20\n'
+                'classDef important fill:#ff9966,stroke:#333333,color:#ffffff;\n',
+              )
+              as TreemapAst;
+      final scene = layoutDiagram(ast, textMeasurer: measurer, options: const RenderOptions(padding: 0));
+      final elements = _flatten(scene.elements).toList();
+      final sections = elements
+          .whereType<SceneRect>()
+          .where((element) => element.cssClasses.contains('treemapSection'))
+          .toList();
+      final leaves = elements
+          .whereType<SceneRect>()
+          .where((element) => element.cssClasses.contains('treemapLeaf'))
+          .toList();
+      final clothing = sections.singleWhere((section) => section.label == 'Clothing');
+
+      expect(sections.map((section) => section.bounds), const [
+        Bounds(left: 10, top: 35, width: 980, height: 355),
+        Bounds(left: 20, top: 70, width: 637, height: 310),
+        Bounds(left: 667, top: 70, width: 313, height: 310),
+      ]);
+      expect(leaves.map((leaf) => leaf.bounds), const [
+        Bounds(left: 30, top: 105, width: 382, height: 265),
+        Bounds(left: 422, top: 105, width: 225, height: 265),
+        Bounds(left: 677, top: 105, width: 293, height: 128),
+        Bounds(left: 677, top: 243, width: 293, height: 127),
+      ]);
+      expect(clothing.fill, const SolidFill(Color(255, 153, 102)));
+      expect(clothing.stroke?.color, const Color(51, 51, 51));
+      expect(
+        elements
+            .whereType<SceneText>()
+            .where((element) => element.text == 'Clothing' || element.text == '40')
+            .map((element) => element.style.color),
+        everyElement(const Color(255, 255, 255)),
+      );
     });
 
     test('treemap typed options hide values and preserve class selectors', () {
@@ -739,11 +794,24 @@ void main() {
       );
       final elements = _flatten(scene.elements).toList();
       final labels = elements.whereType<SceneText>().where((element) => element.cssClasses.contains('packetLabel'));
+      final blocks = elements.whereType<SceneRect>();
 
       expect(scene.bounds, const Bounds(left: 0, top: 0, width: 1026, height: 62));
-      expect(elements.whereType<SceneRect>().map((block) => block.bounds.top), everyElement(15));
+      expect(blocks.map((block) => block.bounds.top), everyElement(15));
+      expect(blocks.map((block) => block.fill), everyElement(const SolidFill(Color(239, 239, 239))));
+      expect(blocks.map((block) => block.stroke?.color), everyElement(const Color(0, 0, 0)));
+      expect(blocks.map((block) => block.stroke?.cap), everyElement(StrokeCap.butt));
+      expect(blocks.map((block) => block.stroke?.join), everyElement(StrokeJoin.miter));
+      expect(labels.map((label) => label.style.color), everyElement(const Color(0, 0, 0)));
       expect(labels.map((label) => label.baseline), everyElement(TextBaseline.middle));
       expect(labels.map((label) => label.style.fontSize), everyElement(12));
+      expect(
+        elements
+            .whereType<SceneText>()
+            .where((element) => element.cssClasses.contains('packetByte'))
+            .map((element) => element.style.color),
+        everyElement(const Color(51, 51, 51)),
+      );
       expect(
         elements
             .whereType<SceneText>()

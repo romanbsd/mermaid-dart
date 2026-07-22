@@ -8,9 +8,20 @@ const _treeDescriptionGap = 16.0;
 const _treeHighlightVerticalInset = 1.0;
 const _treeHighlightRightOverflow = 8.0;
 const _treeHighlightStrokeAllowance = 2.0;
+const _treeInk = Color(0, 0, 0);
+
+SceneTextStyle _treeTextStyle(_LayoutContext context) => SceneTextStyle(
+  fontFamily: context.textStyle.fontFamily,
+  fontSize: context.textStyle.fontSize,
+  color: _treeInk,
+  lineHeight: context.textStyle.lineHeight,
+);
+
+SceneStroke _treeStroke(double width) => SceneStroke(color: _treeInk, width: width);
 
 _LayoutResult _layoutTree(TreeViewAst ast, _LayoutContext context) {
   final config = context.options.optionsFor(const TreeViewRenderOptions());
+  final textStyle = _treeTextStyle(context);
   final elements = <SceneElement>[];
   final indentStack = <int>[];
   final depths = <int>[];
@@ -44,7 +55,7 @@ _LayoutResult _layoutTree(TreeViewAst ast, _LayoutContext context) {
   for (var i = 0; i < nodes.length; i++) {
     final node = nodes[i];
     final x = node.depth * (config.rowIndent + config.paddingX);
-    final measured = context.measurer.measure(node.name, context.textStyle);
+    final measured = context.measurer.measure(node.name, textStyle);
     final height = measured.height + config.paddingY * 2;
     final centerY = totalHeight + height / 2;
     final children = <SceneElement>[];
@@ -58,7 +69,7 @@ _LayoutResult _layoutTree(TreeViewAst ast, _LayoutContext context) {
           Point(x + config.paddingX, totalHeight + config.paddingY),
           _treeIconExtent,
           idPrefix: 'tree',
-          stroke: _stroke(context, width: config.lineThickness),
+          stroke: _treeStroke(config.lineThickness),
           cssClasses: const ['treeView-node-icon'],
         ),
       );
@@ -70,6 +81,7 @@ _LayoutResult _layoutTree(TreeViewAst ast, _LayoutContext context) {
         labelX,
         centerY,
         baseline: TextBaseline.middle,
+        style: textStyle,
         cssClasses: [
           'treeView-node-label',
           if (node.directory) 'treeView-node-dir',
@@ -100,12 +112,13 @@ _LayoutResult _layoutTree(TreeViewAst ast, _LayoutContext context) {
           descriptionX,
           rowTops[i] + rowHeights[i] / 2,
           baseline: TextBaseline.middle,
+          style: textStyle,
           cssClasses: const ['treeView-node-description'],
         ),
       );
       totalWidth = math.max(
         totalWidth,
-        descriptionX + context.measurer.measure(description, context.textStyle).width + config.paddingX,
+        descriptionX + context.measurer.measure(description, textStyle).width + config.paddingX,
       );
     }
   }
@@ -140,7 +153,7 @@ _LayoutResult _layoutTree(TreeViewAst ast, _LayoutContext context) {
         id: context.id('tree-edge'),
         start: Point(x - config.rowIndent, centerY),
         end: Point(x, centerY),
-        stroke: _stroke(context, width: config.lineThickness),
+        stroke: _treeStroke(config.lineThickness),
         role: SemanticRole.edge,
         cssClasses: const ['treeView-node-line'],
       ),
@@ -155,7 +168,7 @@ _LayoutResult _layoutTree(TreeViewAst ast, _LayoutContext context) {
           id: context.id('tree-edge'),
           start: Point(x + config.paddingX, rowTops[i] + rowHeights[i]),
           end: Point(x + config.paddingX, rowTops[lastChild] + rowHeights[lastChild] / 2 + config.lineThickness / 2),
-          stroke: _stroke(context, width: config.lineThickness),
+          stroke: _treeStroke(config.lineThickness),
           role: SemanticRole.edge,
           cssClasses: const ['treeView-node-line'],
         ),

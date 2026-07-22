@@ -1,11 +1,24 @@
 part of '../layout.dart';
 
+// Mermaid packet renderer presentation defaults. They intentionally do not
+// reuse the general flowchart palette.
+const _packetBlockFill = Color(239, 239, 239);
+const _packetInk = Color(0, 0, 0);
+const _packetStrokeWidth = 1.0;
+const _packetLabelFontSize = 12.0;
+const _packetBitFontSize = 10.0;
+const _packetTitleFontSize = 14.0;
+const _packetBitLabelPadding = 10.0;
+const _packetOuterWidth = 2.0;
+const _packetBlockLeftInset = 1.0;
+const _packetBitLabelOffset = 2.0;
+
 _LayoutResult _layoutPacket(PacketAst ast, _LayoutContext context) {
   final config = context.options.optionsFor(const PacketRenderOptions());
-  final labelStyle = _mermaidTextStyle(context, 12);
-  final bitStyle = _mermaidTextStyle(context, 10);
-  final paddingY = config.paddingY + (config.showBits ? 10 : 0);
-  final width = config.bitWidth * config.bitsPerRow + 2;
+  final labelStyle = _packetTextStyle(_packetLabelFontSize);
+  final bitStyle = _mermaidTextStyle(context, _packetBitFontSize);
+  final paddingY = config.paddingY + (config.showBits ? _packetBitLabelPadding : 0);
+  final width = config.bitWidth * config.bitsPerRow + _packetOuterWidth;
   final elements = <SceneElement>[];
   var cursor = 0;
   for (final block in ast.blocks) {
@@ -19,15 +32,15 @@ _LayoutResult _layoutPacket(PacketAst ast, _LayoutContext context) {
       final row = segmentStart ~/ config.bitsPerRow;
       final rowEnd = (row + 1) * config.bitsPerRow - 1;
       final segmentEnd = math.min(end, rowEnd);
-      final x = (segmentStart % config.bitsPerRow) * config.bitWidth + 1;
+      final x = (segmentStart % config.bitsPerRow) * config.bitWidth + _packetBlockLeftInset;
       final y = row * (config.rowHeight + paddingY) + paddingY;
       final blockWidth = (segmentEnd - segmentStart + 1) * config.bitWidth - config.paddingX;
       elements.add(
         SceneRect(
           id: context.id('packet-block'),
           bounds: Bounds(left: x, top: y, width: blockWidth, height: config.rowHeight),
-          fill: SolidFill(context.options.theme.primary),
-          stroke: _stroke(context, width: 1),
+          fill: const SolidFill(_packetBlockFill),
+          stroke: const SceneStroke(color: _packetInk, width: _packetStrokeWidth),
           role: SemanticRole.node,
           cssClasses: const ['packetBlock'],
           label: block.label,
@@ -52,7 +65,7 @@ _LayoutResult _layoutPacket(PacketAst ast, _LayoutContext context) {
             context,
             '$segmentStart',
             x + (single ? blockWidth / 2 : 0),
-            y - 2,
+            y - _packetBitLabelOffset,
             anchor: single ? TextAnchor.middle : TextAnchor.start,
             baseline: TextBaseline.alphabetic,
             style: bitStyle,
@@ -65,7 +78,7 @@ _LayoutResult _layoutPacket(PacketAst ast, _LayoutContext context) {
               context,
               '$segmentEnd',
               x + blockWidth,
-              y - 2,
+              y - _packetBitLabelOffset,
               anchor: TextAnchor.end,
               baseline: TextBaseline.alphabetic,
               style: bitStyle,
@@ -90,7 +103,7 @@ _LayoutResult _layoutPacket(PacketAst ast, _LayoutContext context) {
         height - totalRowHeight / 2,
         anchor: TextAnchor.middle,
         baseline: TextBaseline.middle,
-        style: _mermaidTextStyle(context, 14),
+        style: _mermaidTextStyle(context, _packetTitleFontSize),
         cssClasses: const ['packetTitle'],
         role: SemanticRole.title,
       ),
@@ -98,3 +111,6 @@ _LayoutResult _layoutPacket(PacketAst ast, _LayoutContext context) {
   }
   return _LayoutResult(width, height, elements);
 }
+
+SceneTextStyle _packetTextStyle(double fontSize) =>
+    SceneTextStyle(fontFamily: _mermaidFontFamily, fontSize: fontSize, color: _packetInk);

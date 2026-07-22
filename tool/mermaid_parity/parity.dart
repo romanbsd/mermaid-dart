@@ -85,6 +85,7 @@ final class SvgSnapshot {
     required this.text,
     required this.elementCounts,
     required this.geometry,
+    required this.paint,
   });
 
   factory SvgSnapshot.fromSvg(String svg) {
@@ -109,6 +110,7 @@ final class SvgSnapshot {
               : comparableElements.where((element) => element.name.local == name).length,
       },
       geometry: _geometrySignatures(document.rootElement),
+      paint: _paintSignatures(document.rootElement),
     );
   }
 
@@ -117,6 +119,7 @@ final class SvgSnapshot {
   final List<String> text;
   final Map<String, int> elementCounts;
   final List<String> geometry;
+  final List<String> paint;
 }
 
 final class SvgComparison {
@@ -126,23 +129,31 @@ final class SvgComparison {
     required this.sameText,
     required this.sameElementCounts,
     required this.sameGeometry,
+    required this.samePaint,
   });
 
-  factory SvgComparison.compare(SvgSnapshot dart, SvgSnapshot mermaid) => SvgComparison(
-    exact: dart.canonicalSvg == mermaid.canonicalSvg,
-    sameViewport: dart.viewBox == null || mermaid.viewBox == null || dart.viewBox == mermaid.viewBox,
-    sameText: _listEquals(dart.text, mermaid.text),
-    sameElementCounts: _mapEquals(dart.elementCounts, mermaid.elementCounts),
-    sameGeometry: _listEquals(dart.geometry, mermaid.geometry),
-  );
+  factory SvgComparison.compare(SvgSnapshot dart, SvgSnapshot mermaid) {
+    final sameGeometry = _listEquals(dart.geometry, mermaid.geometry);
+    return SvgComparison(
+      exact: dart.canonicalSvg == mermaid.canonicalSvg,
+      sameViewport: dart.viewBox == null || mermaid.viewBox == null || dart.viewBox == mermaid.viewBox,
+      sameText: _listEquals(dart.text, mermaid.text),
+      sameElementCounts: _mapEquals(dart.elementCounts, mermaid.elementCounts),
+      sameGeometry: sameGeometry,
+      // Paint is paired with normalized geometry. If geometry differs, the
+      // paint comparison has no reliable element correspondence of its own.
+      samePaint: !sameGeometry || _listEquals(dart.paint, mermaid.paint),
+    );
+  }
 
   final bool exact;
   final bool sameViewport;
   final bool sameText;
   final bool sameElementCounts;
   final bool sameGeometry;
+  final bool samePaint;
 
-  bool get visualParity => sameViewport && sameText && sameElementCounts && sameGeometry;
+  bool get visualParity => sameViewport && sameText && sameElementCounts && sameGeometry && samePaint;
 
   String get summary => exact
       ? 'exact'
@@ -151,12 +162,20 @@ final class SvgComparison {
           if (!sameText) 'text',
           if (!sameElementCounts) 'elements',
           if (!sameGeometry) 'geometry',
+          if (!samePaint) 'paint',
         ].join(', ');
 }
 
 const _visibleElements = {'circle', 'ellipse', 'foreignObject', 'line', 'path', 'polygon', 'polyline', 'rect', 'text'};
 
-List<String> _geometrySignatures(XmlElement root) {
+List<String> _geometrySignatures(XmlElement root) => _elementSignatures(root, _geometrySignature);
+
+List<String> _paintSignatures(XmlElement root) => _elementSignatures(root, _paintSignature);
+
+List<String> _elementSignatures(
+  XmlElement root,
+  String Function(XmlElement element, String transform, String styleSheets) signature,
+) {
   final signatures = <String>[];
   final styleSheets = root.descendants
       .whereType<XmlElement>()
@@ -171,7 +190,7 @@ List<String> _geometrySignatures(XmlElement root) {
     final isEmptyText =
         (element.name.local == 'text' || element.name.local == 'foreignObject') && element.innerText.trim().isEmpty;
     if (_visibleElements.contains(element.name.local) && !isEmptyText) {
-      signatures.add(_geometrySignature(element, transform, styleSheets));
+      signatures.add(signature(element, transform, styleSheets));
     }
     for (final child in element.childElements) {
       visit(child, transform);
@@ -181,6 +200,166 @@ List<String> _geometrySignatures(XmlElement root) {
   visit(root, '');
   return signatures..sort();
 }
+
+// SVG presentation properties that materially affect the visible paint while
+// remaining backend-neutral. Geometry and text positioning are compared
+// separately, so typography metrics do not belong in this list.
+const _paintProperties = <String, String>{
+  'fill': 'black',
+  'stroke': 'none',
+  'stroke-width': '1',
+  'stroke-dasharray': 'none',
+  'stroke-linecap': 'butt',
+  'stroke-linejoin': 'miter',
+  'fill-opacity': '1',
+  'stroke-opacity': '1',
+};
+
+// A line has no enclosed area, so fill and join properties cannot change its
+// rendered appearance.
+const _linePaintProperties = <String, String>{
+  'stroke': 'none',
+  'stroke-width': '1',
+  'stroke-dasharray': 'none',
+  'stroke-linecap': 'butt',
+  'stroke-opacity': '1',
+};
+
+String _paintSignature(XmlElement element, String transform, String styleSheets) {
+  final geometry = _geometrySignature(element, transform, styleSheets);
+  final properties = element.name.local == 'line' ? _linePaintProperties : _paintProperties;
+  final values = <String>[
+    for (final MapEntry(:key, :value) in properties.entries)
+      '$key=${_normalizedPaintValue(key, _inheritedPresentationValue(element, key, styleSheets) ?? value, element, styleSheets)}',
+    'opacity=${_effectiveOpacity(element, styleSheets)}',
+  ];
+  return '$geometry|${values.join('|')}';
+}
+
+String? _inheritedPresentationValue(XmlElement element, String name, String styleSheets) {
+  for (XmlElement? current = element; current != null; current = current.parentElement) {
+    final value = _localPresentationValue(current, name, styleSheets);
+    if (value != null && value != 'inherit') return value;
+  }
+  return null;
+}
+
+String? _localPresentationValue(XmlElement element, String name, String styleSheets) =>
+    _inlineStyleValue(element, name) ?? _stylesheetProperty(element, styleSheets, name) ?? element.getAttribute(name);
+
+String? _inlineStyleValue(XmlElement element, String name) {
+  for (final declaration in (element.getAttribute('style') ?? '').split(';').reversed) {
+    final separator = declaration.indexOf(':');
+    if (separator < 0 || declaration.substring(0, separator).trim() != name) continue;
+    return declaration.substring(separator + 1).trim();
+  }
+  return null;
+}
+
+String? _stylesheetProperty(XmlElement element, String styleSheets, String name) {
+  String? value;
+  for (final rule in _cssRule.allMatches(styleSheets)) {
+    for (final selector in rule[1]!.split(',')) {
+      if (!_matchesSimpleSelector(element, selector.trim())) continue;
+      final declaration = RegExp(
+        '(?:^|;)\\s*${RegExp.escape(name)}\\s*:\\s*([^;]+)',
+        caseSensitive: false,
+      ).firstMatch(rule[2]!);
+      if (declaration != null) value = declaration[1]!.trim();
+    }
+  }
+  return value;
+}
+
+String _effectiveOpacity(XmlElement element, String styleSheets) {
+  var opacity = 1.0;
+  for (XmlElement? current = element; current != null; current = current.parentElement) {
+    final value = _localPresentationValue(current, 'opacity', styleSheets);
+    if (value != null) opacity *= double.tryParse(value) ?? 1;
+  }
+  return _formatNumber(opacity);
+}
+
+String _normalizedPaintValue(String name, String value, XmlElement element, String styleSheets) {
+  var normalized = value
+      .replaceFirst(RegExp(r'\s*!important\s*$', caseSensitive: false), '')
+      .trim()
+      .toLowerCase()
+      .replaceAll(RegExp(r'\s+'), ' ');
+  if (normalized == 'currentcolor') {
+    normalized = _inheritedPresentationValue(element, 'color', styleSheets) ?? 'black';
+  }
+  if (name == 'fill' || name == 'stroke') return _normalizedColor(normalized);
+  if (name == 'stroke-width' && normalized.endsWith('px')) {
+    normalized = normalized.substring(0, normalized.length - 2);
+  }
+  final number = double.tryParse(normalized);
+  return number == null ? normalized : _formatNumber(number);
+}
+
+String _normalizedColor(String value) {
+  final compact = value.replaceAll(' ', '');
+  if (compact.startsWith('#') && compact.length == 4) {
+    final hex = compact.substring(1);
+    return '#${[for (final digit in hex.split('')) '$digit$digit'].join()}';
+  }
+  final rgb = _rgbColor.firstMatch(compact);
+  if (rgb != null) {
+    final channels = [for (var index = 1; index <= 3; index++) int.parse(rgb[index]!)];
+    return _hexColor(channels);
+  }
+  final hsl = _hslColor.firstMatch(compact);
+  if (hsl != null) {
+    final hue = (double.parse(hsl[1]!) % _fullHueDegrees) / _fullHueDegrees;
+    final saturation = double.parse(hsl[2]!) / _fullPercentage;
+    final lightness = double.parse(hsl[3]!) / _fullPercentage;
+    if (saturation == 0) {
+      final gray = (lightness * _colorChannelMax).round();
+      return _hexColor([gray, gray, gray]);
+    }
+    final upper = lightness < _halfIntensity
+        ? lightness * (1 + saturation)
+        : lightness + saturation - lightness * saturation;
+    final lower = 2 * lightness - upper;
+    return _hexColor([
+      (_hueChannel(lower, upper, hue + _oneThirdTurn) * _colorChannelMax).round(),
+      (_hueChannel(lower, upper, hue) * _colorChannelMax).round(),
+      (_hueChannel(lower, upper, hue - _oneThirdTurn) * _colorChannelMax).round(),
+    ]);
+  }
+  return switch (compact) {
+    'black' => '#000000',
+    'white' => '#ffffff',
+    'red' => '#ff0000',
+    _ => compact,
+  };
+}
+
+String _hexColor(List<int> channels) =>
+    '#${channels.map((channel) => channel.clamp(0, _colorChannelMax).toInt().toRadixString(16).padLeft(2, '0')).join()}';
+
+double _hueChannel(double lower, double upper, double hue) {
+  if (hue < 0) hue += 1;
+  if (hue > 1) hue -= 1;
+  if (hue < _oneSixthTurn) return lower + (upper - lower) * hue / _oneSixthTurn;
+  if (hue < _halfIntensity) return upper;
+  if (hue < _twoThirdsTurn) {
+    return lower + (upper - lower) * (_twoThirdsTurn - hue) / _oneSixthTurn;
+  }
+  return lower;
+}
+
+// CSS color-space constants used by the HSL-to-RGB conversion.
+const _colorChannelMax = 255;
+const _fullHueDegrees = 360;
+const _fullPercentage = 100;
+const _halfIntensity = 0.5;
+const _oneSixthTurn = 1 / 6;
+const _oneThirdTurn = 1 / 3;
+const _twoThirdsTurn = 2 / 3;
+
+final _rgbColor = RegExp(r'^rgb\((\d{1,3}),(\d{1,3}),(\d{1,3})\)$');
+final _hslColor = RegExp(r'^hsl\((-?(?:\d+\.?\d*|\.\d+)),((?:\d+\.?\d*|\.\d+))%,((?:\d+\.?\d*|\.\d+))%\)$');
 
 String _geometrySignature(XmlElement element, String transform, String styleSheets) {
   final styles = <String, String>{

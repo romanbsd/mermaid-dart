@@ -2,10 +2,14 @@ import 'dart:io';
 
 import 'mermaid_parity/parity.dart';
 
+// sysexits-compatible codes make command-line failures distinguishable.
+const _usageExitCode = 64;
+const _missingInputExitCode = 66;
+
 void main(List<String> arguments) {
   if (arguments.length != 1) {
     stderr.writeln('Usage: dart run tool/debug_geometry.dart FIXTURE_ID');
-    exitCode = 64;
+    exitCode = _usageExitCode;
     return;
   }
 
@@ -14,17 +18,22 @@ void main(List<String> arguments) {
   final mermaidFile = File('tool/mermaid_parity/references/$id.svg');
   if (!dartFile.existsSync() || !mermaidFile.existsSync()) {
     stderr.writeln('Missing parity artifacts for "$id". Run tool/mermaid_parity.dart first.');
-    exitCode = 66;
+    exitCode = _missingInputExitCode;
     return;
   }
 
   final dart = SvgSnapshot.fromSvg(dartFile.readAsStringSync());
   final mermaid = SvgSnapshot.fromSvg(mermaidFile.readAsStringSync());
+  _printDifferences('geometry', dart.geometry, mermaid.geometry);
+  _printDifferences('paint', dart.paint, mermaid.paint);
+}
+
+void _printDifferences(String label, List<String> dart, List<String> mermaid) {
   stdout
-    ..writeln('Dart only:')
-    ..writeln(_difference(dart.geometry, mermaid.geometry).join('\n'))
-    ..writeln('Mermaid only:')
-    ..writeln(_difference(mermaid.geometry, dart.geometry).join('\n'));
+    ..writeln('Dart-only $label:')
+    ..writeln(_difference(dart, mermaid).join('\n'))
+    ..writeln('Mermaid-only $label:')
+    ..writeln(_difference(mermaid, dart).join('\n'));
 }
 
 Iterable<String> _difference(List<String> values, List<String> other) sync* {
