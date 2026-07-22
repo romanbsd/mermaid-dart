@@ -1960,6 +1960,47 @@ void main() {
       );
     });
 
+    test('architecture relaxes an ungrouped junction pair like Mermaid fCoSE', () {
+      final ast =
+          parse(
+                DiagramType.architecture,
+                'architecture-beta\n'
+                'service left_disk(disk)[Disk]\n'
+                'service top_disk(disk)[Disk]\n'
+                'service bottom_disk(disk)[Disk]\n'
+                'service top_gateway(internet)[Gateway]\n'
+                'service bottom_gateway(internet)[Gateway]\n'
+                'junction juncC\n'
+                'junction juncR\n'
+                'left_disk:R -- L:juncC\n'
+                'top_disk:B -- T:juncC\n'
+                'bottom_disk:T -- B:juncC\n'
+                'juncC:R -- L:juncR\n'
+                'top_gateway:B -- T:juncR\n'
+                'bottom_gateway:T -- B:juncR\n',
+              )
+              as ArchitectureAst;
+      final scene = layoutDiagram(ast, textMeasurer: measurer, options: const RenderOptions(padding: 0));
+      final flattened = _flatten(scene.elements).toList();
+      final services = flattened
+          .whereType<SceneGroup>()
+          .where((element) => element.cssClasses.contains('architecture-service'))
+          .map((service) => service.transforms.single as Translate)
+          .toList();
+      final junctions = flattened
+          .whereType<SceneRect>()
+          .where((element) => element.cssClasses.contains('architecture-junction'))
+          .map((junction) => junction.bounds.center)
+          .toList();
+
+      expect(junctions[0].x - services[0].x, closeTo(201.1439111544484, 1e-9));
+      expect(junctions[0].y - services[1].y, closeTo(201.03841103516397, 1e-9));
+      expect(services[2].y - junctions[0].y, closeTo(201.038411035164, 1e-9));
+      expect(junctions[1].x - junctions[0].x, closeTo(202.88904602032396, 1e-9));
+      expect(junctions[1].y - services[3].y, closeTo(201.03841103516397, 1e-9));
+      expect(services[4].y - junctions[1].y, closeTo(201.038411035164, 1e-9));
+    });
+
     test('architecture bounds a junction spine and packs its companion group', () {
       final ast =
           parse(

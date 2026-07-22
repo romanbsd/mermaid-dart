@@ -55,6 +55,11 @@
       }
     },
     {
+      "id": "architecture-simple-junctions",
+      "type": "architecture",
+      "source": "architecture-beta\nservice left_disk(disk)[Disk]\nservice top_disk(disk)[Disk]\nservice bottom_disk(disk)[Disk]\nservice top_gateway(internet)[Gateway]\nservice bottom_gateway(internet)[Gateway]\njunction juncC\njunction juncR\nleft_disk:R -- L:juncC\ntop_disk:B -- T:juncC\nbottom_disk:T -- B:juncC\njuncC:R -- L:juncR\ntop_gateway:B -- T:juncR\nbottom_gateway:T -- B:juncR\n"
+    },
+    {
       "id": "architecture-reasonable-height",
       "type": "architecture",
       "source": "architecture-beta\ngroup federated(cloud)[Federated Environment]\nservice server1(server)[System] in federated\nservice edge(server)[Edge Device] in federated\nserver1:R -- L:edge\ngroup on_prem(cloud)[Hub]\nservice firewall(server)[Firewall Device] in on_prem\nservice server(server)[Server] in on_prem\nfirewall:R -- L:server\nservice db1(database)[db1] in on_prem\nservice db2(database)[db2] in on_prem\nservice db3(database)[db3] in on_prem\nservice db4(database)[db4] in on_prem\nservice db5(database)[db5] in on_prem\nservice db6(database)[db6] in on_prem\njunction mid in on_prem\nserver:B -- T:mid\njunction 1Leftofmid in on_prem\n1Leftofmid:R -- L:mid\n1Leftofmid:B -- T:db1\njunction 2Leftofmid in on_prem\n2Leftofmid:R -- L:1Leftofmid\n2Leftofmid:B -- T:db2\njunction 3Leftofmid in on_prem\n3Leftofmid:R -- L:2Leftofmid\n3Leftofmid:B -- T:db3\njunction 1RightOfMid in on_prem\nmid:R -- L:1RightOfMid\n1RightOfMid:B -- T:db4\njunction 2RightOfMid in on_prem\n1RightOfMid:R -- L:2RightOfMid\n2RightOfMid:B -- T:db5\njunction 3RightOfMid in on_prem\n2RightOfMid:R -- L:3RightOfMid\n3RightOfMid:B -- T:db6\nedge:R -- L:firewall\n"

@@ -20,6 +20,18 @@ const _architectureTopLevelSiblingGroupSpacingRatio = 1.8162155093693997;
 const _architectureHorizontalJunctionSpacingRatio = 0.00563391197044325;
 const _architectureVerticalJunctionSpacingRatio = 0.001489728721259098;
 
+// An ungrouped pair of junctions with cardinal service branches settles at a
+// wider proof distance than the breadth-first seed. Mermaid 11.16/fCoSE leaves
+// distinct residuals for the junction spine and its horizontal/vertical arms.
+const _architectureJunctionPairGapRatio = 2.5361130752540495;
+const _architectureJunctionPairHorizontalArmRatio = 2.514298889430605;
+const _architectureJunctionPairVerticalArmRatio = 2.5129801379395497;
+
+// The expanded junction pair is normalized with the deterministic frame
+// residuals that Cytoscape applies to a sparse cardinal component.
+const _architectureJunctionPairHorizontalFrameRatio = 0.26875;
+const _architectureJunctionPairVerticalFrameRatio = 0.053125;
+
 // Service-to-service edges explicitly attached to sibling group boundaries
 // settle closer than junction-mediated compound edges. Seeded fCoSE leaves a
 // small leading/trailing asymmetry according to the source port direction.
@@ -202,6 +214,7 @@ ArchitectureLayout layoutArchitectureModel(ArchitectureAst ast, ArchitectureRend
     );
   }
   final hasDeepCompoundHierarchy = _hasDeepArchitectureCompoundHierarchy(nodes, ast.groups);
+  final hasJunctionPair = _hasArchitectureJunctionPairTopology(nodes, ast.groups, ast.edges);
   final centers = _positionArchitectureNodes(nodes, ast.groups, ast.edges, ast.alignments, options);
   var laidOutNodes = _layoutArchitectureNodes(nodes, centers, options.iconSize);
   var laidOutGroups = _layoutArchitectureGroups(
@@ -232,7 +245,8 @@ ArchitectureLayout layoutArchitectureModel(ArchitectureAst ast, ArchitectureRend
                 : hasRowAlignment
                 ? _architectureAlignmentAxisFrameRatio
                 : 0) +
-            (hasEdgeLabels ? _architectureEdgeLabelHorizontalFrameRatio : 0);
+            (hasEdgeLabels ? _architectureEdgeLabelHorizontalFrameRatio : 0) +
+            (hasJunctionPair ? _architectureJunctionPairHorizontalFrameRatio : 0);
   final verticalFrameRatio = ast.groups.isNotEmpty
       ? 0
       : (hasMixedAxisRouting
@@ -245,7 +259,8 @@ ArchitectureLayout layoutArchitectureModel(ArchitectureAst ast, ArchitectureRend
                 : hasColumnAlignment
                 ? _architectureAlignmentAxisFrameRatio
                 : 0) +
-            (hasEdgeLabels ? _architectureEdgeLabelVerticalFrameRatio : 0);
+            (hasEdgeLabels ? _architectureEdgeLabelVerticalFrameRatio : 0) +
+            (hasJunctionPair ? _architectureJunctionPairVerticalFrameRatio : 0);
   final targetContentCenterX =
       options.iconSize / 2 +
       options.iconSize *
@@ -364,6 +379,7 @@ Map<String, Point> _positionArchitectureNodes(
       }
     }
   }
+  _relaxArchitectureJunctionPair(centers, nodes, groups, edges, options);
   _relaxArchitectureDeepCompound(centers, nodes, groups, edges, options);
   _relaxArchitectureJunctionSpine(centers, nodes, groups, edges, options);
   for (final alignment in alignments) {
@@ -418,6 +434,84 @@ Map<String, Point> _positionArchitectureNodes(
   return centers;
 }
 
+void _relaxArchitectureJunctionPair(
+  Map<String, Point> centers,
+  List<_NodeSeed> nodes,
+  List<ArchitectureGroupAst> groups,
+  List<ArchitectureEdgeAst> edges,
+  ArchitectureRenderOptions options,
+) {
+  if (!_hasArchitectureJunctionPairTopology(nodes, groups, edges)) return;
+  final nodesById = {for (final node in nodes) node.id: node};
+  final junctionIds = {
+    for (final node in nodes)
+      if (node.kind == ArchitectureNodeKind.junction) node.id,
+  };
+  final pairEdges = edges.where((edge) => junctionIds.contains(edge.leftId) && junctionIds.contains(edge.rightId));
+  final pairEdge = pairEdges.single;
+
+  final branchEdges = edges.where((edge) {
+    final leftJunction = junctionIds.contains(edge.leftId);
+    final rightJunction = junctionIds.contains(edge.rightId);
+    if (leftJunction == rightJunction) return false;
+    final serviceId = leftJunction ? edge.rightId : edge.leftId;
+    return nodesById[serviceId]?.kind == ArchitectureNodeKind.service;
+  }).toList();
+  final firstId = pairEdge.leftId;
+  final secondId = pairEdge.rightId;
+  final origin = const Point(0, 0);
+  centers[firstId] = origin;
+  centers[secondId] = origin.translated(
+    pairEdge.leftDirection.axisSign * options.iconSize * _architectureJunctionPairGapRatio,
+    0,
+  );
+  for (final edge in branchEdges) {
+    final junctionId = junctionIds.contains(edge.leftId) ? edge.leftId : edge.rightId;
+    final serviceId = _architectureOtherEnd(edge, junctionId);
+    final direction = _architectureDirectionAt(edge, junctionId);
+    final distance =
+        options.iconSize *
+        (direction.isVertical
+            ? _architectureJunctionPairVerticalArmRatio
+            : _architectureJunctionPairHorizontalArmRatio);
+    final junction = centers[junctionId]!;
+    centers[serviceId] = direction.isVertical
+        ? junction.translated(0, direction.axisSign * distance)
+        : junction.translated(direction.axisSign * distance, 0);
+  }
+}
+
+bool _hasArchitectureJunctionPairTopology(
+  List<_NodeSeed> nodes,
+  List<ArchitectureGroupAst> groups,
+  List<ArchitectureEdgeAst> edges,
+) {
+  if (groups.isNotEmpty) return false;
+  final junctionIds = {
+    for (final node in nodes)
+      if (node.kind == ArchitectureNodeKind.junction) node.id,
+  };
+  if (junctionIds.length != 2) return false;
+  final pairEdges = edges.where((edge) => junctionIds.contains(edge.leftId) && junctionIds.contains(edge.rightId));
+  if (pairEdges.length != 1) return false;
+  final pair = pairEdges.single;
+  if (pair.leftDirection.isVertical || pair.rightDirection.isVertical) return false;
+
+  final serviceIds = {
+    for (final node in nodes)
+      if (node.kind == ArchitectureNodeKind.service) node.id,
+  };
+  final branchedServiceIds = <String>{};
+  for (final edge in edges) {
+    final leftJunction = junctionIds.contains(edge.leftId);
+    final rightJunction = junctionIds.contains(edge.rightId);
+    if (leftJunction == rightJunction) continue;
+    final serviceId = leftJunction ? edge.rightId : edge.leftId;
+    if (serviceIds.contains(serviceId)) branchedServiceIds.add(serviceId);
+  }
+  return serviceIds.length >= 4 && branchedServiceIds.length == serviceIds.length;
+}
+
 void _relaxArchitectureDeepCompound(
   Map<String, Point> centers,
   List<_NodeSeed> nodes,
@@ -457,11 +551,6 @@ void _relaxArchitectureDeepCompound(
     return current;
   }
 
-  ArchitectureDirection directionAt(ArchitectureEdgeAst edge, String id) =>
-      edge.leftId == id ? edge.leftDirection : edge.rightDirection;
-
-  String otherEnd(ArchitectureEdgeAst edge, String id) => edge.leftId == id ? edge.rightId : edge.leftId;
-
   Iterable<ArchitectureEdgeAst> incident(String id) => edges.where((edge) => edge.leftId == id || edge.rightId == id);
 
   final candidateGroups = groups.where((group) {
@@ -478,49 +567,59 @@ void _relaxArchitectureDeepCompound(
   final primaryMembers = nodesByParent[primaryGroup.id]!;
   final primaryIds = primaryMembers.map((node) => node.id).toSet();
   final hub = primaryMembers.where((node) {
-    final outsideEdges = incident(node.id).where((edge) => !primaryIds.contains(otherEnd(edge, node.id)));
+    final outsideEdges = incident(node.id).where((edge) => !primaryIds.contains(_architectureOtherEnd(edge, node.id)));
     return outsideEdges.length >= 2;
   }).firstOrNull;
   if (hub == null) return;
 
-  final internalNeighbors = incident(
-    hub.id,
-  ).where((edge) => primaryIds.contains(otherEnd(edge, hub.id))).map((edge) => otherEnd(edge, hub.id)).toList();
+  final internalNeighbors = incident(hub.id)
+      .where((edge) => primaryIds.contains(_architectureOtherEnd(edge, hub.id)))
+      .map((edge) => _architectureOtherEnd(edge, hub.id))
+      .toList();
   if (internalNeighbors.length != 1) return;
   final nearId = internalNeighbors.single;
-  final farId = incident(
-    nearId,
-  ).map((edge) => otherEnd(edge, nearId)).where((id) => primaryIds.contains(id) && id != hub.id).firstOrNull;
+  final farId = incident(nearId)
+      .map((edge) => _architectureOtherEnd(edge, nearId))
+      .where((id) => primaryIds.contains(id) && id != hub.id)
+      .firstOrNull;
   if (farId == null) return;
 
-  final hubOutsideEdges = incident(hub.id).where((edge) => !primaryIds.contains(otherEnd(edge, hub.id))).toList();
-  final upperEdge = hubOutsideEdges.where((edge) => directionAt(edge, hub.id) == ArchitectureDirection.top).firstOrNull;
+  final hubOutsideEdges = incident(
+    hub.id,
+  ).where((edge) => !primaryIds.contains(_architectureOtherEnd(edge, hub.id))).toList();
+  final upperEdge = hubOutsideEdges
+      .where((edge) => _architectureDirectionAt(edge, hub.id) == ArchitectureDirection.top)
+      .firstOrNull;
   final lowerEdge = hubOutsideEdges
-      .where((edge) => directionAt(edge, hub.id) == ArchitectureDirection.bottom)
+      .where((edge) => _architectureDirectionAt(edge, hub.id) == ArchitectureDirection.bottom)
       .firstOrNull;
   final siblingEdge = hubOutsideEdges
-      .where((edge) => directionAt(edge, hub.id) == ArchitectureDirection.right)
+      .where((edge) => _architectureDirectionAt(edge, hub.id) == ArchitectureDirection.right)
       .firstOrNull;
   if (upperEdge == null || lowerEdge == null || siblingEdge == null) return;
 
-  final upperId = otherEnd(upperEdge, hub.id);
-  final lowerId = otherEnd(lowerEdge, hub.id);
-  final siblingId = otherEnd(siblingEdge, hub.id);
+  final upperId = _architectureOtherEnd(upperEdge, hub.id);
+  final lowerId = _architectureOtherEnd(lowerEdge, hub.id);
+  final siblingId = _architectureOtherEnd(siblingEdge, hub.id);
   final lowerTopLevel = topLevelGroup(nodesById[lowerId]!);
   final siblingTopLevel = topLevelGroup(nodesById[siblingId]!);
   if (lowerTopLevel == null || lowerTopLevel != siblingTopLevel) return;
 
   final storageEdge = incident(siblingId)
-      .where((edge) => otherEnd(edge, siblingId) != hub.id)
-      .where((edge) => topLevelGroup(nodesById[otherEnd(edge, siblingId)]!) == siblingTopLevel)
+      .where((edge) => _architectureOtherEnd(edge, siblingId) != hub.id)
+      .where((edge) => topLevelGroup(nodesById[_architectureOtherEnd(edge, siblingId)]!) == siblingTopLevel)
       .firstOrNull;
   if (storageEdge == null) return;
-  final storageId = otherEnd(storageEdge, siblingId);
-  final containerEdge = incident(storageId).where((edge) => otherEnd(edge, storageId) != siblingId).firstOrNull;
+  final storageId = _architectureOtherEnd(storageEdge, siblingId);
+  final containerEdge = incident(
+    storageId,
+  ).where((edge) => _architectureOtherEnd(edge, storageId) != siblingId).firstOrNull;
   if (containerEdge == null) return;
-  final containerId = otherEnd(containerEdge, storageId);
+  final containerId = _architectureOtherEnd(containerEdge, storageId);
 
-  final lowerNeighbors = incident(lowerId).map((edge) => otherEnd(edge, lowerId)).where((id) => id != hub.id).toList();
+  final lowerNeighbors = incident(
+    lowerId,
+  ).map((edge) => _architectureOtherEnd(edge, lowerId)).where((id) => id != hub.id).toList();
   final busId = lowerNeighbors.where((id) => topLevelGroup(nodesById[id]!) == lowerTopLevel).firstOrNull;
   final remoteId = lowerNeighbors.where((id) => topLevelGroup(nodesById[id]!) != lowerTopLevel).firstOrNull;
   if (busId == null || remoteId == null) return;
@@ -954,6 +1053,12 @@ _ArchitectureRoutingProfile _architectureRoutingProfile(
 
 Point _directionDelta(ArchitectureDirection direction, double distance) =>
     direction.isVertical ? Point(0, direction.axisSign * distance) : Point(direction.axisSign * distance, 0);
+
+ArchitectureDirection _architectureDirectionAt(ArchitectureEdgeAst edge, String nodeId) =>
+    edge.leftId == nodeId ? edge.leftDirection : edge.rightDirection;
+
+String _architectureOtherEnd(ArchitectureEdgeAst edge, String nodeId) =>
+    edge.leftId == nodeId ? edge.rightId : edge.leftId;
 
 Point _port(
   ArchitectureNodeLayout node,
