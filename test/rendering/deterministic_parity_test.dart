@@ -731,6 +731,18 @@ void main() {
           .whereType<SceneRect>()
           .where((element) => element.cssClasses.contains('git-branch-label-background'))
           .toList();
+      final branchLabels = elements
+          .whereType<SceneText>()
+          .where((element) => element.cssClasses.contains('git-branch-label'))
+          .toList();
+      final commitLabelBackgrounds = elements
+          .whereType<SceneRect>()
+          .where((element) => element.cssClasses.contains('git-commit-label-background'))
+          .toList();
+      final commitLabels = elements
+          .whereType<SceneText>()
+          .where((element) => element.cssClasses.contains('git-commit-label'))
+          .toList();
       final edge = elements.whereType<ScenePath>().singleWhere(
         (element) => element.cssClasses.contains('git-commit-edge'),
       );
@@ -739,10 +751,16 @@ void main() {
       );
 
       expect(commits.map((commit) => commit.center), const [Point(10, -2), Point(60, 88)]);
+      expect(commits.map((commit) => commit.fill), const [SolidFill(Color(0, 0, 236)), SolidFill(Color(222, 222, 0))]);
+      expect(commits.map((commit) => commit.stroke?.width), everyElement(1));
       expect(branches.map((branch) => (branch.start, branch.end)), const [
         (Point(0, -2), Point(100, -2)),
         (Point(0, 88), Point(100, 88)),
       ]);
+      expect(
+        branches.map((branch) => branch.stroke),
+        everyElement(const SceneStroke(color: Color(51, 51, 51), dashes: [2])),
+      );
       expect(labels.map((label) => label.bounds), const [
         Bounds(left: -88, top: -13.5, width: 53, height: 23),
         Bounds(left: -109.421875, top: 76.5, width: 74.421875, height: 23),
@@ -753,6 +771,14 @@ void main() {
         ArcTo(radiusX: 20, radiusY: 20, clockwise: false, end: Point(30, 88)),
         LineTo(Point(60, 88)),
       ]);
+      expect(edge.stroke?.width, 8);
+      expect(edge.stroke?.cap, StrokeCap.round);
+      expect(branchLabels.map((label) => label.style.color), const [Color(255, 255, 255), Color(0, 0, 0)]);
+      expect(
+        commitLabelBackgrounds.map((label) => label.fill),
+        everyElement(const SolidFill(Color(255, 255, 222, 128))),
+      );
+      expect(commitLabels.map((label) => label.style.color), everyElement(const Color(0, 0, 33)));
       expect(rotated, hasLength(2));
       final transforms = rotated.first.transforms;
       expect(transforms, hasLength(2));

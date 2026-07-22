@@ -43,7 +43,7 @@ _LayoutResult _layoutGitGraph(GitGraphAst ast, _LayoutContext context) {
   final commitStyle = SceneTextStyle(
     fontFamily: context.options.theme.fontFamily,
     fontSize: _gitCommitLabelFontSize,
-    color: context.options.theme.primaryText,
+    color: config.commitLabelColor,
   );
   final branchWidths = {
     for (final branch in model.branches) branch.name: context.measurer.measure(branch.name, branchStyle).width,
@@ -86,6 +86,12 @@ _LayoutResult _layoutGitGraph(GitGraphAst ast, _LayoutContext context) {
       final branch = model.branches[i];
       final lane = branchPositions[branch.name]!;
       final color = _gitBranchColor(config, i);
+      final labelStyle = SceneTextStyle(
+        fontFamily: branchStyle.fontFamily,
+        fontSize: branchStyle.fontSize,
+        weight: branchStyle.weight,
+        color: _gitBranchLabelColor(config, i),
+      );
       final (start, end, labelPoint, labelAnchor) = switch (direction) {
         GitGraphDirection.leftToRight => (
           Point(0, lane - _gitLaneYCorrection),
@@ -116,7 +122,11 @@ _LayoutResult _layoutGitGraph(GitGraphAst ast, _LayoutContext context) {
           id: context.id('git-branch'),
           start: start,
           end: end,
-          stroke: SceneStroke(color: color, width: 3),
+          stroke: SceneStroke(
+            color: config.branchLineColor,
+            width: config.branchLineWidth,
+            dashes: config.branchLineDashes,
+          ),
           role: SemanticRole.edge,
           cssClasses: const ['git-branch-line'],
           label: branch.name,
@@ -168,7 +178,7 @@ _LayoutResult _layoutGitGraph(GitGraphAst ast, _LayoutContext context) {
           anchor: labelAnchor,
           baseline: TextBaseline.alphabetic,
           role: SemanticRole.legend,
-          style: branchStyle,
+          style: labelStyle,
           cssClasses: const ['git-branch-label'],
         ),
       );
@@ -189,7 +199,11 @@ _LayoutResult _layoutGitGraph(GitGraphAst ast, _LayoutContext context) {
           id: context.id('git-edge'),
           commands: _gitEdgeCommands(start, end, direction),
           fill: const NoFill(),
-          stroke: SceneStroke(color: _gitBranchColor(config, branchIndex), width: 3),
+          stroke: SceneStroke(
+            color: _gitBranchColor(config, branchIndex),
+            width: config.commitEdgeWidth,
+            cap: config.commitEdgeCap,
+          ),
           role: SemanticRole.edge,
           cssClasses: const ['git-commit-edge'],
           label: '${parent.id} to ${commit.id}',
@@ -250,7 +264,14 @@ _LayoutResult _layoutGitGraph(GitGraphAst ast, _LayoutContext context) {
 }
 
 Color _gitBranchColor(GitGraphRenderOptions config, int index) {
-  final colors = config.branchColors.isEmpty ? _palette : config.branchColors;
+  final colors = config.branchColors.isEmpty ? GitGraphRenderOptions.defaultBranchColors : config.branchColors;
+  return colors[(index < 0 ? 0 : index) % colors.length];
+}
+
+Color _gitBranchLabelColor(GitGraphRenderOptions config, int index) {
+  final colors = config.branchLabelColors.isEmpty
+      ? GitGraphRenderOptions.defaultBranchLabelColors
+      : config.branchLabelColors;
   return colors[(index < 0 ? 0 : index) % colors.length];
 }
 
@@ -334,7 +355,7 @@ void _addGitCommit(
   Color color,
   GitGraphRenderOptions config,
 ) {
-  final stroke = SceneStroke(color: color, width: 2);
+  final stroke = SceneStroke(color: color, width: config.commitStrokeWidth);
   final fill = SolidFill(color);
   if (commit.decoratedType == GitGraphCommitType.highlight) {
     elements.addAll([
@@ -481,7 +502,7 @@ void _addGitCommitLabel(
     SceneRect(
       id: context.id('git-commit-label-background'),
       bounds: bounds,
-      fill: SolidFill(context.options.theme.background),
+      fill: SolidFill(config.commitLabelBackground),
       role: SemanticRole.label,
       cssClasses: const ['git-commit-label-background'],
     ),

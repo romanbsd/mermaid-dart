@@ -131,6 +131,17 @@ void main() {
     expect(SvgComparison.compare(elementOpacity, channelOpacity).samePaint, isTrue);
   });
 
+  test('ignores opacity on disabled paint channels', () {
+    final elementOpacity = SvgSnapshot.fromSvg(
+      '<svg><rect fill="#ffffde" stroke="none" opacity=".5" width="10" height="10"/></svg>',
+    );
+    final fillOpacity = SvgSnapshot.fromSvg(
+      '<svg><rect fill="#ffffde" stroke="none" fill-opacity=".5" width="10" height="10"/></svg>',
+    );
+
+    expect(SvgComparison.compare(elementOpacity, fillOpacity).samePaint, isTrue);
+  });
+
   test('treats foreignObject and SVG text as equivalent visible text', () {
     final svgText = SvgSnapshot.fromSvg('<svg><text x="1">Multi line</text></svg>');
     final htmlText = SvgSnapshot.fromSvg(

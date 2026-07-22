@@ -225,11 +225,21 @@ const _linePaintProperties = <String, String>{
 String _paintSignature(XmlElement element, String transform, String styleSheets) {
   final geometry = _geometrySignature(element, transform, styleSheets);
   final properties = element.name.local == 'line' ? _linePaintProperties : _paintProperties;
-  final values = <String>[
+  final normalized = {
     for (final MapEntry(:key, :value) in properties.entries)
-      '$key=${_normalizedPaintValue(key, _inheritedPresentationValue(element, key, styleSheets) ?? value, element, styleSheets)}',
-    if (element.name.local != 'line') 'fill-opacity=${_effectiveChannelOpacity(element, 'fill-opacity', styleSheets)}',
-    'stroke-opacity=${_effectiveChannelOpacity(element, 'stroke-opacity', styleSheets)}',
+      key: _normalizedPaintValue(
+        key,
+        _inheritedPresentationValue(element, key, styleSheets) ?? value,
+        element,
+        styleSheets,
+      ),
+  };
+  final values = <String>[
+    for (final MapEntry(:key, :value) in normalized.entries) '$key=$value',
+    if (normalized['fill'] != null && normalized['fill'] != 'none')
+      'fill-opacity=${_effectiveChannelOpacity(element, 'fill-opacity', styleSheets)}',
+    if (normalized['stroke'] != 'none')
+      'stroke-opacity=${_effectiveChannelOpacity(element, 'stroke-opacity', styleSheets)}',
   ];
   return '$geometry|${values.join('|')}';
 }

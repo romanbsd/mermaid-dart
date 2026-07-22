@@ -168,6 +168,31 @@ final class EventModelingRenderOptions extends DiagramRenderOptions {
 }
 
 final class GitGraphRenderOptions extends DiagramRenderOptions {
+  /// Mermaid's default-theme `git0` through `git7` colors after its standard
+  /// light-theme darkening step.
+  static const defaultBranchColors = [
+    Color(0, 0, 236),
+    Color(222, 222, 0),
+    Color(157, 236, 0),
+    Color(0, 118, 236),
+    Color(0, 236, 236),
+    Color(0, 236, 118),
+    Color(236, 0, 236),
+    Color(236, 0, 0),
+  ];
+
+  /// Mermaid's matching default foreground colors for branch labels.
+  static const defaultBranchLabelColors = [
+    Color(255, 255, 255),
+    Color(0, 0, 0),
+    Color(0, 0, 0),
+    Color(255, 255, 255),
+    Color(0, 0, 0),
+    Color(0, 0, 0),
+    Color(0, 0, 0),
+    Color(0, 0, 0),
+  ];
+
   const GitGraphRenderOptions({
     this.titleTopMargin = 25,
     this.diagramPadding = 8,
@@ -180,16 +205,16 @@ final class GitGraphRenderOptions extends DiagramRenderOptions {
     this.commitRadius = 10,
     this.branchSpacing = 50,
     this.commitSpacing = 50,
-    this.branchColors = const [
-      Color(87, 103, 198),
-      Color(241, 156, 74),
-      Color(76, 175, 130),
-      Color(218, 91, 91),
-      Color(151, 104, 190),
-      Color(72, 169, 197),
-      Color(222, 190, 73),
-      Color(100, 100, 100),
-    ],
+    this.branchColors = defaultBranchColors,
+    this.branchLabelColors = defaultBranchLabelColors,
+    this.branchLineColor = const Color(51, 51, 51),
+    this.branchLineWidth = 1,
+    this.branchLineDashes = const [2],
+    this.commitStrokeWidth = 1,
+    this.commitEdgeWidth = 8,
+    this.commitEdgeCap = StrokeCap.round,
+    this.commitLabelColor = const Color(0, 0, 33),
+    this.commitLabelBackground = const Color(255, 255, 222, 128),
   });
 
   final double titleTopMargin;
@@ -204,6 +229,15 @@ final class GitGraphRenderOptions extends DiagramRenderOptions {
   final double branchSpacing;
   final double commitSpacing;
   final List<Color> branchColors;
+  final List<Color> branchLabelColors;
+  final Color branchLineColor;
+  final double branchLineWidth;
+  final List<double> branchLineDashes;
+  final double commitStrokeWidth;
+  final double commitEdgeWidth;
+  final StrokeCap commitEdgeCap;
+  final Color commitLabelColor;
+  final Color commitLabelBackground;
 }
 
 final class TreeViewRenderOptions extends DiagramRenderOptions {
