@@ -1,6 +1,13 @@
 part of 'ast.dart';
 
-enum ArchitectureDirection { left, right, top, bottom }
+enum ArchitectureDirection {
+  left,
+  right,
+  top,
+  bottom;
+
+  bool get isVertical => this == top || this == bottom;
+}
 
 enum ArchitectureAlignmentDirection { row, column }
 

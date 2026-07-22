@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import '../../parser/ast.dart';
 import '../options.dart';
 import '../scene.dart';
@@ -56,13 +58,12 @@ final class ArchitectureGroupLayout {
 }
 
 final class ArchitectureEdgeLayout {
-  const ArchitectureEdgeLayout({required this.edge, required this.points});
+  const ArchitectureEdgeLayout({required this.data, required this.start, required this.bend, required this.end});
 
-  final ArchitectureEdgeAst edge;
-  final List<Point> points;
-
-  ArchitectureEdgeLayout translated(double x, double y) =>
-      ArchitectureEdgeLayout(edge: edge, points: [for (final point in points) Point(point.x + x, point.y + y)]);
+  final ArchitectureEdgeAst data;
+  final Point start;
+  final Point bend;
+  final Point end;
 }
 
 final class ArchitectureLayout {
@@ -97,9 +98,18 @@ ArchitectureLayout layoutArchitectureModel(ArchitectureAst ast, ArchitectureRend
     );
   }
 
-  final byId = {for (final node in nodes) node.id: node};
+  final nodeIds = {for (final node in nodes) node.id};
+  final adjacency = <String, List<({ArchitectureEdgeAst edge, bool forward})>>{};
+  for (final edge in ast.edges) {
+    if (!nodeIds.contains(edge.leftId) || !nodeIds.contains(edge.rightId)) continue;
+    (adjacency[edge.leftId] ??= []).add((edge: edge, forward: true));
+    (adjacency[edge.rightId] ??= []).add((edge: edge, forward: false));
+  }
   final centers = <String, Point>{};
-  final spacing = options.iconSize + options.nodeSeparation;
+  final spacing = math.max(
+    options.iconSize + options.nodeSeparation,
+    options.iconSize * options.idealEdgeLengthMultiplier,
+  );
   var component = 0;
   for (final root in nodes) {
     if (centers.containsKey(root.id)) continue;
@@ -109,14 +119,12 @@ ArchitectureLayout layoutArchitectureModel(ArchitectureAst ast, ArchitectureRend
     for (var cursor = 0; cursor < queue.length; cursor++) {
       final currentId = queue[cursor];
       final current = centers[currentId]!;
-      for (final edge in ast.edges) {
-        final forward = edge.leftId == currentId;
-        final reverse = edge.rightId == currentId;
-        if (!forward && !reverse) continue;
-        final nextId = forward ? edge.rightId : edge.leftId;
-        if (!byId.containsKey(nextId) || centers.containsKey(nextId)) continue;
+      for (final relation in adjacency[currentId] ?? const []) {
+        final edge = relation.edge;
+        final nextId = relation.forward ? edge.rightId : edge.leftId;
+        if (centers.containsKey(nextId)) continue;
         final delta = _edgeDelta(edge, spacing);
-        centers[nextId] = forward
+        centers[nextId] = relation.forward
             ? Point(current.x + delta.x, current.y + delta.y)
             : Point(current.x - delta.x, current.y - delta.y);
         queue.add(nextId);
@@ -128,14 +136,12 @@ ArchitectureLayout layoutArchitectureModel(ArchitectureAst ast, ArchitectureRend
     final members = alignment.members.where(centers.containsKey).toList();
     if (members.length < 2) continue;
     final origin = centers[members.first]!;
-    for (var index = 0; index < members.length; index++) {
+    for (var index = 1; index < members.length; index++) {
       final id = members[index];
-      final old = centers[id]!;
       centers[id] = switch (alignment.direction) {
         ArchitectureAlignmentDirection.row => Point(origin.x + index * spacing, origin.y),
         ArchitectureAlignmentDirection.column => Point(origin.x, origin.y + index * spacing),
       };
-      if (index == 0) centers[id] = old;
     }
   }
 
@@ -159,12 +165,21 @@ ArchitectureLayout layoutArchitectureModel(ArchitectureAst ast, ArchitectureRend
   ];
   final groupAsts = {for (final group in ast.groups) group.id: group};
   final groupBounds = <String, Bounds>{};
+  final nodesByParent = <String, List<ArchitectureNodeLayout>>{};
+  for (final node in laidOutNodes) {
+    if (node.parent case final parent?) (nodesByParent[parent] ??= []).add(node);
+  }
+  final groupsByParent = <String, List<ArchitectureGroupAst>>{};
+  for (final group in ast.groups) {
+    if (group.parent case final parent?) (groupsByParent[parent] ??= []).add(group);
+  }
 
   Bounds? calculateGroup(String id, Set<String> visiting) {
+    if (groupBounds[id] case final cached?) return cached;
     final group = groupAsts[id];
     if (group == null || !visiting.add(id)) return null;
     Bounds? content;
-    for (final node in laidOutNodes.where((node) => node.parent == id)) {
+    for (final node in nodesByParent[id] ?? const []) {
       final visual = node.kind == ArchitectureNodeKind.service && node.label != null
           ? Bounds(
               left: node.bounds.left,
@@ -175,7 +190,7 @@ ArchitectureLayout layoutArchitectureModel(ArchitectureAst ast, ArchitectureRend
           : node.bounds;
       content = content == null ? visual : content.union(visual);
     }
-    for (final child in ast.groups.where((candidate) => candidate.parent == id)) {
+    for (final child in groupsByParent[id] ?? const []) {
       final bounds = calculateGroup(child.id, visiting);
       if (bounds != null) content = content == null ? bounds : content.union(bounds);
     }
@@ -234,7 +249,7 @@ ArchitectureLayout layoutArchitectureModel(ArchitectureAst ast, ArchitectureRend
     final start = _port(source, sourceBounds, edge.leftDirection, edge.leftGroup);
     final end = _port(target, targetBounds, edge.rightDirection, edge.rightGroup);
     final bend = _bend(start, end, edge.leftDirection, edge.rightDirection);
-    edges.add(ArchitectureEdgeLayout(edge: edge, points: [start, bend, end]));
+    edges.add(ArchitectureEdgeLayout(data: edge, start: start, bend: bend, end: end));
   }
 
   return ArchitectureLayout(
@@ -282,24 +297,10 @@ Point _port(ArchitectureNodeLayout node, Bounds bounds, ArchitectureDirection di
 }
 
 Point _bend(Point start, Point end, ArchitectureDirection source, ArchitectureDirection target) {
-  final sameAxis = switch ((source, target)) {
-    (
-      ArchitectureDirection.left || ArchitectureDirection.right,
-      ArchitectureDirection.left || ArchitectureDirection.right,
-    ) =>
-      true,
-    (
-      ArchitectureDirection.top || ArchitectureDirection.bottom,
-      ArchitectureDirection.top || ArchitectureDirection.bottom,
-    ) =>
-      true,
-    _ => false,
-  };
-  if (sameAxis) return Point((start.x + end.x) / 2, (start.y + end.y) / 2);
-  return switch (source) {
-    ArchitectureDirection.top || ArchitectureDirection.bottom => Point(start.x, end.y),
-    ArchitectureDirection.left || ArchitectureDirection.right => Point(end.x, start.y),
-  };
+  if (source.isVertical == target.isVertical) {
+    return Point((start.x + end.x) / 2, (start.y + end.y) / 2);
+  }
+  return source.isVertical ? Point(start.x, end.y) : Point(end.x, start.y);
 }
 
 final class _NodeSeed {

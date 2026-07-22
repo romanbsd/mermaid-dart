@@ -944,6 +944,37 @@ void main() {
       );
     });
 
+    test('architecture typed spacing options control connected node distance', () {
+      final scene = layoutDiagram(
+        const ArchitectureAst(
+          services: [
+            ArchitectureServiceAst(id: 'a'),
+            ArchitectureServiceAst(id: 'b'),
+          ],
+          edges: [
+            ArchitectureEdgeAst(
+              leftId: 'a',
+              leftDirection: ArchitectureDirection.right,
+              rightId: 'b',
+              rightDirection: ArchitectureDirection.left,
+            ),
+          ],
+        ),
+        textMeasurer: measurer,
+        options: const RenderOptions(
+          padding: 0,
+          architecture: ArchitectureRenderOptions(iconSize: 40, nodeSeparation: 0, idealEdgeLengthMultiplier: 3),
+        ),
+      );
+      final nodes = _flatten(
+        scene.elements,
+      ).whereType<SceneGroup>().where((element) => element.cssClasses.contains('architecture-service')).toList();
+      final first = nodes[0].transforms.single as Translate;
+      final second = nodes[1].transforms.single as Translate;
+
+      expect(second.x - first.x, 120);
+    });
+
     test('architecture encloses nested groups and routes group edges to their boundary', () {
       final scene = layoutDiagram(
         const ArchitectureAst(
