@@ -8,6 +8,7 @@ environment:
 
 # Add regular dependencies here.
 dependencies:
+  collection: ^1.19.1
   petitparser: ^7.0.2
 
 dev_dependencies:
