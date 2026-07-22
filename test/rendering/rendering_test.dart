@@ -152,7 +152,9 @@ rule <- "a" b? ;
       );
       expect(icon.label, 'unknown:inbox');
       expect(icon.geometry.paths, isNotEmpty);
-      expect(description.style.color, const Color(106, 153, 85));
+      expect(icon.fill, const SolidFill(TreeViewRenderOptions.defaultIconColor));
+      expect(icon.stroke?.color, TreeViewRenderOptions.defaultIconColor);
+      expect(description.style.color, TreeViewRenderOptions.defaultDescriptionColor);
       expect(
         XmlDocument.parse(
           renderSvg(scene),

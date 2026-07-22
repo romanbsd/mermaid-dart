@@ -152,6 +152,17 @@
       }
     },
     {
+      "id": "tree-highlighted-styles",
+      "type": "treeView",
+      "source": "treeView-beta\nsrc/ :::highlight ## Sources\n    index.js\n",
+      "textMeasurements": {
+        "/": { "width": 5, "height": 19 },
+        "src": { "width": 21, "height": 19 },
+        "index.js": { "width": 57.1875, "height": 19 },
+        "Sources": { "width": 54.28125, "height": 19 }
+      }
+    },
+    {
       "id": "treemap-products",
       "type": "treemap",
       "source": "treemap\n\"Products\"\n  \"Large\": 3\n  \"Small\": 1\n"

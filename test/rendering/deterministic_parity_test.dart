@@ -84,12 +84,17 @@ void main() {
 
       expect(labels.map((label) => label.text), ['/', 'root', 'child', 'peer']);
       expect(labels.map((label) => label.baseline), everyElement(TextBaseline.middle));
-      expect(labels.map((label) => label.style.color), everyElement(const Color(0, 0, 0)));
+      expect(labels.map((label) => label.style.color), everyElement(TreeViewRenderOptions.defaultLabelColor));
       expect(descriptions.map((description) => description.position.x).toSet(), hasLength(1));
-      expect(descriptions.map((description) => description.style.color), everyElement(const Color(106, 153, 85)));
+      expect(
+        descriptions.map((description) => description.style.color),
+        everyElement(TreeViewRenderOptions.defaultDescriptionColor),
+      );
+      expect(highlight.fill, const SolidFill(TreeViewRenderOptions.defaultHighlightBackground));
+      expect(highlight.stroke, const SceneStroke(color: TreeViewRenderOptions.defaultHighlightStroke));
       expect(highlight.bounds.right, scene.bounds.width - 2);
       expect(lines, hasLength(6));
-      expect(lines.map((line) => line.stroke?.color), everyElement(const Color(0, 0, 0)));
+      expect(lines.map((line) => line.stroke?.color), everyElement(TreeViewRenderOptions.defaultLineColor));
       expect(lines.map((line) => line.stroke?.cap), everyElement(StrokeCap.butt));
       expect(lines.map((line) => line.stroke?.join), everyElement(StrokeJoin.miter));
       expect(elements.whereType<SceneCircle>(), isEmpty);

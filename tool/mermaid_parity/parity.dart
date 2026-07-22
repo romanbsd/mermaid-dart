@@ -281,7 +281,10 @@ String? _stylesheetProperty(XmlElement element, String styleSheets, String name)
 
 String _effectiveChannelOpacity(XmlElement element, String channel, String styleSheets) {
   final channelOpacity = double.tryParse(_inheritedPresentationValue(element, channel, styleSheets) ?? '') ?? 1;
-  return _formatNumber(channelOpacity * _effectiveOpacity(element, styleSheets));
+  final paintChannel = channel == 'fill-opacity' ? 'fill' : 'stroke';
+  final paint = _inheritedPresentationValue(element, paintChannel, styleSheets) ?? '';
+  final embeddedOpacity = _parseRgba(paint)?.alpha ?? 1;
+  return _formatNumber(channelOpacity * embeddedOpacity * _effectiveOpacity(element, styleSheets));
 }
 
 double _effectiveOpacity(XmlElement element, String styleSheets) {
@@ -316,6 +319,10 @@ String _normalizedColor(String value) {
     final hex = compact.substring(1);
     return '#${[for (final digit in hex.split('')) '$digit$digit'].join()}';
   }
+  if (_parseRgba(compact) case (:final channels, alpha: _)) {
+    // Alpha participates in the separately normalized channel opacity.
+    return _hexColor(channels);
+  }
   final rgb = _rgbColor.firstMatch(compact);
   if (rgb != null) {
     final channels = [for (var index = 1; index <= 3; index++) int.parse(rgb[index]!)];
@@ -348,6 +355,19 @@ String _normalizedColor(String value) {
   };
 }
 
+({List<int> channels, double alpha})? _parseRgba(String value) {
+  final compact = value
+      .replaceFirst(RegExp(r'\s*!important\s*$', caseSensitive: false), '')
+      .replaceAll(' ', '')
+      .toLowerCase();
+  final match = _rgbaColor.firstMatch(compact);
+  if (match == null) return null;
+  return (
+    channels: [for (var index = 1; index <= 3; index++) int.parse(match[index]!)],
+    alpha: double.parse(match[4]!),
+  );
+}
+
 String _hexColor(List<int> channels) =>
     '#${channels.map((channel) => channel.clamp(0, _colorChannelMax).toInt().toRadixString(16).padLeft(2, '0')).join()}';
 
@@ -372,6 +392,7 @@ const _oneThirdTurn = 1 / 3;
 const _twoThirdsTurn = 2 / 3;
 
 final _rgbColor = RegExp(r'^rgb\((\d{1,3}),(\d{1,3}),(\d{1,3})\)$');
+final _rgbaColor = RegExp(r'^rgba\((\d{1,3}),(\d{1,3}),(\d{1,3}),((?:\d+\.?\d*|\.\d+))\)$');
 final _hslColor = RegExp(r'^hsl\((-?(?:\d+\.?\d*|\.\d+)),((?:\d+\.?\d*|\.\d+))%,((?:\d+\.?\d*|\.\d+))%\)$');
 
 String _geometrySignature(XmlElement element, String transform, String styleSheets) {

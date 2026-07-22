@@ -8,28 +8,19 @@ const _treeDescriptionGap = 16.0;
 const _treeHighlightVerticalInset = 1.0;
 const _treeHighlightRightOverflow = 8.0;
 const _treeHighlightStrokeAllowance = 2.0;
-const _treeInk = Color(0, 0, 0);
-
-SceneTextStyle _treeTextStyle(_LayoutContext context) => SceneTextStyle(
+SceneTextStyle _treeTextStyle(_LayoutContext context, Color color) => SceneTextStyle(
   fontFamily: context.textStyle.fontFamily,
   fontSize: context.textStyle.fontSize,
-  color: _treeInk,
+  color: color,
   lineHeight: context.textStyle.lineHeight,
 );
 
-SceneStroke _treeStroke(double width) => SceneStroke(color: _treeInk, width: width);
+SceneStroke _treeStroke(Color color, double width) => SceneStroke(color: color, width: width);
 
 _LayoutResult _layoutTree(TreeViewAst ast, _LayoutContext context) {
   final config = context.options.optionsFor(const TreeViewRenderOptions());
-  final textStyle = _treeTextStyle(context);
-  final descriptionStyle = SceneTextStyle(
-    fontFamily: textStyle.fontFamily,
-    fontSize: textStyle.fontSize,
-    weight: textStyle.weight,
-    style: textStyle.style,
-    color: config.descriptionColor,
-    lineHeight: textStyle.lineHeight,
-  );
+  final textStyle = _treeTextStyle(context, config.labelColor);
+  final descriptionStyle = _treeTextStyle(context, config.descriptionColor);
   final elements = <SceneElement>[];
   final indentStack = <int>[];
   final depths = <int>[];
@@ -77,7 +68,8 @@ _LayoutResult _layoutTree(TreeViewAst ast, _LayoutContext context) {
           Point(x + config.paddingX, totalHeight + config.paddingY),
           _treeIconExtent,
           idPrefix: 'tree',
-          stroke: _treeStroke(config.lineThickness),
+          fill: SolidFill(config.iconColor),
+          stroke: _treeStroke(config.iconColor, config.lineThickness),
           cssClasses: const ['treeView-node-icon'],
         ),
       );
@@ -150,7 +142,8 @@ _LayoutResult _layoutTree(TreeViewAst ast, _LayoutContext context) {
           ),
           radiusX: 3,
           radiusY: 3,
-          fill: SolidFill(context.options.theme.tertiary),
+          fill: SolidFill(config.highlightBackground),
+          stroke: _treeStroke(config.highlightStroke, config.highlightStrokeWidth),
           cssClasses: const ['treeView-highlight-bg'],
         ),
       );
@@ -161,7 +154,7 @@ _LayoutResult _layoutTree(TreeViewAst ast, _LayoutContext context) {
         id: context.id('tree-edge'),
         start: Point(x - config.rowIndent, centerY),
         end: Point(x, centerY),
-        stroke: _treeStroke(config.lineThickness),
+        stroke: _treeStroke(config.lineColor, config.lineThickness),
         role: SemanticRole.edge,
         cssClasses: const ['treeView-node-line'],
       ),
@@ -176,7 +169,7 @@ _LayoutResult _layoutTree(TreeViewAst ast, _LayoutContext context) {
           id: context.id('tree-edge'),
           start: Point(x + config.paddingX, rowTops[i] + rowHeights[i]),
           end: Point(x + config.paddingX, rowTops[lastChild] + rowHeights[lastChild] / 2 + config.lineThickness / 2),
-          stroke: _treeStroke(config.lineThickness),
+          stroke: _treeStroke(config.lineColor, config.lineThickness),
           role: SemanticRole.edge,
           cssClasses: const ['treeView-node-line'],
         ),

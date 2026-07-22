@@ -277,16 +277,46 @@ final class TreeViewRenderOptions extends DiagramRenderOptions {
     this.paddingX = 5,
     this.paddingY = 5,
     this.lineThickness = 1,
-    this.descriptionColor = const Color(106, 153, 85),
+    this.labelColor = defaultLabelColor,
+    this.lineColor = defaultLineColor,
+    this.iconColor = defaultIconColor,
+    this.descriptionColor = defaultDescriptionColor,
+    this.highlightBackground = defaultHighlightBackground,
+    this.highlightStroke = defaultHighlightStroke,
+    this.highlightStrokeWidth = 1,
   });
+
+  static const defaultLabelColor = Color(0, 0, 0);
+  static const defaultLineColor = Color(0, 0, 0);
+  static const defaultIconColor = Color(84, 110, 122);
+  static const defaultDescriptionColor = Color(106, 153, 85);
+
+  /// Mermaid's 15%-opaque amber highlight background.
+  static const defaultHighlightBackground = Color(255, 193, 7, 38);
+
+  static const defaultHighlightStroke = Color(255, 193, 7);
 
   final double rowIndent;
   final double paddingX;
   final double paddingY;
   final double lineThickness;
 
+  /// Primary node-label color.
+  final Color labelColor;
+
+  /// Connector-line color.
+  final Color lineColor;
+
+  /// Color applied to application-resolved and placeholder icon geometry.
+  final Color iconColor;
+
   /// Mermaid's default secondary text color for node descriptions.
   final Color descriptionColor;
+
+  /// Background and outline used by the built-in `highlight` class.
+  final Color highlightBackground;
+  final Color highlightStroke;
+  final double highlightStrokeWidth;
 }
 
 enum TreemapValueFormat { plain, grouped, currencyGrouped }

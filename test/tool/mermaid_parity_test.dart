@@ -11,8 +11,8 @@ void main() {
     final manifest = ParityManifest.load(File('tool/mermaid_parity/fixtures.json'));
 
     expect(manifest.mermaidVersion, '11.16.0');
-    expect(manifest.fixtures.map((fixture) => fixture.id), hasLength(20));
-    expect(manifest.fixtures.map((fixture) => fixture.id).toSet(), hasLength(20));
+    expect(manifest.fixtures.map((fixture) => fixture.id), hasLength(21));
+    expect(manifest.fixtures.map((fixture) => fixture.id).toSet(), hasLength(21));
     expect(
       manifest.fixtures.map((fixture) => fixture.id),
       containsAll([
@@ -20,6 +20,7 @@ void main() {
         'git-special-commits',
         'git-special-commits-tb',
         'git-special-commits-bt',
+        'tree-highlighted-styles',
         'tree-unicode-invalid-icon',
         'wardley-strategies',
       ]),
@@ -140,6 +141,17 @@ void main() {
     );
 
     expect(SvgComparison.compare(elementOpacity, channelOpacity).samePaint, isTrue);
+  });
+
+  test('normalizes rgba alpha to equivalent channel opacity', () {
+    final rgba = SvgSnapshot.fromSvg(
+      '<svg><rect fill="rgba(255, 193, 7, 0.15)" stroke="#ffc107" width="10" height="10"/></svg>',
+    );
+    final channelOpacity = SvgSnapshot.fromSvg(
+      '<svg><rect fill="#ffc107" fill-opacity=".15" stroke="#ffc107" width="10" height="10"/></svg>',
+    );
+
+    expect(SvgComparison.compare(rgba, channelOpacity).samePaint, isTrue);
   });
 
   test('ignores opacity on disabled paint channels', () {
