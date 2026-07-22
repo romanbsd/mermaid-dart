@@ -148,7 +148,7 @@ int firstNonWhitespaceOffset(String source) => RegExp(r'\S').firstMatch(source)?
 String hideIgnoredSyntax(String source) {
   var result = source;
   for (final expression in [
-    RegExp(r'---[\t ]*\r?\n(?:[\s\S]*?\r?\n)?---(?:\r?\n|(?!\S))'),
+    RegExp(r'^[\t ]*(?:\r?\n[\t ]*)*---[\t ]*\r?\n(?:[\s\S]*?\r?\n)?---(?:\r?\n|(?!\S))'),
     RegExp(r'[\t ]*%%\{[\s\S]*?\}%%(?:\r?\n|(?!\S))'),
     RegExp(r'[\t ]*%%[^\n\r]*'),
   ]) {

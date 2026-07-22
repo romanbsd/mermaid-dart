@@ -29,4 +29,20 @@ void main() {
       );
     });
   });
+
+  group('ignored common syntax', () {
+    test('only hides frontmatter at the start of the document', () {
+      const bodyBlock = 'info\n---\nbody\n---\n';
+
+      expect(hideIgnoredSyntax(bodyBlock), bodyBlock);
+    });
+
+    test('continues to hide leading frontmatter after blank lines', () {
+      const source = '\n---\ntitle: Frontmatter\n---\ninfo\n';
+      final hidden = hideIgnoredSyntax(source);
+
+      expect(hidden.length, source.length);
+      expect(hidden, '\n   \n                  \n   \ninfo\n');
+    });
+  });
 }

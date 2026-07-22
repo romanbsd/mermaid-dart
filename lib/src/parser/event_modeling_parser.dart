@@ -246,11 +246,44 @@ final class _EventModelScanner {
     if (delimiter != '{' && delimiter != '"' && delimiter != "'") return null;
     final newline = text.indexOf('\n', index);
     final lineEnd = newline < 0 ? text.length : newline;
-    final closing = text.lastIndexOf(delimiter == '{' ? '}' : delimiter, lineEnd - 1);
-    if (closing <= index) fail('Unterminated inline data');
+    final closing = delimiter == '{' ? _findMatchingBrace(lineEnd) : _findMatchingQuote(delimiter, lineEnd);
+    if (closing < 0) fail('Unterminated inline data');
     final value = text.substring(index, closing + 1);
     index = closing + 1;
     return value;
+  }
+
+  int _findMatchingQuote(String delimiter, int lineEnd) {
+    for (var cursor = index + 1; cursor < lineEnd; cursor++) {
+      if (text[cursor] == '\\') {
+        cursor++;
+      } else if (text[cursor] == delimiter) {
+        return cursor;
+      }
+    }
+    return -1;
+  }
+
+  int _findMatchingBrace(int lineEnd) {
+    var depth = 0;
+    String? quote;
+    for (var cursor = index; cursor < lineEnd; cursor++) {
+      final character = text[cursor];
+      if (quote case final delimiter?) {
+        if (character == '\\') {
+          cursor++;
+        } else if (character == delimiter) {
+          quote = null;
+        }
+      } else if (character == '"' || character == "'") {
+        quote = character;
+      } else if (character == '{') {
+        depth++;
+      } else if (character == '}' && --depth == 0) {
+        return cursor;
+      }
+    }
+    return -1;
   }
 
   String takeDataBlock() {

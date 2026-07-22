@@ -126,6 +126,30 @@ tf 01 event Started
       expect(ast.frames, hasLength(1));
     });
 
+    test('stops inline data at its matching delimiter', () {
+      final ast =
+          parse(DiagramType.eventModeling, '''eventmodeling
+tf 01 evt Quoted "a" // later "quote"
+tf 02 evt Json {"nested": {"value": "}"}} // later }
+''')
+              as EventModelingAst;
+
+      expect(ast.frames, [
+        const EventModelTimeFrameAst(
+          name: '01',
+          entityType: EventModelEntityType.event,
+          entityIdentifier: 'Quoted',
+          dataInlineValue: '"a"',
+        ),
+        const EventModelTimeFrameAst(
+          name: '02',
+          entityType: EventModelEntityType.event,
+          entityIdentifier: 'Json',
+          dataInlineValue: '{"nested": {"value": "}"}}',
+        ),
+      ]);
+    });
+
     test('rejects invalid frame identifiers and data types', () {
       expect(
         () => parse(DiagramType.eventModeling, 'eventmodeling\ntf 1234 evt Started\n'),
