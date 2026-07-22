@@ -125,6 +125,46 @@ final class TreemapRenderOptions extends DiagramRenderOptions {
   final TreemapValueFormat valueFormat;
 }
 
+final class WardleyRenderOptions extends DiagramRenderOptions {
+  const WardleyRenderOptions({
+    this.width = 900,
+    this.height = 600,
+    this.padding = 48,
+    this.nodeRadius = 6,
+    this.nodeLabelOffset = 8,
+    this.axisFontSize = 12,
+    this.labelFontSize = 10,
+    this.showGrid = false,
+    this.backgroundColor = const Color(255, 255, 255),
+    this.axisColor = const Color(0, 0, 0),
+    this.axisTextColor = const Color(34, 34, 34),
+    this.gridColor = const Color(100, 100, 100, 51),
+    this.componentFill = const Color(255, 255, 255),
+    this.componentStroke = const Color(0, 0, 0),
+    this.componentLabelColor = const Color(34, 34, 34),
+    this.linkStroke = const Color(0, 0, 0),
+    this.evolutionStroke = const Color(220, 53, 69),
+  });
+
+  final double width;
+  final double height;
+  final double padding;
+  final double nodeRadius;
+  final double nodeLabelOffset;
+  final double axisFontSize;
+  final double labelFontSize;
+  final bool showGrid;
+  final Color backgroundColor;
+  final Color axisColor;
+  final Color axisTextColor;
+  final Color gridColor;
+  final Color componentFill;
+  final Color componentStroke;
+  final Color componentLabelColor;
+  final Color linkStroke;
+  final Color evolutionStroke;
+}
+
 final class RailroadRenderOptions extends DiagramRenderOptions {
   const RailroadRenderOptions({
     this.compactMode = false,
@@ -232,6 +272,7 @@ final class RenderOptions {
     this.railroad = const RailroadRenderOptions(),
     this.treeView = const TreeViewRenderOptions(),
     this.treemap = const TreemapRenderOptions(),
+    this.wardley = const WardleyRenderOptions(),
     this.diagram = const <Type, DiagramRenderOptions>{},
   });
 
@@ -246,6 +287,7 @@ final class RenderOptions {
   final RailroadRenderOptions railroad;
   final TreeViewRenderOptions treeView;
   final TreemapRenderOptions treemap;
+  final WardleyRenderOptions wardley;
 
   /// Additional typed options for renderer families added after this API.
   final Map<Type, DiagramRenderOptions> diagram;
@@ -263,6 +305,7 @@ final class RenderOptions {
           RailroadRenderOptions() => railroad,
           TreeViewRenderOptions() => treeView,
           TreemapRenderOptions() => treemap,
+          WardleyRenderOptions() => wardley,
         }
         as T;
   }

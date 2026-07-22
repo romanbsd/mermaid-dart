@@ -622,6 +622,154 @@ void main() {
       expect(scene.bounds.height, 700);
       expect(title.position, const Point(350, 0));
     });
+
+    test('wardley projects coordinates inside padded axes and renders map semantics', () {
+      final scene = layoutDiagram(
+        const WardleyAst(
+          title: 'Operating model',
+          evolutionStages: [
+            WardleyEvolutionStageAst(name: 'Genesis', boundary: .4),
+            WardleyEvolutionStageAst(name: 'Product', boundary: 1),
+          ],
+          anchors: [WardleyAnchorAst(name: 'User', position: WardleyPositionAst(x: 10, y: 90))],
+          components: [
+            WardleyComponentAst(
+              name: 'API',
+              position: WardleyPositionAst(x: 50, y: 60),
+              label: WardleyLabelAst(offsetX: -20, offsetY: 15),
+              strategy: WardleyStrategy.build,
+              inertia: true,
+            ),
+            WardleyComponentAst(
+              name: 'Database',
+              position: WardleyPositionAst(x: 80, y: 30),
+              strategy: WardleyStrategy.buy,
+            ),
+          ],
+          links: [
+            WardleyLinkAst(
+              from: 'API',
+              to: 'Database',
+              style: WardleyLinkStyle.dashed,
+              flow: WardleyLinkFlow.bidirectional,
+              label: 'depends',
+            ),
+          ],
+          evolves: [WardleyEvolveAst(component: 'API', target: 90)],
+          notes: [WardleyNoteAst(text: 'Watch this', position: WardleyPositionAst(x: 20, y: 80))],
+          annotationsBox: WardleyPositionAst(x: 65, y: 85),
+          annotations: [WardleyAnnotationAst(number: 1, position: WardleyPositionAst(x: 70, y: 50), text: 'Critical')],
+          markers: [
+            WardleyAcceleratorAst(name: 'Cloud', position: WardleyPositionAst(x: 15, y: 75)),
+            WardleyDeacceleratorAst(name: 'Legacy', position: WardleyPositionAst(x: 60, y: 20)),
+          ],
+        ),
+        textMeasurer: measurer,
+        options: const RenderOptions(
+          padding: 0,
+          wardley: WardleyRenderOptions(width: 500, height: 400, padding: 40, nodeRadius: 5, showGrid: true),
+        ),
+      );
+      final elements = _flatten(scene.elements).toList();
+      final nodes = elements
+          .whereType<SceneCircle>()
+          .where((element) => element.cssClasses.contains('wardley-component'))
+          .toList();
+      final axes = elements
+          .whereType<SceneLine>()
+          .where((element) => element.cssClasses.contains('wardley-axis'))
+          .toList();
+      final componentLabels = elements
+          .whereType<SceneText>()
+          .where((element) => element.cssClasses.contains('wardley-node-label'))
+          .toList();
+
+      expect(scene.bounds, const Bounds(left: 0, top: 0, width: 500, height: 400));
+      expect(axes.map((axis) => (axis.start, axis.end)), [
+        (const Point(40, 360), const Point(460, 360)),
+        (const Point(40, 40), const Point(40, 360)),
+      ]);
+      expect(nodes.map((node) => node.center), [const Point(250, 168), const Point(376, 264)]);
+      expect(componentLabels.singleWhere((label) => label.text == 'API').position, const Point(230, 183));
+      expect(
+        elements.whereType<SceneLine>().where((element) => element.cssClasses.contains('wardley-grid-line')),
+        hasLength(6),
+      );
+      expect(
+        elements
+            .whereType<SceneLine>()
+            .singleWhere((element) => element.cssClasses.contains('wardley-stage-boundary'))
+            .start
+            .x,
+        208,
+      );
+      expect(
+        elements.whereType<ScenePath>().where((element) => element.cssClasses.contains('wardley-link')),
+        hasLength(1),
+      );
+      expect(
+        elements.whereType<ScenePolygon>().where((element) => element.cssClasses.contains('wardley-link-arrow')),
+        hasLength(2),
+      );
+      expect(
+        elements.whereType<ScenePath>().where((element) => element.cssClasses.contains('wardley-trend')),
+        hasLength(1),
+      );
+      expect(
+        elements.whereType<ScenePath>().where((element) => element.cssClasses.contains('wardley-marker')),
+        hasLength(2),
+      );
+      expect(
+        elements.whereType<SceneText>().singleWhere((element) => element.text == 'Watch this').position,
+        const Point(124, 104),
+      );
+      expect(
+        elements.whereType<SceneText>().singleWhere((element) => element.cssClasses.contains('wardley-title')).position,
+        const Point(250, 20),
+      );
+      expectSvgGolden('wardley_semantics', renderSvg(scene));
+    });
+
+    test('wardley pipelines position their parent and filter child-to-parent links', () {
+      final scene = layoutDiagram(
+        const WardleyAst(
+          components: [WardleyComponentAst(name: 'Platform', position: WardleyPositionAst(x: 50, y: 50))],
+          pipelines: [
+            WardleyPipelineAst(
+              parent: 'Platform',
+              components: [
+                WardleyPipelineComponentAst(name: 'Queue', evolution: 30),
+                WardleyPipelineComponentAst(name: 'Store', evolution: 70),
+              ],
+            ),
+          ],
+          links: [WardleyLinkAst(from: 'Queue', to: 'Platform', style: WardleyLinkStyle.solid)],
+        ),
+        textMeasurer: measurer,
+        options: const RenderOptions(padding: 0),
+      );
+      final elements = _flatten(scene.elements).toList();
+      final pipelineBox = elements.whereType<SceneRect>().singleWhere(
+        (element) => element.cssClasses.contains('wardley-pipeline-box'),
+      );
+      final parent = elements.whereType<SceneRect>().singleWhere(
+        (element) => element.cssClasses.contains('wardley-pipeline-parent'),
+      );
+
+      expect(pipelineBox.bounds.left, closeTo(274.2, 1e-9));
+      expect(pipelineBox.bounds.top, 288);
+      expect(pipelineBox.bounds.width, closeTo(351.6, 1e-9));
+      expect(pipelineBox.bounds.height, 24);
+      expect(parent.bounds.center.x, 450);
+      expect(parent.bounds.center.y, closeTo(286.4, 1e-9));
+      expect(
+        elements.whereType<SceneLine>().where(
+          (element) => element.cssClasses.contains('wardley-pipeline-evolution-link'),
+        ),
+        hasLength(1),
+      );
+      expect(elements.whereType<ScenePath>().where((element) => element.cssClasses.contains('wardley-link')), isEmpty);
+    });
   });
 }
 
