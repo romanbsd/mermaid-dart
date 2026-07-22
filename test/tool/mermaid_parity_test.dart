@@ -11,14 +11,15 @@ void main() {
     final manifest = ParityManifest.load(File('tool/mermaid_parity/fixtures.json'));
 
     expect(manifest.mermaidVersion, '11.16.0');
-    expect(manifest.fixtures.map((fixture) => fixture.id), hasLength(37));
-    expect(manifest.fixtures.map((fixture) => fixture.id).toSet(), hasLength(37));
+    expect(manifest.fixtures.map((fixture) => fixture.id), hasLength(38));
+    expect(manifest.fixtures.map((fixture) => fixture.id).toSet(), hasLength(38));
     expect(
       manifest.fixtures.map((fixture) => fixture.id),
       containsAll([
         'architecture-nested-routing',
         'architecture-fallback-icon',
         'architecture-title-accessibility',
+        'architecture-seed-42',
         'architecture-align-row',
         'architecture-align-column',
         'architecture-junction-group-edge',
@@ -46,6 +47,8 @@ void main() {
     expect(railroad.textMeasurements['rule ='], const Size(41.625, 19));
     final stretched = manifest.fixtures.singleWhere((fixture) => fixture.id == 'architecture-edge-length-3');
     expect(stretched.renderOptions.architecture.idealEdgeLengthMultiplier, 3);
+    final seeded = manifest.fixtures.singleWhere((fixture) => fixture.id == 'architecture-seed-42');
+    expect(seeded.renderOptions.architecture.seed, 42);
     expect(
       manifest.fixtures.map((fixture) => fixture.type.name).toSet(),
       containsAll({
@@ -461,6 +464,15 @@ void main() {
 
     expect(() => ParityFixture.fromJson(fixture('architecture', 0)), throwsFormatException);
     expect(() => ParityFixture.fromJson(fixture('info', 3)), throwsFormatException);
+    expect(
+      () => ParityFixture.fromJson({
+        'id': 'configured',
+        'type': 'architecture',
+        'source': 'architecture-beta',
+        'architectureOptions': {'edgeElasticity': 1.1},
+      }),
+      throwsFormatException,
+    );
   });
 
   test('fixture text measurer uses exact entries and deterministic fallback', () {

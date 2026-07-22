@@ -20,6 +20,12 @@
       "source": "architecture-beta\n  title Simple Architecture Diagram\n  accTitle: Accessibility Title\n  accDescr: Accessibility Description\n  group api(cloud)[API]\n\n  service db(database)[Database] in api\n  service disk1(disk)[Storage] in api\n  service disk2(disk)[Storage] in api\n  service server(server)[Server] in api\n\n  db:L -- R:server\n  disk1:T -- B:server\n  disk2:T -- B:db\n"
     },
     {
+      "id": "architecture-seed-42",
+      "type": "architecture",
+      "source": "architecture-beta\ngroup sub1(cloud)[Subscription A]\ngroup vnet1(cloud)[VNet A] in sub1\nservice vm1(server)[VM] in vnet1\ngroup sub2(cloud)[Subscription B]\nservice web(server)[Web App] in sub2\nservice db(database)[Registry] in sub2\nvm1:R --> L:web\nweb:R --> L:db\n",
+      "architectureOptions": { "seed": 42 }
+    },
+    {
       "id": "architecture-nested-routing",
       "type": "architecture",
       "source": "architecture-beta\ngroup api[API]\ngroup public[Public API] in api\ngroup private[Private API] in api\nservice serv1(server)[Server] in public\nservice serv2(server)[Server] in private\nservice db(database)[Database] in private\nservice gateway(internet)[Gateway] in api\nserv1:B -- T:serv2\nserv2:L -- R:db\nserv1:L -- R:gateway\n"

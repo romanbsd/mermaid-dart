@@ -134,13 +134,9 @@ Future<void> main(List<String> arguments) async {
 }
 
 File? _writeMermaidConfig(Directory output, ParityFixture fixture) {
-  final multiplier = fixture.architectureIdealEdgeLengthMultiplier;
-  if (multiplier == null) return null;
-  return File('${output.path}/${fixture.id}.config.json')..writeAsStringSync(
-    const JsonEncoder.withIndent(' ').convert({
-      'architecture': {'idealEdgeLengthMultiplier': multiplier},
-    }),
-  );
+  if (fixture.architectureConfig.isEmpty) return null;
+  return File('${output.path}/${fixture.id}.config.json')
+    ..writeAsStringSync(const JsonEncoder.withIndent(' ').convert({'architecture': fixture.architectureConfig}));
 }
 
 File? _writePuppeteerConfig(Directory output) {

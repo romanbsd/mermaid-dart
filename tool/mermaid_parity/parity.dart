@@ -36,7 +36,7 @@ final class ParityFixture {
     required this.type,
     required this.source,
     this.textMeasurements = const {},
-    this.architectureIdealEdgeLengthMultiplier,
+    this.architectureConfig = const {},
   });
 
   factory ParityFixture.fromJson(Object? json) {
@@ -49,12 +49,8 @@ final class ParityFixture {
         },
         _ => throw const FormatException('Invalid fixture textMeasurements'),
       };
-      final architectureIdealEdgeLengthMultiplier = switch (json['architectureOptions']) {
-        null => null,
-        {'idealEdgeLengthMultiplier': final num multiplier} when multiplier > 0 => multiplier.toDouble(),
-        _ => throw const FormatException('Invalid fixture architectureOptions'),
-      };
-      if (architectureIdealEdgeLengthMultiplier != null && DiagramType.fromWireName(type) != DiagramType.architecture) {
+      final architectureConfig = _architectureConfig(json['architectureOptions']);
+      if (json['architectureOptions'] != null && DiagramType.fromWireName(type) != DiagramType.architecture) {
         throw const FormatException('architectureOptions require an architecture fixture');
       }
       return ParityFixture(
@@ -62,7 +58,7 @@ final class ParityFixture {
         type: DiagramType.fromWireName(type),
         source: source,
         textMeasurements: textMeasurements,
-        architectureIdealEdgeLengthMultiplier: architectureIdealEdgeLengthMultiplier,
+        architectureConfig: architectureConfig,
       );
     }
     throw const FormatException('Invalid parity fixture');
@@ -72,17 +68,47 @@ final class ParityFixture {
   final DiagramType type;
   final String source;
   final Map<String, Size> textMeasurements;
-  final double? architectureIdealEdgeLengthMultiplier;
+  final Map<String, Object> architectureConfig;
 
   TextMeasurer get textMeasurer => _FixtureTextMeasurer(textMeasurements);
 
-  RenderOptions get renderOptions => RenderOptions(
-    padding: 0,
-    architecture: ArchitectureRenderOptions(
-      idealEdgeLengthMultiplier:
-          architectureIdealEdgeLengthMultiplier ?? const ArchitectureRenderOptions().idealEdgeLengthMultiplier,
-    ),
-  );
+  RenderOptions get renderOptions {
+    const defaults = ArchitectureRenderOptions();
+    return RenderOptions(
+      padding: 0,
+      architecture: ArchitectureRenderOptions(
+        randomize: architectureConfig['randomize'] as bool? ?? defaults.randomize,
+        idealEdgeLengthMultiplier:
+            (architectureConfig['idealEdgeLengthMultiplier'] as num?)?.toDouble() ?? defaults.idealEdgeLengthMultiplier,
+        edgeElasticity: (architectureConfig['edgeElasticity'] as num?)?.toDouble() ?? defaults.edgeElasticity,
+        numIter: architectureConfig['numIter'] as int? ?? defaults.numIter,
+        seed: architectureConfig['seed'] as int? ?? defaults.seed,
+      ),
+    );
+  }
+}
+
+const _architectureConfigKeys = {'randomize', 'idealEdgeLengthMultiplier', 'edgeElasticity', 'numIter', 'seed'};
+
+Map<String, Object> _architectureConfig(Object? value) {
+  if (value == null) return const {};
+  if (value is! Map<String, Object?> || value.keys.any((key) => !_architectureConfigKeys.contains(key))) {
+    throw const FormatException('Invalid fixture architectureOptions');
+  }
+  final result = <String, Object>{};
+  for (final MapEntry(:key, :value) in value.entries) {
+    final valid = switch ((key, value)) {
+      ('randomize', final bool option) => option,
+      ('idealEdgeLengthMultiplier', final num option) when option > 0 => option,
+      ('edgeElasticity', final num option) when option >= 0 && option <= 1 => option,
+      ('numIter', final int option) when option > 0 => option,
+      ('seed', final int option) => option,
+      _ => null,
+    };
+    if (valid == null) throw const FormatException('Invalid fixture architectureOptions');
+    result[key] = valid;
+  }
+  return Map.unmodifiable(result);
 }
 
 Size _textMeasurement(Object? json) {

@@ -82,8 +82,12 @@ final class ArchitectureRenderOptions extends DiagramRenderOptions {
     this.padding = 40,
     this.iconSize = 80,
     this.fontSize = 16,
+    this.randomize = false,
     this.nodeSeparation = 75,
     this.idealEdgeLengthMultiplier = 1.5,
+    this.edgeElasticity = 0.45,
+    this.numIter = 2500,
+    this.seed = 1,
     this.groupBorderColor = const Color(199, 199, 241),
     this.edgeColor = const Color(51, 51, 51),
   });
@@ -91,8 +95,22 @@ final class ArchitectureRenderOptions extends DiagramRenderOptions {
   final double padding;
   final double iconSize;
   final double fontSize;
+
+  /// Whether fCoSE-compatible layouts randomize their initial node positions.
+  final bool randomize;
+
   final double nodeSeparation;
   final double idealEdgeLengthMultiplier;
+
+  /// Spring elasticity for edges whose endpoints share a compound group.
+  final double edgeElasticity;
+
+  /// Maximum proof-layout solver iterations.
+  final int numIter;
+
+  /// Reproducible layout seed. Mermaid reserves zero for native randomness.
+  final int seed;
+
   final Color groupBorderColor;
   final Color edgeColor;
 }

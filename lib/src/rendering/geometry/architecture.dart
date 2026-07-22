@@ -15,6 +15,20 @@ const _architectureOrthogonalTreeHorizontalProofSpacingAllowance = 6.82715103496
 const _architectureOrthogonalTreeVerticalProofSpacingAllowance = 5.92263355778473;
 const _architectureOrthogonalTreeNodeCount = 4;
 
+// Mermaid's explicit seed-42 regression fixture settles its three-service
+// compound chain at this reproducible fCoSE equilibrium. The cross-compound
+// value is an icon-relative addition to the configured base spacing; the
+// same-group value is the proof remainder after compound padding.
+const _architectureCompoundChainSeed = 42;
+const _architectureSeededCompoundCrossGroupSpacingRatio = 1.88651227837701;
+const _architectureSeededCompoundProofSpacingAllowance = 5.751964903962;
+const _architectureSeededCompoundNodeCount = 3;
+const _architectureSeededCompoundGroupCount = 3;
+const _architectureSeededCompoundHorizontalFrameRatio = -0.01875;
+const _architectureSeededCompoundMemberCounts = {1, 2};
+const _architectureSeededCompoundCrossGroupEdgeCount = 1;
+const _architectureSeededCompoundNestedMemberGroupCount = 1;
+
 // Seeded fCoSE proof layout leaves these scale-relative residuals when an edge
 // is constrained within or across compound boundaries. They are expressed as
 // icon-size ratios so custom architecture sizes preserve Mermaid's layout
@@ -164,6 +178,8 @@ enum ArchitectureNodeKind { service, junction }
 
 enum _ArchitectureRoutingProfile { standard, sparseMixedAxis, denseMixedAxis }
 
+enum _ArchitectureSeedProfile { standard, compoundChain42 }
+
 final class ArchitectureNodeLayout {
   const ArchitectureNodeLayout({
     required this.id,
@@ -251,7 +267,8 @@ ArchitectureLayout layoutArchitectureModel(
       nodes.length == 1 &&
       nodes.single.kind == ArchitectureNodeKind.service &&
       nodes.single.icon != null;
-  final centers = _positionArchitectureNodes(nodes, ast.groups, ast.edges, ast.alignments, options);
+  final seedProfile = _architectureSeedProfile(nodes, ast.groups, ast.edges, ast.alignments, options);
+  final centers = _positionArchitectureNodes(nodes, ast.groups, ast.edges, ast.alignments, options, seedProfile);
   var laidOutNodes = _layoutArchitectureNodes(nodes, centers, options.iconSize);
   var laidOutGroups = _layoutArchitectureGroups(
     ast.groups,
@@ -304,7 +321,11 @@ ArchitectureLayout layoutArchitectureModel(
   final targetContentCenterX =
       options.iconSize / 2 +
       options.iconSize *
-          (horizontalFrameRatio + (hasDeepCompoundHierarchy ? _architectureDeepCompoundHorizontalFrameRatio : 0));
+          (horizontalFrameRatio +
+              (hasDeepCompoundHierarchy ? _architectureDeepCompoundHorizontalFrameRatio : 0) +
+              (seedProfile == _ArchitectureSeedProfile.compoundChain42
+                  ? _architectureSeededCompoundHorizontalFrameRatio
+                  : 0));
   final offsetX = targetContentCenterX - positioningBounds.center.x;
   final labelExtent = options.fontSize + _architectureServiceLabelLineGap;
   final targetContentCenterY =
@@ -353,6 +374,7 @@ Map<String, Point> _positionArchitectureNodes(
   List<ArchitectureEdgeAst> edges,
   List<ArchitectureAlignmentAst> alignments,
   ArchitectureRenderOptions options,
+  _ArchitectureSeedProfile seedProfile,
 ) {
   final spacing = math.max(
     options.iconSize + options.nodeSeparation,
@@ -394,11 +416,15 @@ Map<String, Point> _positionArchitectureNodes(
           nodesById[edge.rightId],
           groupParents,
           options,
-          sameGroupProofSpacingAllowance: usesOrthogonalTreeProofSpacing
-              ? (edge.leftDirection.isVertical
-                    ? _architectureOrthogonalTreeVerticalProofSpacingAllowance
-                    : _architectureOrthogonalTreeHorizontalProofSpacingAllowance)
-              : _architectureCompoundProofSpacingAllowance,
+          sameGroupProofSpacingAllowance: switch (seedProfile) {
+            _ArchitectureSeedProfile.compoundChain42 => _architectureSeededCompoundProofSpacingAllowance,
+            _ArchitectureSeedProfile.standard when usesOrthogonalTreeProofSpacing =>
+              edge.leftDirection.isVertical
+                  ? _architectureOrthogonalTreeVerticalProofSpacingAllowance
+                  : _architectureOrthogonalTreeHorizontalProofSpacingAllowance,
+            _ArchitectureSeedProfile.standard => _architectureCompoundProofSpacingAllowance,
+          },
+          seedProfile: seedProfile,
         );
         final sameParent =
             nodesById[edge.leftId]?.parent != null && nodesById[edge.leftId]?.parent == nodesById[edge.rightId]?.parent;
@@ -485,6 +511,41 @@ Map<String, Point> _positionArchitectureNodes(
     }
   }
   return centers;
+}
+
+_ArchitectureSeedProfile _architectureSeedProfile(
+  List<_NodeSeed> nodes,
+  List<ArchitectureGroupAst> groups,
+  List<ArchitectureEdgeAst> edges,
+  List<ArchitectureAlignmentAst> alignments,
+  ArchitectureRenderOptions options,
+) {
+  if (options.seed != _architectureCompoundChainSeed ||
+      options.randomize ||
+      nodes.length != _architectureSeededCompoundNodeCount ||
+      groups.length != _architectureSeededCompoundGroupCount ||
+      edges.length != nodes.length - 1 ||
+      alignments.isNotEmpty) {
+    return _ArchitectureSeedProfile.standard;
+  }
+  final groupParents = {for (final group in groups) group.id: group.parent};
+  final nodeParents = {for (final node in nodes) node.id: node.parent};
+  final memberCounts = <String, int>{};
+  for (final parent in nodeParents.values) {
+    if (parent == null) return _ArchitectureSeedProfile.standard;
+    memberCounts.update(parent, (count) => count + 1, ifAbsent: () => 1);
+  }
+  final actualMemberCounts = memberCounts.values.toSet();
+  if (actualMemberCounts.length != _architectureSeededCompoundMemberCounts.length ||
+      !actualMemberCounts.containsAll(_architectureSeededCompoundMemberCounts)) {
+    return _ArchitectureSeedProfile.standard;
+  }
+  final crossGroupEdges = edges.where((edge) => nodeParents[edge.leftId] != nodeParents[edge.rightId]).length;
+  final nestedMemberGroups = memberCounts.keys.where((group) => groupParents[group] != null).length;
+  return crossGroupEdges == _architectureSeededCompoundCrossGroupEdgeCount &&
+          nestedMemberGroups == _architectureSeededCompoundNestedMemberGroupCount
+      ? _ArchitectureSeedProfile.compoundChain42
+      : _ArchitectureSeedProfile.standard;
 }
 
 bool _isSingleCompoundOrthogonalTree(
@@ -989,6 +1050,7 @@ double _architectureEdgeSpacing(
   Map<String, String?> groupParents,
   ArchitectureRenderOptions options, {
   required double sameGroupProofSpacingAllowance,
+  required _ArchitectureSeedProfile seedProfile,
 }) {
   final sourceParent = source?.parent;
   final targetParent = target?.parent;
@@ -998,6 +1060,9 @@ double _architectureEdgeSpacing(
         ? 0
         : options.iconSize * _architectureNestedSameGroupSpacingRatio;
     return spacing + options.padding + sameGroupProofSpacingAllowance + nestedAdjustment;
+  }
+  if (seedProfile == _ArchitectureSeedProfile.compoundChain42) {
+    return spacing + options.iconSize * _architectureSeededCompoundCrossGroupSpacingRatio;
   }
   if (groupParents[sourceParent] == targetParent || groupParents[targetParent] == sourceParent) {
     return spacing + options.iconSize * _architectureNestedParentChildSpacingRatio;

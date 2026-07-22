@@ -4,6 +4,38 @@ import 'package:xml/xml.dart';
 
 void main() {
   group('geometry-first rendering', () {
+    test('architecture options expose Mermaid layout defaults', () {
+      const options = ArchitectureRenderOptions();
+
+      expect(options.randomize, isFalse);
+      expect(options.edgeElasticity, 0.45);
+      expect(options.numIter, 2500);
+      expect(options.seed, 1);
+    });
+
+    test('architecture seed overrides select a reproducible layout variant', () {
+      const source = '''architecture-beta
+group sub1(cloud)[Subscription A]
+group vnet1(cloud)[VNet A] in sub1
+service vm1(server)[VM] in vnet1
+group sub2(cloud)[Subscription B]
+service web(server)[Web App] in sub2
+service db(database)[Registry] in sub2
+vm1:R --> L:web
+web:R --> L:db
+''';
+      final ast = parse(DiagramType.architecture, source);
+      const seededOptions = RenderOptions(architecture: ArchitectureRenderOptions(seed: 42));
+      final first = layoutDiagram(ast, options: seededOptions);
+      final second = layoutDiagram(ast, options: seededOptions);
+      final defaultSeed = layoutDiagram(ast);
+
+      expect(first.viewport, second.viewport);
+      expect(first.elements, second.elements);
+      expect(first.bounds, isNot(defaultSeed.bounds));
+      expect(first.bounds.width, closeTo(713.1729471741228, 1e-9));
+    });
+
     test('geometry primitives translate and create centered bounds', () {
       expect(const Point(2, 3).translated(4, -1), const Point(6, 2));
       expect(
