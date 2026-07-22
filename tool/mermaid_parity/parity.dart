@@ -89,6 +89,7 @@ final class SvgSnapshot {
   });
 
   factory SvgSnapshot.fromSvg(String svg) {
+    final sourceDocument = XmlDocument.parse(svg);
     final canonicalSvg = canonicalizeSvgForComparison(svg);
     final document = XmlDocument.parse(canonicalSvg);
     const elementNames = {'circle', 'ellipse', 'line', 'path', 'polygon', 'polyline', 'rect', 'text'};
@@ -101,7 +102,10 @@ final class SvgSnapshot {
     );
     return SvgSnapshot._(
       canonicalSvg: canonicalSvg,
-      viewBox: _normalizedNumberList(document.rootElement.getAttribute('viewBox')),
+      // Read the viewport from the source document. Canonical SVG intentionally
+      // rounds attributes for stable structural output, which would otherwise
+      // introduce a second rounding step before visual comparison.
+      viewBox: _normalizedNumberList(sourceDocument.rootElement.getAttribute('viewBox')),
       text: [for (final element in textElements) _normalizedVisibleText(element)]..sort(),
       elementCounts: {
         for (final name in elementNames)
@@ -234,12 +238,14 @@ String _paintSignature(XmlElement element, String transform, String styleSheets)
         styleSheets,
       ),
   };
+  final fillOpacity = _effectiveChannelOpacity(element, 'fill-opacity', styleSheets);
+  final strokeOpacity = _effectiveChannelOpacity(element, 'stroke-opacity', styleSheets);
+  if (fillOpacity == '0') normalized['fill'] = 'none';
+  if (strokeOpacity == '0') normalized['stroke'] = 'none';
   final values = <String>[
     for (final MapEntry(:key, :value) in normalized.entries) '$key=$value',
-    if (normalized['fill'] != null && normalized['fill'] != 'none')
-      'fill-opacity=${_effectiveChannelOpacity(element, 'fill-opacity', styleSheets)}',
-    if (normalized['stroke'] != 'none')
-      'stroke-opacity=${_effectiveChannelOpacity(element, 'stroke-opacity', styleSheets)}',
+    if (normalized['fill'] != null && normalized['fill'] != 'none') 'fill-opacity=$fillOpacity',
+    if (normalized['stroke'] != 'none') 'stroke-opacity=$strokeOpacity',
   ];
   return '$geometry|${values.join('|')}';
 }

@@ -10,11 +10,15 @@ import '../scene.dart';
 const _architectureCompoundProofSpacingAllowance = 5.68656576118505;
 
 // Seeded fCoSE proof layout leaves these scale-relative residuals when an edge
-// crosses nested compound boundaries. They are expressed as icon-size ratios
-// so custom architecture sizes preserve Mermaid's layout proportions.
+// is constrained within or across compound boundaries. They are expressed as
+// icon-size ratios so custom architecture sizes preserve Mermaid's layout
+// proportions.
 const _architectureNestedSameGroupSpacingRatio = 0.007624642307904625;
 const _architectureNestedSiblingGroupSpacingRatio = 1.2521559071984768;
 const _architectureNestedParentChildSpacingRatio = 0.8456279412989119;
+const _architectureTopLevelSiblingGroupSpacingRatio = 1.8162155093693997;
+const _architectureHorizontalJunctionSpacingRatio = 0.00563391197044325;
+const _architectureVerticalJunctionSpacingRatio = 0.001489728721259098;
 
 // Proof-quality fCoSE slightly relaxes declared alignment gaps and the
 // orthogonal fan-in distance. The seeded residuals are icon-scaled so row and
@@ -38,6 +42,8 @@ const _architectureNestedCompoundBorderAllowance = 1.5;
 
 // Cytoscape reserves four pixels between a service icon and its label line.
 const _architectureServiceLabelLineGap = 4.0;
+const _architectureGroupEndpointPaddingAllowance = 4.0;
+const _architectureGroupBottomLabelAllowance = 18.0;
 
 // Cytoscape's browser-measured ungrouped service extent includes this
 // font-relative overflow below the icon. Compound groups already account for
@@ -164,7 +170,7 @@ ArchitectureLayout layoutArchitectureModel(ArchitectureAst ast, ArchitectureRend
   return ArchitectureLayout(
     nodes: laidOutNodes,
     groups: laidOutGroups,
-    edges: _routeArchitectureEdges(ast.edges, laidOutNodes, laidOutGroups),
+    edges: _routeArchitectureEdges(ast.edges, laidOutNodes, options),
     bounds: contentBounds,
   );
 }
@@ -223,7 +229,19 @@ Map<String, Point> _positionArchitectureNodes(
           groupParents,
           options,
         );
-        final delta = _edgeDelta(edge, compoundSpacing);
+        final sameParent =
+            nodesById[edge.leftId]?.parent != null && nodesById[edge.leftId]?.parent == nodesById[edge.rightId]?.parent;
+        final includesJunction =
+            nodesById[edge.leftId]?.kind == ArchitectureNodeKind.junction ||
+            nodesById[edge.rightId]?.kind == ArchitectureNodeKind.junction;
+        final unadjustedDelta = _edgeDelta(edge, compoundSpacing);
+        final junctionAdjustment = sameParent && includesJunction
+            ? options.iconSize *
+                  (unadjustedDelta.x == 0
+                      ? _architectureVerticalJunctionSpacingRatio
+                      : _architectureHorizontalJunctionSpacingRatio)
+            : 0;
+        final delta = _edgeDelta(edge, compoundSpacing + junctionAdjustment);
         centers[nextId] = current.translated(
           relation.forward ? delta.x : -delta.x,
           relation.forward ? delta.y : -delta.y,
@@ -306,6 +324,9 @@ double _architectureEdgeSpacing(
   if (groupParents[sourceParent] != null && groupParents[sourceParent] == groupParents[targetParent]) {
     return spacing + options.iconSize * _architectureNestedSiblingGroupSpacingRatio;
   }
+  if (groupParents[sourceParent] == null && groupParents[targetParent] == null) {
+    return spacing + options.iconSize * _architectureTopLevelSiblingGroupSpacingRatio;
+  }
   return spacing;
 }
 
@@ -385,7 +406,7 @@ List<ArchitectureGroupLayout> _layoutArchitectureGroups(
       ArchitectureGroupLayout(
         id: group.id,
         bounds: boundsById[group.id] ?? const Bounds(left: 0, top: 0, width: 1, height: 1),
-        label: group.title ?? group.id,
+        label: group.title,
         icon: group.icon,
         parent: group.parent,
       ),
@@ -419,28 +440,23 @@ Bounds _architectureContentBounds(
 List<ArchitectureEdgeLayout> _routeArchitectureEdges(
   List<ArchitectureEdgeAst> edges,
   List<ArchitectureNodeLayout> nodes,
-  List<ArchitectureGroupLayout> groups,
+  ArchitectureRenderOptions options,
 ) {
   final nodesById = {for (final node in nodes) node.id: node};
-  final groupsById = {for (final group in groups) group.id: group};
   final result = <ArchitectureEdgeLayout>[];
   for (final edge in edges) {
     final source = nodesById[edge.leftId];
     final target = nodesById[edge.rightId];
     if (source == null || target == null) continue;
-    final sourceBounds = edge.leftGroup && source.parent != null
-        ? groupsById[source.parent!]?.bounds ?? source.bounds
-        : source.bounds;
-    final targetBounds = edge.rightGroup && target.parent != null
-        ? groupsById[target.parent!]?.bounds ?? target.bounds
-        : target.bounds;
-    final start = _port(source, sourceBounds, edge.leftDirection, edge.leftGroup);
-    final end = _port(target, targetBounds, edge.rightDirection, edge.rightGroup);
+    final rawStart = _nodeBoundaryPort(source, edge.leftDirection);
+    final rawEnd = _nodeBoundaryPort(target, edge.rightDirection);
+    final start = _port(source, edge.leftDirection, edge.leftGroup, options);
+    final end = _port(target, edge.rightDirection, edge.rightGroup, options);
     result.add(
       ArchitectureEdgeLayout(
         data: edge,
         start: start,
-        bend: _bend(start, end, edge.leftDirection, edge.rightDirection),
+        bend: _bend(rawStart, rawEnd, edge.leftDirection, edge.rightDirection),
         end: end,
       ),
     );
@@ -457,15 +473,28 @@ Point _edgeDelta(ArchitectureEdgeAst edge, double spacing) {
 Point _directionDelta(ArchitectureDirection direction, double distance) =>
     direction.isVertical ? Point(0, direction.axisSign * distance) : Point(direction.axisSign * distance, 0);
 
-Point _port(ArchitectureNodeLayout node, Bounds bounds, ArchitectureDirection direction, bool groupEndpoint) {
+Point _port(
+  ArchitectureNodeLayout node,
+  ArchitectureDirection direction,
+  bool groupEndpoint,
+  ArchitectureRenderOptions options,
+) {
   if (node.kind == ArchitectureNodeKind.junction && !groupEndpoint) return node.center;
-  return switch (direction) {
-    ArchitectureDirection.left => Point(bounds.left, node.center.y.clamp(bounds.top, bounds.bottom)),
-    ArchitectureDirection.right => Point(bounds.right, node.center.y.clamp(bounds.top, bounds.bottom)),
-    ArchitectureDirection.top => Point(node.center.x.clamp(bounds.left, bounds.right), bounds.top),
-    ArchitectureDirection.bottom => Point(node.center.x.clamp(bounds.left, bounds.right), bounds.bottom),
-  };
+  final nodePort = _nodeBoundaryPort(node, direction);
+  if (!groupEndpoint) return nodePort;
+  final shift =
+      options.padding +
+      _architectureGroupEndpointPaddingAllowance +
+      (direction == ArchitectureDirection.bottom ? _architectureGroupBottomLabelAllowance : 0);
+  return _directionDelta(direction, shift).translated(nodePort.x, nodePort.y);
 }
+
+Point _nodeBoundaryPort(ArchitectureNodeLayout node, ArchitectureDirection direction) => switch (direction) {
+  ArchitectureDirection.left => Point(node.bounds.left, node.center.y),
+  ArchitectureDirection.right => Point(node.bounds.right, node.center.y),
+  ArchitectureDirection.top => Point(node.center.x, node.bounds.top),
+  ArchitectureDirection.bottom => Point(node.center.x, node.bounds.bottom),
+};
 
 Point _bend(Point start, Point end, ArchitectureDirection source, ArchitectureDirection target) {
   if (source.isVertical == target.isVertical) {

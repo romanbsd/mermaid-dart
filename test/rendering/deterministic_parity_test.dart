@@ -1637,6 +1637,12 @@ void main() {
       final edge = elements.whereType<ScenePath>().singleWhere(
         (element) => element.cssClasses.contains('architecture-edge'),
       );
+      final services = elements
+          .whereType<SceneGroup>()
+          .where((element) => element.cssClasses.contains('architecture-service'))
+          .toList();
+      final api = services.singleWhere((service) => service.label == 'API').transforms.single as Translate;
+      final database = services.singleWhere((service) => service.label == 'DB').transforms.single as Translate;
       final start = (edge.commands.first as MoveTo).point;
       final end = (edge.commands.last as LineTo).point;
 
@@ -1644,8 +1650,10 @@ void main() {
       expect(system.bounds.right, greaterThanOrEqualTo(data.bounds.right));
       expect(system.bounds.top, lessThan(data.bounds.top));
       expect(system.bounds.bottom, greaterThanOrEqualTo(data.bounds.bottom));
-      expect(start.x, system.bounds.right);
-      expect(end.x, data.bounds.left);
+      expect(start.x, greaterThan(api.x));
+      expect(start.x, lessThan(system.bounds.right));
+      expect(end.x, lessThan(database.x));
+      expect(end.x, lessThan(data.bounds.left));
       expect(
         elements.whereType<SceneRect>().where((element) => element.cssClasses.contains('architecture-junction')),
         hasLength(1),

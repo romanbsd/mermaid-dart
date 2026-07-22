@@ -11,14 +11,15 @@ void main() {
     final manifest = ParityManifest.load(File('tool/mermaid_parity/fixtures.json'));
 
     expect(manifest.mermaidVersion, '11.16.0');
-    expect(manifest.fixtures.map((fixture) => fixture.id), hasLength(24));
-    expect(manifest.fixtures.map((fixture) => fixture.id).toSet(), hasLength(24));
+    expect(manifest.fixtures.map((fixture) => fixture.id), hasLength(25));
+    expect(manifest.fixtures.map((fixture) => fixture.id).toSet(), hasLength(25));
     expect(
       manifest.fixtures.map((fixture) => fixture.id),
       containsAll([
         'architecture-nested-routing',
         'architecture-align-row',
         'architecture-align-column',
+        'architecture-junction-group-edge',
         'event-modeling-unicode-multiline',
         'git-special-commits',
         'git-special-commits-tb',
@@ -401,6 +402,13 @@ void main() {
     final rotated = SvgSnapshot.fromSvg('<svg><polygon points="10,0 5,10 0,0"/></svg>');
 
     expect(SvgComparison.compare(first, rotated).sameGeometry, isTrue);
+  });
+
+  test('treats fully transparent paint as a disabled paint channel', () {
+    final none = SvgSnapshot.fromSvg('<svg><rect width="10" height="10" fill="none"/></svg>');
+    final transparent = SvgSnapshot.fromSvg('<svg><rect width="10" height="10" fill="#333" fill-opacity="0"/></svg>');
+
+    expect(SvgComparison.compare(none, transparent).samePaint, isTrue);
   });
 
   test('manifest rejects duplicate IDs', () {
