@@ -1,5 +1,18 @@
 part of '../layout.dart';
 
+// Mermaid draws architecture edges at three pixels and places arrow tips two
+// pixels inside their endpoint so the marker meets the service boundary cleanly.
+const _architectureEdgeStrokeWidth = 3.0;
+const _architectureArrowEndpointInset = 2.0;
+const _architectureGroupStrokeWidth = 2.0;
+const _architectureGroupStrokeDash = 8.0;
+
+// Mermaid's createText wrapper advances its tspan by one font-size line. Group
+// labels add the two-pixel base transform and, when an icon is present, the
+// icon/label alignment correction from svgDraw.ts.
+const _architectureGroupLabelBaseOffset = 2.0;
+const _architectureGroupIconLabelCorrection = 3.0;
+
 _LayoutResult _layoutArchitecture(ArchitectureAst ast, _LayoutContext context) {
   final config = context.options.optionsFor(const ArchitectureRenderOptions());
   final layout = layoutArchitectureModel(ast, config);
@@ -8,9 +21,15 @@ _LayoutResult _layoutArchitecture(ArchitectureAst ast, _LayoutContext context) {
     for (final edge in layout.edges) ..._architectureEdgeElements(context, config, edge),
     for (final node in layout.nodes) _architectureNodeElement(context, config, node),
   ];
-  return _LayoutResult(layout.bounds.width, layout.bounds.height, [
-    SceneGroup(id: context.id('architecture'), children: elements, cssClasses: const ['architecture']),
-  ]);
+  return _LayoutResult(
+    layout.bounds.width,
+    layout.bounds.height,
+    [
+      SceneGroup(id: context.id('architecture'), children: elements, cssClasses: const ['architecture']),
+    ],
+    bounds: layout.bounds,
+    viewportPadding: math.max(0, config.padding - context.options.padding),
+  );
 }
 
 SceneTextStyle _architectureTextStyle(_LayoutContext context, ArchitectureRenderOptions config) => SceneTextStyle(
@@ -29,8 +48,8 @@ List<SceneElement> _architectureGroupElements(
     SceneRect(
       id: context.id('architecture-group'),
       bounds: group.bounds,
-      fill: SolidFill(context.options.theme.tertiary),
-      stroke: _stroke(context),
+      fill: const NoFill(),
+      stroke: _stroke(context, width: _architectureGroupStrokeWidth, dashes: const [_architectureGroupStrokeDash]),
       role: SemanticRole.group,
       label: group.label,
       cssClasses: const ['architecture-group', 'node-bkg'],
@@ -50,7 +69,10 @@ List<SceneElement> _architectureGroupElements(
         context,
         label,
         group.bounds.left + 4 + iconSize,
-        group.bounds.top + config.fontSize / 2 + 4,
+        group.bounds.top +
+            config.fontSize +
+            _architectureGroupLabelBaseOffset +
+            (group.icon == null ? 0 : config.fontSize / 2 - _architectureGroupIconLabelCorrection),
         baseline: TextBaseline.hanging,
         style: _architectureTextStyle(context, config),
         cssClasses: const ['architecture-group-label', 'architecture-service-label'],
@@ -69,7 +91,7 @@ List<SceneElement> _architectureEdgeElements(
       id: context.id('architecture-edge'),
       commands: [MoveTo(edge.start), LineTo(edge.bend), LineTo(edge.end)],
       fill: const NoFill(),
-      stroke: _stroke(context, width: 2),
+      stroke: _stroke(context, width: _architectureEdgeStrokeWidth),
       role: SemanticRole.edge,
       label: data.title,
       cssClasses: const ['architecture-edge', 'edge'],
@@ -154,8 +176,9 @@ SceneElement _architectureNodeElement(
         context,
         label,
         0,
-        config.iconSize / 2 + config.fontSize / 2 + 2,
+        config.iconSize / 2 + config.fontSize,
         anchor: TextAnchor.middle,
+        baseline: TextBaseline.middle,
         style: _architectureTextStyle(context, config),
         cssClasses: const ['architecture-service-label'],
       ),
@@ -177,11 +200,14 @@ ScenePolygon _architectureArrow(
   ArchitectureRenderOptions config,
 ) {
   final delta = direction.axisSign.toDouble();
-  final tail = direction.isVertical ? tip.translated(0, delta) : tip.translated(delta, 0);
+  final adjustedTip = direction.isVertical
+      ? tip.translated(0, -delta * _architectureArrowEndpointInset)
+      : tip.translated(-delta * _architectureArrowEndpointInset, 0);
+  final tail = direction.isVertical ? adjustedTip.translated(0, delta) : adjustedTip.translated(delta, 0);
   final size = config.iconSize / 6;
   return _triangleArrow(
     context,
-    tip: tip,
+    tip: adjustedTip,
     tail: tail,
     length: size,
     halfWidth: size / 2,

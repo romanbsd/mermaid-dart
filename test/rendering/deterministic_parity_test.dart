@@ -1102,6 +1102,71 @@ void main() {
       );
     });
 
+    test('architecture matches Mermaid compound-group geometry', () {
+      final scene = layoutDiagram(
+        const ArchitectureAst(
+          groups: [ArchitectureGroupAst(id: 'cloud', icon: 'cloud', title: 'Cloud')],
+          services: [
+            ArchitectureServiceAst(id: 'api', icon: 'server', title: 'API', parent: 'cloud'),
+            ArchitectureServiceAst(id: 'db', icon: 'database', title: 'Database', parent: 'cloud'),
+          ],
+          edges: [
+            ArchitectureEdgeAst(
+              leftId: 'api',
+              leftDirection: ArchitectureDirection.right,
+              rightId: 'db',
+              rightDirection: ArchitectureDirection.left,
+              rightArrow: true,
+            ),
+          ],
+        ),
+        textMeasurer: measurer,
+      );
+      final elements = _flatten(scene.elements).toList();
+      final group = elements.whereType<SceneRect>().singleWhere(
+        (element) => element.cssClasses.contains('architecture-group'),
+      );
+      final services = elements
+          .whereType<SceneGroup>()
+          .where((element) => element.cssClasses.contains('architecture-service'))
+          .toList();
+      final api = services[0].transforms.single as Translate;
+      final database = services[1].transforms.single as Translate;
+      final edge = elements.whereType<ScenePath>().singleWhere(
+        (element) => element.cssClasses.contains('architecture-edge'),
+      );
+      final arrow = elements.whereType<ScenePolygon>().singleWhere(
+        (element) => element.cssClasses.contains('architecture-arrow'),
+      );
+
+      expect(group.bounds.left, closeTo(-142.84328288059254, 1e-9));
+      expect(group.bounds.top, -25.5);
+      expect(group.bounds.width, closeTo(365.6865657611851, 1e-9));
+      expect(group.bounds.height, 182);
+      expect(api.x, closeTo(-60.34328288059254, 1e-9));
+      expect(api.y, 57);
+      expect(database.x, closeTo(140.34328288059251, 1e-9));
+      expect(database.y, 57);
+      final edgePoints = [
+        (edge.commands[0] as MoveTo).point,
+        (edge.commands[1] as LineTo).point,
+        (edge.commands[2] as LineTo).point,
+      ];
+      expect(edgePoints.map((point) => point.x), [
+        closeTo(-20.34328288059254, 1e-9),
+        closeTo(40, 1e-9),
+        closeTo(100.34328288059251, 1e-9),
+      ]);
+      expect(edgePoints.map((point) => point.y), everyElement(57));
+      expect(arrow.points.first.x, closeTo(102.34328288059251, 1e-9));
+      expect(arrow.points.first.y, 57);
+      expect(scene.bounds, group.bounds);
+      expect(scene.viewport.left, closeTo(-182.84328288059254, 1e-9));
+      expect(scene.viewport.top, -65.5);
+      expect(scene.viewport.width, closeTo(445.6865657611851, 1e-9));
+      expect(scene.viewport.height, 262);
+    });
+
     test('architecture typed spacing options control connected node distance', () {
       final scene = layoutDiagram(
         const ArchitectureAst(

@@ -92,7 +92,8 @@ final class SvgSnapshot {
     final document = XmlDocument.parse(canonicalSvg);
     const elementNames = {'circle', 'ellipse', 'line', 'path', 'polygon', 'polyline', 'rect', 'text'};
     final elements = document.descendants.whereType<XmlElement>().toList();
-    final textElements = elements.where(
+    final comparableElements = elements.where((element) => _isComparableGeometryElement(element, document.rootElement));
+    final textElements = comparableElements.where(
       (element) =>
           (element.name.local == 'text' || element.name.local == 'foreignObject') &&
           element.innerText.trim().isNotEmpty,
@@ -100,10 +101,12 @@ final class SvgSnapshot {
     return SvgSnapshot._(
       canonicalSvg: canonicalSvg,
       viewBox: document.rootElement.getAttribute('viewBox'),
-      text: [for (final element in textElements) element.innerText.trim().replaceAll(RegExp(r'\s+'), ' ')],
+      text: [for (final element in textElements) element.innerText.trim().replaceAll(RegExp(r'\s+'), ' ')]..sort(),
       elementCounts: {
         for (final name in elementNames)
-          name: name == 'text' ? textElements.length : elements.where((element) => element.name.local == name).length,
+          name: name == 'text'
+              ? textElements.length
+              : comparableElements.where((element) => element.name.local == name).length,
       },
       geometry: _geometrySignatures(document.rootElement),
     );
@@ -162,6 +165,7 @@ List<String> _geometrySignatures(XmlElement root) {
       .join('\n');
 
   void visit(XmlElement element, String inheritedTransform) {
+    if (!_isComparableGeometryElement(element, root)) return;
     final ownTransform = element.getAttribute('transform') ?? '';
     final transform = [inheritedTransform, ownTransform].where((value) => value.isNotEmpty).join(' ');
     final isEmptyText =
@@ -202,16 +206,7 @@ String _geometrySignature(XmlElement element, String transform, String styleShee
       attribute('rx', '0'),
       attribute('ry', '0'),
     ],
-    'text' => [
-      x(attribute('x', '0')),
-      y(attribute('y', '0')),
-      attribute('font-size', _stylesheetFontSize(element, styleSheets) ?? '16'),
-      attribute('text-anchor', _stylesheetTextAnchor(element, styleSheets) ?? 'start'),
-      switch (attribute('dominant-baseline', _stylesheetBaseline(element, styleSheets) ?? 'alphabetic')) {
-        'auto' => 'alphabetic',
-        final baseline => baseline,
-      },
-    ],
+    'text' => _textGeometryValues(element, translation, styleSheets, attribute),
     _ => const <String>[],
   };
   final kind = name == 'foreignObject' ? 'text' : name;
@@ -219,6 +214,74 @@ String _geometrySignature(XmlElement element, String transform, String styleShee
       ? element.innerText.trim().replaceAll(RegExp(r'\s+'), ' ')
       : '';
   return [kind, if (translation == null) _normalizedTransform(transform) else '', ...values, text].join('|');
+}
+
+bool _isComparableGeometryElement(XmlElement element, XmlElement root) {
+  for (XmlElement? ancestor = element; ancestor != null && ancestor != root; ancestor = ancestor.parentElement) {
+    if (ancestor.name.local == 'svg' || ancestor.getAttribute('data-role') == 'icon') return false;
+  }
+  if (element.name.local == 'rect' &&
+      (_numberAttribute(element, 'width') ?? 0) == 0 &&
+      (_numberAttribute(element, 'height') ?? 0) == 0) {
+    return false;
+  }
+  return true;
+}
+
+double? _numberAttribute(XmlElement element, String name) => double.tryParse(element.getAttribute(name) ?? '');
+
+List<String> _textGeometryValues(
+  XmlElement element,
+  _Translation? translation,
+  String styleSheets,
+  String Function(String name, [String fallback]) attribute,
+) {
+  final fontSize = _svgLength(attribute('font-size', _stylesheetFontSize(element, styleSheets) ?? '16'), 16);
+  final span = element.descendants.whereType<XmlElement>().where((child) => child.name.local == 'tspan').firstOrNull;
+  final localX = _svgLength(span?.getAttribute('x') ?? attribute('x', '0'), fontSize);
+  final localY =
+      _svgLength(span?.getAttribute('y') ?? attribute('y', '0'), fontSize) +
+      _svgLength(span?.getAttribute('dy') ?? '0', fontSize);
+  final anchor =
+      attribute('text-anchor', '').nullIfEmpty ??
+      _inheritedAttribute(element, 'text-anchor') ??
+      _stylesheetTextAnchor(element, styleSheets) ??
+      'start';
+  final rawBaseline =
+      attribute('dominant-baseline', '').nullIfEmpty ??
+      _inheritedAttribute(element, 'dominant-baseline') ??
+      _stylesheetBaseline(element, styleSheets) ??
+      'alphabetic';
+  final baseline = switch (rawBaseline) {
+    'auto' => 'alphabetic',
+    'start' => 'hanging',
+    final value => value,
+  };
+  return [
+    _formatNumber(localX + (translation?.dx ?? 0)),
+    _formatNumber(localY + (translation?.dy ?? 0)),
+    _formatNumber(fontSize),
+    anchor,
+    baseline,
+  ];
+}
+
+String? _inheritedAttribute(XmlElement element, String name) {
+  for (var ancestor = element.parentElement; ancestor != null; ancestor = ancestor.parentElement) {
+    if (ancestor.getAttribute(name) case final value?) return value;
+  }
+  return null;
+}
+
+double _svgLength(String value, double fontSize) {
+  final trimmed = value.trim();
+  if (trimmed.endsWith('em')) return double.parse(trimmed.substring(0, trimmed.length - 2)) * fontSize;
+  if (trimmed.endsWith('px')) return double.parse(trimmed.substring(0, trimmed.length - 2));
+  return double.parse(trimmed);
+}
+
+extension on String {
+  String? get nullIfEmpty => isEmpty ? null : this;
 }
 
 String _normalizedTransform(String transform) => _transformFunction

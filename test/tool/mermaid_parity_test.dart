@@ -111,6 +111,33 @@ void main() {
     expect(comparison.exact, isFalse);
   });
 
+  test('normalizes Mermaid createText wrappers to positioned SVG text', () {
+    final mermaid = SvgSnapshot.fromSvg(
+      '<svg><g transform="translate(10 20)" dominant-baseline="middle" '
+      'text-anchor="middle"><text y="-10.1" font-size="16">'
+      '<tspan x="0" y="-0.1em" dy="1.1em">API</tspan>'
+      '</text></g></svg>',
+    );
+    final dart = SvgSnapshot.fromSvg(
+      '<svg><text x="10" y="36" font-size="16" text-anchor="middle" '
+      'dominant-baseline="middle">API</text></svg>',
+    );
+
+    expect(SvgComparison.compare(dart, mermaid).sameGeometry, isTrue);
+  });
+
+  test('ignores resolver-owned icon internals and zero-sized backgrounds', () {
+    final mermaid = SvgSnapshot.fromSvg(
+      '<svg><rect width="0" height="0"/><svg width="80" height="80">'
+      '<circle cx="40" cy="40" r="20"/></svg></svg>',
+    );
+    final dart = SvgSnapshot.fromSvg('<svg><g data-role="icon"><path d="M0 0 L80 80"/></g></svg>');
+
+    final comparison = SvgComparison.compare(dart, mermaid);
+    expect(comparison.sameElementCounts, isTrue);
+    expect(comparison.sameGeometry, isTrue);
+  });
+
   test('compares translated local geometry with absolute geometry', () {
     final local = SvgSnapshot.fromSvg(
       '<svg><g transform="translate(10, 20)">'
@@ -137,13 +164,16 @@ void main() {
 
   test('ignores paint-equivalent sibling order in geometry comparison', () {
     final shapesFirst = SvgSnapshot.fromSvg(
-      '<svg><circle cx="1" cy="2" r="3"/><rect x="4" y="5" width="6" height="7"/></svg>',
+      '<svg><circle cx="1" cy="2" r="3"/><rect x="4" y="5" width="6" height="7"/>'
+      '<text x="1" y="9">A</text><text x="2" y="9">B</text></svg>',
     );
     final reverseOrder = SvgSnapshot.fromSvg(
-      '<svg><rect x="4" y="5" width="6" height="7"/><circle cx="1" cy="2" r="3"/></svg>',
+      '<svg><text x="2" y="9">B</text><text x="1" y="9">A</text>'
+      '<rect x="4" y="5" width="6" height="7"/><circle cx="1" cy="2" r="3"/></svg>',
     );
 
     final comparison = SvgComparison.compare(shapesFirst, reverseOrder);
+    expect(comparison.sameText, isTrue);
     expect(comparison.sameGeometry, isTrue);
     expect(comparison.exact, isFalse);
   });

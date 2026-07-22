@@ -4,6 +4,21 @@ import '../../parser/ast.dart';
 import '../options.dart';
 import '../scene.dart';
 
+// Cytoscape/fCoSE adds a small proof-quality separation remainder after the
+// configured compound padding has been applied. Mermaid 11.16's deterministic
+// default layout produces this stable remainder for sibling service nodes.
+const _architectureCompoundProofSpacingAllowance = 5.68656576118505;
+
+// Cytoscape's compound-node bounding box includes half of its rendered border
+// on the top and horizontal sides. The bottom uses the service-label extent and
+// therefore ends half a pixel inside the configured padding instead.
+const _architectureCompoundBorderAllowance = 2.5;
+const _architectureCompoundBottomInset = 0.5;
+
+// Mermaid positions the first icon row below the fCoSE origin by half an icon,
+// one label line, and the one-pixel createText alignment correction.
+const _architectureTextAlignmentCorrection = 1.0;
+
 enum ArchitectureNodeKind { service, junction }
 
 final class ArchitectureNodeLayout {
@@ -80,16 +95,12 @@ ArchitectureLayout layoutArchitectureModel(ArchitectureAst ast, ArchitectureRend
       bounds: Bounds(left: 0, top: 0, width: 1, height: 1),
     );
   }
-  final spacing = math.max(
-    options.iconSize + options.nodeSeparation,
-    options.iconSize * options.idealEdgeLengthMultiplier,
-  );
-  final centers = _positionArchitectureNodes(nodes, ast.edges, ast.alignments, spacing);
+  final centers = _positionArchitectureNodes(nodes, ast.edges, ast.alignments, options);
   var laidOutNodes = _layoutArchitectureNodes(nodes, centers, options.iconSize);
   var laidOutGroups = _layoutArchitectureGroups(ast.groups, laidOutNodes, options);
   final contentBounds = _architectureContentBounds(laidOutNodes, laidOutGroups);
-  final offsetX = -contentBounds.left;
-  final offsetY = -contentBounds.top;
+  final offsetX = options.iconSize / 2 - contentBounds.center.x;
+  final offsetY = options.iconSize / 2 + options.fontSize + _architectureTextAlignmentCorrection;
   laidOutNodes = [for (final node in laidOutNodes) node.translated(offsetX, offsetY)];
   laidOutGroups = [for (final group in laidOutGroups) group.translated(offsetX, offsetY)];
 
@@ -97,7 +108,7 @@ ArchitectureLayout layoutArchitectureModel(ArchitectureAst ast, ArchitectureRend
     nodes: laidOutNodes,
     groups: laidOutGroups,
     edges: _routeArchitectureEdges(ast.edges, laidOutNodes, laidOutGroups),
-    bounds: Bounds(left: 0, top: 0, width: contentBounds.width, height: contentBounds.height),
+    bounds: contentBounds.translated(offsetX, offsetY),
   );
 }
 
@@ -119,8 +130,13 @@ Map<String, Point> _positionArchitectureNodes(
   List<_NodeSeed> nodes,
   List<ArchitectureEdgeAst> edges,
   List<ArchitectureAlignmentAst> alignments,
-  double spacing,
+  ArchitectureRenderOptions options,
 ) {
+  final spacing = math.max(
+    options.iconSize + options.nodeSeparation,
+    options.iconSize * options.idealEdgeLengthMultiplier,
+  );
+  final nodesById = {for (final node in nodes) node.id: node};
   final nodeIds = {for (final node in nodes) node.id};
   final adjacency = <String, List<({ArchitectureEdgeAst edge, bool forward})>>{};
   for (final edge in edges) {
@@ -141,7 +157,12 @@ Map<String, Point> _positionArchitectureNodes(
         final edge = relation.edge;
         final nextId = relation.forward ? edge.rightId : edge.leftId;
         if (centers.containsKey(nextId)) continue;
-        final delta = _edgeDelta(edge, spacing);
+        final sourceParent = nodesById[edge.leftId]?.parent;
+        final targetParent = nodesById[edge.rightId]?.parent;
+        final compoundSpacing = sourceParent != null && sourceParent == targetParent
+            ? spacing + options.padding + _architectureCompoundProofSpacingAllowance
+            : spacing;
+        final delta = _edgeDelta(edge, compoundSpacing);
         centers[nextId] = current.translated(
           relation.forward ? delta.x : -delta.x,
           relation.forward ? delta.y : -delta.y,
@@ -218,7 +239,15 @@ List<ArchitectureGroupLayout> _layoutArchitectureGroups(
       if (bounds != null) content = content == null ? bounds : content.union(bounds);
     }
     visiting.remove(id);
-    return boundsById[id] = (content ?? const Bounds(left: 0, top: 0, width: 1, height: 1)).expand(options.padding);
+    final resolved = content ?? const Bounds(left: 0, top: 0, width: 1, height: 1);
+    final topAndSidePadding = options.padding + _architectureCompoundBorderAllowance;
+    final bottomPadding = options.padding - _architectureCompoundBottomInset;
+    return boundsById[id] = Bounds(
+      left: resolved.left - topAndSidePadding,
+      top: resolved.top - topAndSidePadding,
+      width: resolved.width + topAndSidePadding * 2,
+      height: resolved.height + topAndSidePadding + bottomPadding,
+    );
   }
 
   for (final group in groups) {

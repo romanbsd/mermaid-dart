@@ -163,8 +163,8 @@ _LayoutResult _layoutGitGraph(GitGraphAst ast, _LayoutContext context) {
           branch.name,
           labelPoint.x,
           direction == GitGraphDirection.leftToRight
-              ? labelPoint.y - size.height / 2 - _gitLaneYCorrection
-              : labelPoint.y,
+              ? labelPoint.y - size.height / 2 - _gitLaneYCorrection + branchStyle.fontSize
+              : labelPoint.y + branchStyle.fontSize,
           anchor: labelAnchor,
           baseline: TextBaseline.alphabetic,
           role: SemanticRole.legend,
