@@ -13,6 +13,15 @@ final class _ExactTextMeasurer implements TextMeasurer {
   }
 }
 
+final class _MappedTextMeasurer implements TextMeasurer {
+  const _MappedTextMeasurer(this.sizes);
+
+  final Map<String, Size> sizes;
+
+  @override
+  Size measure(String text, SceneTextStyle style) => sizes[text] ?? const _ExactTextMeasurer().measure(text, style);
+}
+
 void main() {
   const measurer = _ExactTextMeasurer();
 
@@ -64,12 +73,18 @@ void main() {
       final highlight = elements.whereType<SceneRect>().singleWhere(
         (element) => element.cssClasses.contains('treeView-highlight-bg'),
       );
+      final labels = elements
+          .whereType<SceneText>()
+          .where((element) => element.cssClasses.contains('treeView-node-label'))
+          .toList();
 
+      expect(labels.map((label) => label.text), ['/', 'root', 'child', 'peer']);
+      expect(labels.map((label) => label.baseline), everyElement(TextBaseline.middle));
       expect(descriptions.map((description) => description.position.x).toSet(), hasLength(1));
-      expect(highlight.bounds.width, scene.bounds.width - 2);
+      expect(highlight.bounds.right, scene.bounds.width - 2);
       expect(
         elements.whereType<SceneLine>().where((element) => element.cssClasses.contains('treeView-node-line')),
-        hasLength(4),
+        hasLength(6),
       );
       expect(elements.whereType<SceneCircle>(), isEmpty);
       expectSvgGolden('tree_descriptions', renderSvg(scene));
@@ -238,6 +253,9 @@ void main() {
       final title = elements.whereType<SceneText>().singleWhere(
         (element) => element.cssClasses.contains('cynefinTitle'),
       );
+      final subtitles = elements.whereType<SceneText>().where(
+        (element) => element.cssClasses.contains('cynefinSubtitle'),
+      );
 
       expect(scene.bounds, const Bounds(left: 0, top: 0, width: 880, height: 680));
       expect(boundaries, hasLength(2));
@@ -267,7 +285,19 @@ void main() {
         hasLength(1),
       );
       expect(title.position, const Point(440, 20));
+      expect(subtitles.map((subtitle) => subtitle.style.fontSize), everyElement(11));
+      expect(subtitles.map((subtitle) => subtitle.baseline), everyElement(TextBaseline.middle));
       expectSvgGolden('cynefin_seeded', renderSvg(scene));
+    });
+
+    test('cynefin defaults use Mermaid boundary amplitude and stable CLI seed', () {
+      final scene = layoutDiagram(const CynefinAst(), textMeasurer: measurer, options: const RenderOptions(padding: 0));
+      final boundaries = _flatten(
+        scene.elements,
+      ).whereType<ScenePath>().where((element) => element.cssClasses.contains('cynefinBoundary')).toList();
+
+      expect((boundaries[0].commands.first as MoveTo).point.x, closeTo(444.8574703261256, 1e-9));
+      expect((boundaries[1].commands.first as MoveTo).point.y, closeTo(343.14857986569405, 1e-9));
     });
 
     test('cynefin typed options support straight compact layouts', () {
@@ -469,6 +499,70 @@ void main() {
         'Release history',
       );
       expectSvgGolden('git_graph_history', renderSvg(scene));
+    });
+
+    test('git graph matches Mermaid lane, branch-label, edge, and rotated-label geometry', () {
+      final scene = layoutDiagram(
+        const GitGraphAst(
+          statements: [
+            GitGraphCommitAst(id: 'A'),
+            GitGraphBranchAst(name: 'develop'),
+            GitGraphCommitAst(id: 'B'),
+          ],
+        ),
+        textMeasurer: const _MappedTextMeasurer({
+          'main': Size(35, 19),
+          'develop': Size(56.421875, 19),
+          'A': Size(5.90625, 11),
+          'B': Size(5.671875, 11),
+        }),
+        options: const RenderOptions(padding: 0),
+      );
+      final elements = _flatten(scene.elements).toList();
+      final commits = elements
+          .whereType<SceneCircle>()
+          .where((element) => element.cssClasses.contains('git-commit-normal'))
+          .toList();
+      final branches = elements
+          .whereType<SceneLine>()
+          .where((element) => element.cssClasses.contains('git-branch-line'))
+          .toList();
+      final labels = elements
+          .whereType<SceneRect>()
+          .where((element) => element.cssClasses.contains('git-branch-label-background'))
+          .toList();
+      final edge = elements.whereType<ScenePath>().singleWhere(
+        (element) => element.cssClasses.contains('git-commit-edge'),
+      );
+      final rotated = scene.elements.whereType<SceneGroup>().where(
+        (element) => element.cssClasses.contains('git-commit-label-rotated'),
+      );
+
+      expect(commits.map((commit) => commit.center), const [Point(10, -2), Point(60, 88)]);
+      expect(branches.map((branch) => (branch.start, branch.end)), const [
+        (Point(0, -2), Point(100, -2)),
+        (Point(0, 88), Point(100, 88)),
+      ]);
+      expect(labels.map((label) => label.bounds), const [
+        Bounds(left: -88, top: -13.5, width: 53, height: 23),
+        Bounds(left: -109.421875, top: 76.5, width: 74.421875, height: 23),
+      ]);
+      expect(edge.commands, const [
+        MoveTo(Point(10, -2)),
+        LineTo(Point(10, 68)),
+        ArcTo(radiusX: 20, radiusY: 20, clockwise: false, end: Point(30, 88)),
+        LineTo(Point(60, 88)),
+      ]);
+      expect(rotated, hasLength(2));
+      final transforms = rotated.first.transforms;
+      expect(transforms, hasLength(2));
+      expect((transforms.first as Translate).x, closeTo(-13.544375, 1e-12));
+      expect((transforms.first as Translate).y, closeTo(12.008125, 1e-12));
+      expect(transforms.last, const Rotate(-45, center: Point(0, -2)));
+      expect(scene.viewport.left, -117.421875);
+      expect(scene.viewport.top, -21.5);
+      expect(scene.viewport.width, 225.421875);
+      expect(scene.viewport.height, closeTo(145.929443359375, 1e-5));
     });
 
     test('git graph top-to-bottom and bottom-to-top reverse the history axis', () {

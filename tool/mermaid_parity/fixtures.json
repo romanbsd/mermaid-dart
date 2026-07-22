@@ -9,7 +9,14 @@
     {
       "id": "cynefin-domains",
       "type": "cynefin",
-      "source": "cynefin-beta\ncomplex \"Probe\"\ncomplicated \"Analyze\"\nclear \"Sense\"\nchaotic \"Act\"\nconfusion \"Collect\"\n"
+      "source": "cynefin-beta\ncomplex \"Probe\"\ncomplicated \"Analyze\"\nclear \"Sense\"\nchaotic \"Act\"\nconfusion \"Collect\"\n",
+      "textMeasurements": {
+        "Probe": { "width": 34.464, "height": 14 },
+        "Analyze": { "width": 45.636, "height": 14 },
+        "Sense": { "width": 34.289, "height": 14 },
+        "Act": { "width": 21.784, "height": 14 },
+        "Collect": { "width": 41.953, "height": 14 }
+      }
     },
     {
       "id": "event-modeling-flow",
@@ -19,7 +26,13 @@
     {
       "id": "git-branches",
       "type": "gitGraph",
-      "source": "gitGraph\ncommit id: \"A\"\nbranch develop\ncheckout develop\ncommit id: \"B\"\n"
+      "source": "gitGraph\ncommit id: \"A\"\nbranch develop\ncheckout develop\ncommit id: \"B\"\n",
+      "textMeasurements": {
+        "main": { "width": 35, "height": 19 },
+        "develop": { "width": 56.421875, "height": 19 },
+        "A": { "width": 5.90625, "height": 11 },
+        "B": { "width": 5.671875, "height": 11 }
+      }
     },
     {
       "id": "info-version",
@@ -58,7 +71,13 @@
     {
       "id": "tree-files",
       "type": "treeView",
-      "source": "treeView-beta\nsrc/\n    index.js\n    app.dart\n"
+      "source": "treeView-beta\nsrc/\n    index.js\n    app.dart\n",
+      "textMeasurements": {
+        "/": { "width": 5, "height": 19 },
+        "src": { "width": 21, "height": 19 },
+        "index.js": { "width": 56, "height": 19 },
+        "app.dart": { "width": 62, "height": 19 }
+      }
     },
     {
       "id": "treemap-products",

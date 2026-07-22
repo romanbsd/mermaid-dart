@@ -218,8 +218,16 @@ String _geometrySignature(XmlElement element, String transform, String styleShee
   final text = name == 'text' || name == 'foreignObject'
       ? element.innerText.trim().replaceAll(RegExp(r'\s+'), ' ')
       : '';
-  return [kind, if (translation == null) transform else '', ...values, text].join('|');
+  return [kind, if (translation == null) _normalizedTransform(transform) else '', ...values, text].join('|');
 }
+
+String _normalizedTransform(String transform) => _transformFunction
+    .allMatches(transform)
+    .map((match) {
+      final values = _pathToken.allMatches(match[2]!).map((value) => _formatNumber(double.parse(value[0]!))).join(' ');
+      return '${match[1]!.toLowerCase()}($values)';
+    })
+    .join(' ');
 
 final class _Translation {
   const _Translation(this.dx, this.dy);
@@ -247,6 +255,7 @@ final _translate = RegExp(
   caseSensitive: false,
 );
 final _pathToken = RegExp(r'[A-Za-z]|-?(?:\d+\.?\d*|\.\d+)(?:e[+-]?\d+)?', caseSensitive: false);
+final _transformFunction = RegExp(r'([A-Za-z]+)\s*\(([^)]*)\)');
 
 String _translatedNumber(String value, double offset) => _formatNumber(double.parse(value) + offset);
 

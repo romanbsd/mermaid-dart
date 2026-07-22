@@ -7,6 +7,8 @@
 - Model nullability explicitly, keep public APIs small and typed, and follow the effective Dart conventions enforced by the repository analyzer.
 - Prefer enums over strings for closed, known sets of values; use string conversion only at serialization, parsing, or interoperability boundaries.
 - Preserve Mermaid.js behavior and algorithms while expressing them naturally in Dart; do not transliterate JavaScript conventions that have a clearer Dart equivalent.
+- Avoid unexplained numeric literals in implementation code. Extract repeated, algorithmic, domain-specific, and geometry values into clearly named constants near the renderer or utility that owns them.
+- Document non-obvious constants with their meaning, units, and behavioral source (including the corresponding Mermaid.js concept or default when ported). Trivial structural values such as zero-based indices may remain inline when their meaning is self-evident.
 
 ## Development workflow
 

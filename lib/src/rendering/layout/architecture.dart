@@ -1,4 +1,4 @@
-part of 'layout.dart';
+part of '../layout.dart';
 
 _LayoutResult _layoutArchitecture(ArchitectureAst ast, _LayoutContext context) {
   final config = context.options.optionsFor(const ArchitectureRenderOptions());
