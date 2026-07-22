@@ -1,5 +1,52 @@
 import 'scene.dart';
 
+// Mermaid's default 12-step categorical theme scales. Radar consumes the
+// primary scale; treemap coordinates it with peer borders and label colors.
+const _mermaidColorScale = <Color>[
+  Color(134, 134, 255),
+  Color(255, 255, 120),
+  Color(215, 255, 134),
+  Color(194, 134, 255),
+  Color(255, 134, 255),
+  Color(255, 134, 194),
+  Color(255, 134, 134),
+  Color(255, 194, 134),
+  Color(194, 255, 134),
+  Color(134, 255, 194),
+  Color(134, 255, 255),
+  Color(134, 194, 255),
+];
+
+const _mermaidColorScalePeers = <Color>[
+  Color(57, 57, 255),
+  Color(247, 247, 0),
+  Color(181, 255, 32),
+  Color(156, 57, 255),
+  Color(255, 57, 255),
+  Color(255, 57, 156),
+  Color(255, 57, 57),
+  Color(255, 156, 57),
+  Color(156, 255, 57),
+  Color(57, 255, 156),
+  Color(57, 255, 255),
+  Color(57, 156, 255),
+];
+
+const _mermaidColorScaleLabels = <Color>[
+  Color(255, 255, 255),
+  Color(0, 0, 0),
+  Color(0, 0, 0),
+  Color(255, 255, 255),
+  Color(0, 0, 0),
+  Color(0, 0, 0),
+  Color(0, 0, 0),
+  Color(0, 0, 0),
+  Color(0, 0, 0),
+  Color(0, 0, 0),
+  Color(0, 0, 0),
+  Color(0, 0, 0),
+];
+
 final class MermaidTheme {
   const MermaidTheme({
     this.background = const Color(255, 255, 255, 0),
@@ -60,6 +107,11 @@ final class CynefinRenderOptions extends DiagramRenderOptions {
     this.clearColor = const Color(255, 248, 225, 102),
     this.confusionColor = const Color(243, 229, 245, 128),
     this.cliffColor = const Color(139, 0, 0),
+    this.domainLabelColor = const Color(19, 19, 0),
+    this.textColor = const Color(51, 51, 51),
+    this.strokeColor = const Color(51, 51, 51),
+    this.boundaryDashes = const [6, 3],
+    this.confusionDashes = const [4, 2],
   });
 
   final double width;
@@ -74,6 +126,11 @@ final class CynefinRenderOptions extends DiagramRenderOptions {
   final Color clearColor;
   final Color confusionColor;
   final Color cliffColor;
+  final Color domainLabelColor;
+  final Color textColor;
+  final Color strokeColor;
+  final List<double> boundaryDashes;
+  final List<double> confusionDashes;
 }
 
 final class InfoRenderOptions extends DiagramRenderOptions {
@@ -170,6 +227,12 @@ final class TreemapRenderOptions extends DiagramRenderOptions {
     this.diagramPadding = 8,
     this.showValues = true,
     this.valueFormat = TreemapValueFormat.grouped,
+    this.sectionOpacity = .6,
+    this.sectionStrokeOpacity = .4,
+    this.leafOpacity = .3,
+    this.sectionColors = _mermaidColorScale,
+    this.sectionBorderColors = _mermaidColorScalePeers,
+    this.labelColors = _mermaidColorScaleLabels,
   });
 
   final double width;
@@ -180,6 +243,12 @@ final class TreemapRenderOptions extends DiagramRenderOptions {
   final double diagramPadding;
   final bool showValues;
   final TreemapValueFormat valueFormat;
+  final double sectionOpacity;
+  final double sectionStrokeOpacity;
+  final double leafOpacity;
+  final List<Color> sectionColors;
+  final List<Color> sectionBorderColors;
+  final List<Color> labelColors;
 }
 
 final class WardleyRenderOptions extends DiagramRenderOptions {
@@ -290,6 +359,24 @@ final class PieRenderOptions extends DiagramRenderOptions {
     this.legendPosition = PieLegendPosition.right,
     this.highlightSlice,
     this.showLegend = true,
+    this.sectionOpacity = .7,
+    this.sectionStroke = const Color(0, 0, 0),
+    this.outerStroke = const Color(0, 0, 0),
+    this.legendText = const Color(0, 0, 0),
+    this.sectionColors = const [
+      Color(236, 236, 255),
+      Color(255, 255, 222),
+      Color(181, 255, 32),
+      Color(185, 185, 255),
+      Color(255, 255, 69),
+      Color(215, 255, 134),
+      Color(255, 134, 255),
+      Color(32, 255, 255),
+      Color(255, 32, 32),
+      Color(255, 32, 255),
+      Color(32, 255, 143),
+      Color(255, 83, 83),
+    ],
   });
 
   final double size;
@@ -300,6 +387,11 @@ final class PieRenderOptions extends DiagramRenderOptions {
   final PieLegendPosition legendPosition;
   final String? highlightSlice;
   final bool showLegend;
+  final double sectionOpacity;
+  final Color sectionStroke;
+  final Color outerStroke;
+  final Color legendText;
+  final List<Color> sectionColors;
 }
 
 final class RadarRenderOptions extends DiagramRenderOptions {
@@ -318,20 +410,7 @@ final class RadarRenderOptions extends DiagramRenderOptions {
     this.graticuleOpacity = .3,
     this.axisColor = const Color(51, 51, 51),
     this.seriesOpacity = .5,
-    this.seriesColors = const [
-      Color(134, 134, 255),
-      Color(255, 255, 120),
-      Color(215, 255, 134),
-      Color(194, 134, 255),
-      Color(255, 134, 255),
-      Color(255, 134, 194),
-      Color(255, 134, 134),
-      Color(255, 194, 134),
-      Color(194, 255, 134),
-      Color(134, 255, 194),
-      Color(134, 255, 255),
-      Color(134, 194, 255),
-    ],
+    this.seriesColors = _mermaidColorScale,
   });
 
   final double width;

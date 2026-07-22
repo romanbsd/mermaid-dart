@@ -211,8 +211,6 @@ const _paintProperties = <String, String>{
   'stroke-dasharray': 'none',
   'stroke-linecap': 'butt',
   'stroke-linejoin': 'miter',
-  'fill-opacity': '1',
-  'stroke-opacity': '1',
 };
 
 // A line has no enclosed area, so fill and join properties cannot change its
@@ -222,7 +220,6 @@ const _linePaintProperties = <String, String>{
   'stroke-width': '1',
   'stroke-dasharray': 'none',
   'stroke-linecap': 'butt',
-  'stroke-opacity': '1',
 };
 
 String _paintSignature(XmlElement element, String transform, String styleSheets) {
@@ -231,7 +228,8 @@ String _paintSignature(XmlElement element, String transform, String styleSheets)
   final values = <String>[
     for (final MapEntry(:key, :value) in properties.entries)
       '$key=${_normalizedPaintValue(key, _inheritedPresentationValue(element, key, styleSheets) ?? value, element, styleSheets)}',
-    'opacity=${_effectiveOpacity(element, styleSheets)}',
+    if (element.name.local != 'line') 'fill-opacity=${_effectiveChannelOpacity(element, 'fill-opacity', styleSheets)}',
+    'stroke-opacity=${_effectiveChannelOpacity(element, 'stroke-opacity', styleSheets)}',
   ];
   return '$geometry|${values.join('|')}';
 }
@@ -271,13 +269,18 @@ String? _stylesheetProperty(XmlElement element, String styleSheets, String name)
   return value;
 }
 
-String _effectiveOpacity(XmlElement element, String styleSheets) {
+String _effectiveChannelOpacity(XmlElement element, String channel, String styleSheets) {
+  final channelOpacity = double.tryParse(_inheritedPresentationValue(element, channel, styleSheets) ?? '') ?? 1;
+  return _formatNumber(channelOpacity * _effectiveOpacity(element, styleSheets));
+}
+
+double _effectiveOpacity(XmlElement element, String styleSheets) {
   var opacity = 1.0;
   for (XmlElement? current = element; current != null; current = current.parentElement) {
     final value = _localPresentationValue(current, 'opacity', styleSheets);
     if (value != null) opacity *= double.tryParse(value) ?? 1;
   }
-  return _formatNumber(opacity);
+  return opacity;
 }
 
 String _normalizedPaintValue(String name, String value, XmlElement element, String styleSheets) {
@@ -599,7 +602,10 @@ String? _stylesheetValue(XmlElement element, String styleSheets, RegExp declarat
 
 bool _matchesSimpleSelector(XmlElement element, String selector) {
   final parts = selector.split(RegExp(r'\s+'));
-  if (parts.first.startsWith('#')) parts.removeAt(0);
+  // Mermaid scopes generated rules under the root SVG ID. Ignore that scope
+  // only for descendant selectors; a standalone ID selector still targets the
+  // root element and must not match every descendant.
+  if (parts.length > 1 && parts.first.startsWith('#')) parts.removeAt(0);
   if (parts.isEmpty) return true;
   if (!_matchesSelectorPart(element, parts.last)) return false;
   var ancestor = element.parentElement;
@@ -615,7 +621,10 @@ bool _matchesSimpleSelector(XmlElement element, String selector) {
 
 bool _matchesSelectorPart(XmlElement element, String selector) {
   selector = selector.replaceFirst(RegExp(r':.*$'), '');
-  if (selector.startsWith('#')) return element.getAttribute('id') == selector.substring(1);
+  if (selector.startsWith('#')) {
+    return element.getAttribute('id') == selector.substring(1) ||
+        (element.name.local == 'svg' && element.parentElement == null);
+  }
   if (selector.startsWith('.')) {
     return (element.getAttribute('class') ?? '').split(RegExp(r'\s+')).contains(selector.substring(1));
   }

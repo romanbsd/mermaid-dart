@@ -208,10 +208,14 @@ void main() {
 
       expect(section.label, 'Products');
       expect(section.bounds, const Bounds(left: 10, top: 35, width: 980, height: 355));
+      expect(section.fill, const SolidFill(Color(134, 134, 255, 153)));
+      expect(section.stroke?.color, const Color(57, 57, 255, 102));
       expect(leaves.map((leaf) => leaf.bounds), const [
         Bounds(left: 20, top: 70, width: 718, height: 310),
         Bounds(left: 748, top: 70, width: 232, height: 310),
       ]);
+      expect(leaves.map((leaf) => leaf.fill), everyElement(const SolidFill(Color(134, 134, 255, 77))));
+      expect(leaves.map((leaf) => leaf.stroke?.color), everyElement(const Color(134, 134, 255)));
       expect(labels.map((label) => label.text), ['Products', '4', 'Large', '3', 'Small', '1']);
       expect(labels.map((label) => label.position), const [
         Point(16, 47.5),
@@ -263,8 +267,34 @@ void main() {
         Bounds(left: 677, top: 105, width: 293, height: 128),
         Bounds(left: 677, top: 243, width: 293, height: 127),
       ]);
-      expect(clothing.fill, const SolidFill(Color(255, 153, 102)));
-      expect(clothing.stroke?.color, const Color(51, 51, 51));
+      expect(sections.map((section) => section.fill), const [
+        SolidFill(Color(134, 134, 255, 153)),
+        SolidFill(Color(255, 255, 120, 153)),
+        SolidFill(Color(255, 153, 102, 153)),
+      ]);
+      expect(clothing.stroke?.color, const Color(51, 51, 51, 102));
+      expect(leaves.map((leaf) => leaf.fill), const [
+        SolidFill(Color(255, 255, 120, 77)),
+        SolidFill(Color(255, 255, 120, 77)),
+        SolidFill(Color(215, 255, 134, 77)),
+        SolidFill(Color(215, 255, 134, 77)),
+      ]);
+      expect(elements.whereType<SceneText>().map((element) => (element.text, element.style.color)), const [
+        ('Products', Color(255, 255, 255)),
+        ('120', Color(255, 255, 255)),
+        ('Electronics', Color(0, 0, 0)),
+        ('80', Color(0, 0, 0)),
+        ('Phones', Color(255, 255, 255)),
+        ('50', Color(255, 255, 255)),
+        ('Computers', Color(0, 0, 0)),
+        ('30', Color(0, 0, 0)),
+        ('Clothing', Color(255, 255, 255)),
+        ('40', Color(255, 255, 255)),
+        ('Men', Color(0, 0, 0)),
+        ('20', Color(0, 0, 0)),
+        ('Women', Color(0, 0, 0)),
+        ('20', Color(0, 0, 0)),
+      ]);
       expect(
         elements
             .whereType<SceneText>()
@@ -322,7 +352,7 @@ void main() {
         (element) => element.cssClasses.contains('treemapLabel'),
       );
 
-      expect(leaf.fill, const SolidFill(Color(17, 34, 51)));
+      expect(leaf.fill, const SolidFill(Color(17, 34, 51, 77)));
       expect(leaf.stroke?.color, const Color(68, 85, 102));
       expect(label.style.color, const Color(255, 255, 255));
     });
@@ -368,10 +398,19 @@ void main() {
       final subtitles = elements.whereType<SceneText>().where(
         (element) => element.cssClasses.contains('cynefinSubtitle'),
       );
+      final confusion = elements.whereType<ScenePath>().singleWhere(
+        (element) => element.cssClasses.contains('cynefinConfusion'),
+      );
+      final badges = elements.whereType<SceneRect>().where((element) => element.cssClasses.contains('cynefinItem'));
+      final domainLabels = elements.whereType<SceneText>().where(
+        (element) => element.cssClasses.contains('cynefinDomainLabel'),
+      );
 
       expect(scene.bounds, const Bounds(left: 0, top: 0, width: 880, height: 680));
       expect(boundaries, hasLength(2));
       expect(boundaries.every((path) => path.commands.whereType<CubicTo>().length == 7), isTrue);
+      expect(boundaries.map((path) => path.stroke?.dashes), everyElement(const [6, 3]));
+      expect(boundaries.map((path) => path.stroke?.cap), everyElement(StrokeCap.butt));
       expect(
         elements.whereType<ScenePath>().singleWhere((element) => element.cssClasses.contains('cynefinCliff')).commands,
         hasLength(3),
@@ -384,6 +423,8 @@ void main() {
         hasLength(4),
       );
       expect(arrow.commands.whereType<QuadraticTo>(), hasLength(1));
+      expect(confusion.stroke?.width, 1.5);
+      expect(confusion.stroke?.dashes, const [4, 2]);
       expect(
         elements.whereType<ScenePolygon>().where((element) => element.cssClasses.contains('cynefinArrowHead')),
         hasLength(1),
@@ -392,11 +433,13 @@ void main() {
         elements.whereType<SceneRect>().where((element) => element.cssClasses.contains('cynefinItem')),
         hasLength(4),
       );
+      expect(badges.map((badge) => badge.stroke?.color), everyElement(const Color(51, 51, 51)));
       expect(
         elements.whereType<SceneRect>().where((element) => element.cssClasses.contains('cynefinItemOverflow')),
         hasLength(1),
       );
       expect(title.position, const Point(440, 20));
+      expect(domainLabels.map((label) => label.style.color), everyElement(const Color(19, 19, 0)));
       expect(subtitles.map((subtitle) => subtitle.style.fontSize), everyElement(11));
       expect(subtitles.map((subtitle) => subtitle.baseline), everyElement(TextBaseline.middle));
       expectSvgGolden('cynefin_seeded', renderSvg(scene));
@@ -893,15 +936,28 @@ void main() {
         options: const RenderOptions(padding: 0),
       );
       final elements = _flatten(scene.elements).toList();
+      final slices = elements
+          .whereType<ScenePath>()
+          .where((element) => element.cssClasses.contains('pieCircle'))
+          .toList();
+      final outerCircle = elements.whereType<SceneCircle>().singleWhere(
+        (element) => element.cssClasses.contains('pieOuterCircle'),
+      );
+      final legendBoxes = elements
+          .whereType<SceneRect>()
+          .where((element) => element.cssClasses.contains('legend'))
+          .toList();
+      final legendText = elements
+          .whereType<SceneText>()
+          .where((element) => element.cssClasses.contains('legendText'))
+          .toList();
 
-      expect(
-        elements.whereType<ScenePath>().where((element) => element.cssClasses.contains('pieCircle')),
-        hasLength(1),
-      );
-      expect(
-        elements.whereType<SceneCircle>().where((element) => element.cssClasses.contains('pieOuterCircle')),
-        hasLength(1),
-      );
+      expect(slices, hasLength(1));
+      expect(slices.single.fill, const SolidFill(Color(236, 236, 255, 179)));
+      expect(slices.single.stroke?.color, const Color(0, 0, 0, 179));
+      expect(outerCircle.stroke?.color, const Color(0, 0, 0));
+      expect(outerCircle.stroke?.cap, StrokeCap.butt);
+      expect(outerCircle.stroke?.join, StrokeJoin.miter);
       expect(
         elements
             .whereType<SceneText>()
@@ -909,14 +965,14 @@ void main() {
             .map((element) => (element.text, element.style.fontSize, element.baseline)),
         [('100%', 17, TextBaseline.alphabetic)],
       );
-      expect(elements.whereType<SceneRect>().where((element) => element.cssClasses.contains('legend')), hasLength(2));
-      expect(
-        elements
-            .whereType<SceneText>()
-            .where((element) => element.cssClasses.contains('legendText'))
-            .map((element) => element.style.fontSize),
-        everyElement(17),
-      );
+      expect(legendBoxes, hasLength(2));
+      expect(legendBoxes.map((box) => box.fill), [
+        const SolidFill(Color(236, 236, 255)),
+        const SolidFill(Color(255, 255, 222)),
+      ]);
+      expect(legendBoxes.map((box) => box.stroke?.color), [const Color(236, 236, 255), const Color(255, 255, 222)]);
+      expect(legendText.map((label) => label.style.color), everyElement(const Color(0, 0, 0)));
+      expect(legendText.map((element) => element.style.fontSize), everyElement(17));
       expectSvgGolden('pie_filtered', renderSvg(scene));
     });
 

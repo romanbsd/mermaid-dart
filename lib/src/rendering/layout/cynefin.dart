@@ -2,11 +2,15 @@ part of '../layout.dart';
 
 // Mermaid's parity CLI renders into an SVG named `my-svg`; hashing the same ID
 // preserves its default seeded boundary geometry. The other values mirror the
-// renderer's subtitle, item, and badge typography rules.
+// renderer's typography, badge sizing, and boundary stroke rules.
 const _cynefinDefaultSvgId = 'my-svg';
 const _cynefinSubtitleFontSize = 11.0;
 const _cynefinItemFontSize = 12.0;
 const _cynefinBadgeHorizontalPadding = 16.0;
+const _cynefinBoundaryStrokeWidth = 2.0;
+const _cynefinConfusionStrokeWidth = 1.5;
+const _cynefinCliffStrokeWidth = 4.0;
+const _cynefinBadgeStrokeWidth = 1.0;
 
 _LayoutResult _layoutCynefin(CynefinAst ast, _LayoutContext context) {
   final config = context.options.optionsFor(const CynefinRenderOptions());
@@ -71,7 +75,7 @@ _LayoutResult _layoutCynefin(CynefinAst ast, _LayoutContext context) {
         offsetY: padding,
       ),
       fill: const NoFill(),
-      stroke: _stroke(context, width: 2),
+      stroke: SceneStroke(color: config.strokeColor, width: _cynefinBoundaryStrokeWidth, dashes: config.boundaryDashes),
       role: SemanticRole.edge,
       cssClasses: const ['cynefinBoundary'],
     ),
@@ -86,7 +90,7 @@ _LayoutResult _layoutCynefin(CynefinAst ast, _LayoutContext context) {
         offsetY: padding,
       ),
       fill: const NoFill(),
-      stroke: _stroke(context, width: 2),
+      stroke: SceneStroke(color: config.strokeColor, width: _cynefinBoundaryStrokeWidth, dashes: config.boundaryDashes),
       role: SemanticRole.edge,
       cssClasses: const ['cynefinBoundary'],
     ),
@@ -94,7 +98,7 @@ _LayoutResult _layoutCynefin(CynefinAst ast, _LayoutContext context) {
       id: context.id('cynefin-cliff'),
       commands: generateCynefinCliffPath(width, height, offsetX: padding, offsetY: padding),
       fill: const NoFill(),
-      stroke: SceneStroke(color: config.cliffColor, width: 4, cap: StrokeCap.round, join: StrokeJoin.round),
+      stroke: SceneStroke(color: config.cliffColor, width: _cynefinCliffStrokeWidth),
       role: SemanticRole.edge,
       cssClasses: const ['cynefinCliff'],
     ),
@@ -102,7 +106,11 @@ _LayoutResult _layoutCynefin(CynefinAst ast, _LayoutContext context) {
       id: context.id('cynefin-confusion'),
       commands: generateCynefinConfusionPath(padding + width / 2, padding + height / 2, width * .15, height * .15),
       fill: SolidFill(config.confusionColor),
-      stroke: _stroke(context, width: 2),
+      stroke: SceneStroke(
+        color: config.strokeColor,
+        width: _cynefinConfusionStrokeWidth,
+        dashes: config.confusionDashes,
+      ),
       role: SemanticRole.group,
       cssClasses: const ['cynefinConfusion'],
       label: 'Confusion',
@@ -134,7 +142,7 @@ _LayoutResult _layoutCynefin(CynefinAst ast, _LayoutContext context) {
           fontFamily: context.options.theme.fontFamily,
           fontSize: 16,
           weight: FontWeight.bold,
-          color: context.options.theme.primaryText,
+          color: config.domainLabelColor,
         ),
         cssClasses: const ['cynefinDomainLabel'],
       ),
@@ -144,7 +152,7 @@ _LayoutResult _layoutCynefin(CynefinAst ast, _LayoutContext context) {
     final subtitleStyle = SceneTextStyle(
       fontFamily: context.options.theme.fontFamily,
       fontSize: _cynefinSubtitleFontSize,
-      color: context.options.theme.primaryText,
+      color: config.textColor,
     );
     for (final domain in domainOrder) {
       final center = positions[domain]!.center;
@@ -182,7 +190,7 @@ _LayoutResult _layoutCynefin(CynefinAst ast, _LayoutContext context) {
   final itemStyle = SceneTextStyle(
     fontFamily: context.options.theme.fontFamily,
     fontSize: _cynefinItemFontSize,
-    color: context.options.theme.primaryText,
+    color: config.textColor,
   );
   for (final domain in domainOrder) {
     final items = byDomain[domain]?.items ?? const [];
@@ -201,6 +209,7 @@ _LayoutResult _layoutCynefin(CynefinAst ast, _LayoutContext context) {
         center.x,
         startY + i * 30,
         colors[domain]!,
+        config.strokeColor,
         itemStyle,
         overflow: false,
       );
@@ -213,6 +222,7 @@ _LayoutResult _layoutCynefin(CynefinAst ast, _LayoutContext context) {
         center.x,
         startY + renderedItems.length * 30,
         colors[domain]!,
+        config.strokeColor,
         itemStyle,
         overflow: true,
       );
@@ -234,7 +244,7 @@ _LayoutResult _layoutCynefin(CynefinAst ast, _LayoutContext context) {
         id: context.id('cynefin-arrow'),
         commands: [MoveTo(start), QuadraticTo(control, end)],
         fill: const NoFill(),
-        stroke: _stroke(context, width: 2),
+        stroke: SceneStroke(color: config.strokeColor, width: _cynefinBoundaryStrokeWidth),
         role: SemanticRole.edge,
         cssClasses: const ['cynefinArrowLine'],
       ),
@@ -249,7 +259,7 @@ _LayoutResult _layoutCynefin(CynefinAst ast, _LayoutContext context) {
       ScenePolygon(
         id: context.id('cynefin-arrow-head'),
         points: [end, Point(base.x - unitY * 4, base.y + unitX * 4), Point(base.x + unitY * 4, base.y - unitX * 4)],
-        fill: SolidFill(context.options.theme.line),
+        fill: SolidFill(config.strokeColor),
         role: SemanticRole.edge,
         cssClasses: const ['cynefinArrowHead'],
       ),
@@ -292,6 +302,7 @@ void _addCynefinBadge(
   double centerX,
   double top,
   Color fill,
+  Color strokeColor,
   SceneTextStyle style, {
   required bool overflow,
 }) {
@@ -307,6 +318,7 @@ void _addCynefinBadge(
       fill: SolidFill(
         overflow ? Color(fill.red, fill.green, fill.blue, 153) : Color(fill.red, fill.green, fill.blue, 242),
       ),
+      stroke: SceneStroke(color: strokeColor, width: _cynefinBadgeStrokeWidth),
       role: SemanticRole.node,
       cssClasses: [overflow ? 'cynefinItemOverflow' : 'cynefinItem'],
       label: label,

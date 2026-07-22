@@ -93,8 +93,44 @@ _LayoutResult _layoutTreemap(TreemapAst ast, _LayoutContext context) {
   }
 
   final container = <SceneElement>[];
-  var nextColor = 0;
-  final sectionColors = <_TreemapLayoutNode, Color>{root: _palette.first};
+  final fillPalette = config.sectionColors.isEmpty ? const TreemapRenderOptions().sectionColors : config.sectionColors;
+  final borderPalette = config.sectionBorderColors.isEmpty
+      ? const TreemapRenderOptions().sectionBorderColors
+      : config.sectionBorderColors;
+  final labelPalette = config.labelColors.isEmpty ? const TreemapRenderOptions().labelColors : config.labelColors;
+  final sections = <_TreemapLayoutNode>[];
+  final breadthFirst = <_TreemapLayoutNode>[...root.children];
+  for (var index = 0; index < breadthFirst.length; index++) {
+    final node = breadthFirst[index];
+    if (node.children.isNotEmpty) sections.add(node);
+    breadthFirst.addAll(node.children);
+  }
+  final leaves = <_TreemapLayoutNode>[];
+  void collectLeaves(_TreemapLayoutNode node) {
+    if (node.children.isEmpty) {
+      leaves.add(node);
+      return;
+    }
+    for (final child in node.children) {
+      collectLeaves(child);
+    }
+  }
+
+  collectLeaves(root);
+  Map<_TreemapLayoutNode, Color> ordinalColors(Iterable<_TreemapLayoutNode> nodes, List<Color> palette) {
+    final colorsByLabel = <String, Color>{};
+    var nextColor = 0;
+    return {
+      for (final node in nodes)
+        node: colorsByLabel.putIfAbsent(node.label, () => palette[nextColor++ % palette.length]),
+    };
+  }
+
+  final sectionColors = ordinalColors(sections, fillPalette);
+  final sectionBorderColors = ordinalColors(sections, borderPalette);
+  final labelColors = ordinalColors([...sections, ...leaves], labelPalette);
+  final sectionIndices = {for (final (index, section) in sections.indexed) section: index};
+  sectionColors[root] = fillPalette.first;
 
   void drawLeaf(_TreemapLayoutNode leaf, Bounds bounds, Color color, int index) {
     final customStyle = leaf.cssClass == null ? null : classStyles[leaf.cssClass];
@@ -104,7 +140,7 @@ _LayoutResult _layoutTreemap(TreemapAst ast, _LayoutContext context) {
       SceneRect(
         id: context.id('treemap-leaf'),
         bounds: bounds,
-        fill: SolidFill(fillColor),
+        fill: SolidFill(_colorWithOpacity(fillColor, config.leafOpacity)),
         stroke: SceneStroke(color: strokeColor, width: _treemapLeafStrokeWidth),
         role: SemanticRole.node,
         cssClasses: const ['treemapLeaf'],
@@ -114,7 +150,7 @@ _LayoutResult _layoutTreemap(TreemapAst ast, _LayoutContext context) {
     final availableWidth = bounds.width - labelMetrics.padding * 2;
     final availableHeight = bounds.height - labelMetrics.padding * 2;
     var labelSize = labelMetrics.initialLabelSize;
-    final labelColor = customStyle?.text ?? context.options.theme.primaryText;
+    final labelColor = customStyle?.text ?? labelColors[leaf] ?? context.options.theme.primaryText;
     SceneTextStyle labelStyle() =>
         SceneTextStyle(fontFamily: context.options.theme.fontFamily, fontSize: labelSize, color: labelColor);
     while (labelSize > labelMetrics.minimumLabelSize &&
@@ -207,20 +243,26 @@ _LayoutResult _layoutTreemap(TreemapAst ast, _LayoutContext context) {
         drawLeaf(child, bounds, sectionColors[parent] ?? _palette.first, i);
         continue;
       }
-      final color = _palette[(++nextColor) % _palette.length];
+      final color = sectionColors[child] ?? fillPalette.first;
       final customStyle = child.cssClass == null ? null : classStyles[child.cssClass];
       final fillColor = customStyle?.fill ?? color;
-      final strokeColor = customStyle?.stroke ?? fillColor;
-      final textColor = customStyle?.text ?? context.options.theme.primaryText;
-      sectionColors[child] = fillColor;
+      final strokeColor = customStyle?.stroke ?? sectionBorderColors[child] ?? borderPalette.first;
+      final textColor = customStyle?.text ?? labelColors[child] ?? context.options.theme.primaryText;
       container.add(
         SceneRect(
           id: context.id('treemap-section'),
           bounds: bounds,
-          fill: SolidFill(fillColor),
-          stroke: SceneStroke(color: strokeColor, width: _treemapSectionStrokeWidth),
+          fill: SolidFill(_colorWithOpacity(fillColor, config.sectionOpacity)),
+          stroke: SceneStroke(
+            color: _colorWithOpacity(strokeColor, config.sectionStrokeOpacity),
+            width: _treemapSectionStrokeWidth,
+          ),
           role: SemanticRole.group,
-          cssClasses: ['treemapSection', 'section$nextColor', if (child.cssClass != null) child.cssClass!],
+          cssClasses: [
+            'treemapSection',
+            'section${sectionIndices[child] ?? 0}',
+            if (child.cssClass != null) child.cssClass!,
+          ],
           label: child.label,
         ),
       );
@@ -262,7 +304,7 @@ _LayoutResult _layoutTreemap(TreemapAst ast, _LayoutContext context) {
   }
 
   if (root.children.isEmpty && root.ownValue != null) {
-    drawLeaf(root, Bounds(left: 0, top: titleHeight, width: width, height: height), _palette.first, 0);
+    drawLeaf(root, Bounds(left: 0, top: titleHeight, width: width, height: height), fillPalette.first, 0);
   } else {
     layoutChildren(root, Bounds(left: 0, top: titleHeight, width: width, height: height), 0);
   }

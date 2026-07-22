@@ -1,52 +1,70 @@
 part of '../layout.dart';
 
+// Mermaid pie renderer typography, filtering, geometry, and stroke defaults.
+const _pieLabelFontSize = 17.0;
+const _pieTitleFontSize = 25.0;
+const _pieMinimumVisiblePercentage = 1.0;
+const _percentageScale = 100.0;
+const _pieLegendRectSize = 18.0;
+const _pieLegendSpacing = 4.0;
+const _pieLegendRightOffsetInRects = 12.0;
+const _pieOuterRadiusOffset = 1.0;
+const _pieStrokeWidth = 2.0;
+const _pieMaximumDonutRatio = .9;
+const _pieTitleY = 25.0;
+const _fullCircleTolerance = 1e-9;
+
 _LayoutResult _layoutPie(PieAst ast, _LayoutContext context) {
   final config = context.options.optionsFor(const PieRenderOptions());
-  final textStyle = _mermaidTextStyle(context, 17);
-  final titleStyle = _mermaidTextStyle(context, 25);
+  final textStyle = _mermaidTextStyle(context, _pieLabelFontSize);
+  final legendTextStyle = SceneTextStyle(
+    fontFamily: textStyle.fontFamily,
+    fontSize: textStyle.fontSize,
+    color: config.legendText,
+  );
+  final titleStyle = _mermaidTextStyle(context, _pieTitleFontSize);
   final radius = config.radius ?? config.size / 2 - config.margin;
   final total = ast.sections.fold<double>(0, (sum, section) => sum + math.max(0, section.value.toDouble()));
   final rendered = <({int index, PieSectionAst section})>[
     for (var i = 0; i < ast.sections.length; i++)
-      if (total > 0 && math.max(0, ast.sections[i].value.toDouble()) / total * 100 >= 1)
+      if (total > 0 &&
+          math.max(0, ast.sections[i].value.toDouble()) / total * _percentageScale >= _pieMinimumVisiblePercentage)
         (index: i, section: ast.sections[i]),
   ];
   final arcTotal = rendered.fold<double>(0, (sum, entry) => sum + entry.section.value.toDouble());
-  const legendRectSize = 18.0;
-  const legendSpacing = 4.0;
-  final legendLineHeight = legendRectSize + legendSpacing;
+  final legendLineHeight = _pieLegendRectSize + _pieLegendSpacing;
   final legendLabels = [
     for (final section in ast.sections) '${section.label}${ast.showData ? ' [${section.value}]' : ''}',
   ];
   final longestLegend = legendLabels
       .map((label) => context.measurer.measure(label, textStyle).width)
       .fold(0.0, math.max);
-  final legendWidth = legendRectSize + legendSpacing + longestLegend;
+  final legendWidth = _pieLegendRectSize + _pieLegendSpacing + longestLegend;
   final totalLegendHeight = ast.sections.length * legendLineHeight;
   var width = config.size + config.margin;
   var height = config.size;
   var center = Point(config.size / 2, config.size / 2);
-  var legendLeft = center.x + 12 * legendRectSize;
+  var legendLeft = center.x + _pieLegendRightOffsetInRects * _pieLegendRectSize;
   var legendTop = center.y - totalLegendHeight / 2;
   switch (config.legendPosition) {
     case PieLegendPosition.top:
       height += totalLegendHeight;
-      legendLeft = center.x - longestLegend / 2 - legendRectSize - legendSpacing;
+      legendLeft = center.x - longestLegend / 2 - _pieLegendRectSize - _pieLegendSpacing;
       legendTop = config.margin;
       center = Point(center.x, center.y + totalLegendHeight + legendLineHeight);
     case PieLegendPosition.bottom:
       height += totalLegendHeight;
-      legendLeft = center.x - longestLegend / 2 - legendRectSize - legendSpacing;
+      legendLeft = center.x - longestLegend / 2 - _pieLegendRectSize - _pieLegendSpacing;
       legendTop = center.y + radius + legendLineHeight;
     case PieLegendPosition.left:
       width += legendWidth;
-      legendLeft = legendRectSize;
+      legendLeft = _pieLegendRectSize;
       legendTop = center.y - totalLegendHeight / 2;
       center = Point(center.x + legendWidth + legendLineHeight, center.y);
     case PieLegendPosition.right:
       width += legendWidth;
     case PieLegendPosition.center:
-      legendLeft = center.x - longestLegend / 2 - legendRectSize - legendSpacing;
+      legendLeft = center.x - longestLegend / 2 - _pieLegendRectSize - _pieLegendSpacing;
       legendTop = center.y - totalLegendHeight / 2;
   }
   final elements = <SceneElement>[];
@@ -54,14 +72,16 @@ _LayoutResult _layoutPie(PieAst ast, _LayoutContext context) {
     SceneCircle(
       id: context.id('pie-outer-circle'),
       center: center,
-      radius: radius + 1,
+      radius: radius + _pieOuterRadiusOffset,
       fill: const NoFill(),
-      stroke: _stroke(context, width: 2),
+      stroke: SceneStroke(color: config.outerStroke, width: _pieStrokeWidth),
       cssClasses: const ['pieOuterCircle'],
     ),
   );
   var angle = -math.pi / 2;
-  final innerRadius = config.donutHole > 0 && config.donutHole <= .9 ? radius * config.donutHole : 0.0;
+  final innerRadius = config.donutHole > 0 && config.donutHole <= _pieMaximumDonutRatio
+      ? radius * config.donutHole
+      : 0.0;
   for (final entry in rendered) {
     final section = entry.section;
     final sweep = section.value.toDouble() / arcTotal * math.pi * 2;
@@ -76,8 +96,11 @@ _LayoutResult _layoutPie(PieAst ast, _LayoutContext context) {
       ScenePath(
         id: context.id('pie-section'),
         commands: _pieArcCommands(center, radius, innerRadius, angle, end),
-        fill: SolidFill(_palette[entry.index % _palette.length]),
-        stroke: const SceneStroke(color: Color(255, 255, 255), width: 2),
+        fill: SolidFill(_colorWithOpacity(_pieSectionColor(config, entry.index), config.sectionOpacity)),
+        stroke: SceneStroke(
+          color: _colorWithOpacity(config.sectionStroke, config.sectionOpacity),
+          width: _pieStrokeWidth,
+        ),
         role: SemanticRole.node,
         cssClasses: classes,
         label: section.label,
@@ -88,7 +111,7 @@ _LayoutResult _layoutPie(PieAst ast, _LayoutContext context) {
     elements.add(
       _text(
         context,
-        '${(section.value.toDouble() / total * 100).round()}%',
+        '${(section.value.toDouble() / total * _percentageScale).round()}%',
         center.x + math.cos(middle) * labelRadius,
         center.y + math.sin(middle) * labelRadius,
         anchor: TextAnchor.middle,
@@ -107,11 +130,11 @@ _LayoutResult _layoutPie(PieAst ast, _LayoutContext context) {
           bounds: Bounds(
             left: legendLeft,
             top: legendTop + i * legendLineHeight,
-            width: legendRectSize,
-            height: legendRectSize,
+            width: _pieLegendRectSize,
+            height: _pieLegendRectSize,
           ),
-          fill: SolidFill(_palette[i % _palette.length]),
-          stroke: SceneStroke(color: _palette[i % _palette.length]),
+          fill: SolidFill(_pieSectionColor(config, i)),
+          stroke: SceneStroke(color: _pieSectionColor(config, i)),
           role: SemanticRole.legend,
           cssClasses: const ['legend'],
         ),
@@ -120,11 +143,11 @@ _LayoutResult _layoutPie(PieAst ast, _LayoutContext context) {
         _text(
           context,
           legendLabels[i],
-          legendLeft + legendRectSize + legendSpacing,
-          legendTop + i * legendLineHeight + legendRectSize - legendSpacing,
+          legendLeft + _pieLegendRectSize + _pieLegendSpacing,
+          legendTop + i * legendLineHeight + _pieLegendRectSize - _pieLegendSpacing,
           role: SemanticRole.legend,
           baseline: TextBaseline.alphabetic,
-          style: textStyle,
+          style: legendTextStyle,
           cssClasses: const ['legendText'],
         ),
       );
@@ -136,7 +159,7 @@ _LayoutResult _layoutPie(PieAst ast, _LayoutContext context) {
         context,
         ast.title!,
         config.size / 2,
-        25,
+        _pieTitleY,
         anchor: TextAnchor.middle,
         baseline: TextBaseline.alphabetic,
         role: SemanticRole.title,
@@ -148,11 +171,16 @@ _LayoutResult _layoutPie(PieAst ast, _LayoutContext context) {
   return _LayoutResult(width, height, elements);
 }
 
+Color _pieSectionColor(PieRenderOptions config, int index) {
+  final colors = config.sectionColors.isEmpty ? const PieRenderOptions().sectionColors : config.sectionColors;
+  return colors[index % colors.length];
+}
+
 List<PathCommand> _pieArcCommands(Point center, double outer, double inner, double start, double end) {
   Point polar(double radius, double angle) =>
       Point(center.x + radius * math.cos(angle), center.y + radius * math.sin(angle));
   final sweep = end - start;
-  final full = sweep >= math.pi * 2 - 1e-9;
+  final full = sweep >= math.pi * 2 - _fullCircleTolerance;
   final commands = <PathCommand>[MoveTo(polar(outer, start))];
   if (full) {
     commands

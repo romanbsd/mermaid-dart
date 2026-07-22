@@ -99,6 +99,38 @@ void main() {
     expect(SvgComparison.compare(left, right).samePaint, isTrue);
   });
 
+  test('unrelated stylesheet properties do not override presentation attributes', () {
+    final styled = SvgSnapshot.fromSvg(
+      '<svg id="chart"><style>#chart { fill: #333; } '
+      '#chart .slice { stroke: #000; opacity: .7; }</style>'
+      '<path class="slice" fill="#ececff" d="M0 0L10 0Z"/></svg>',
+    );
+    final explicit = SvgSnapshot.fromSvg('<svg><path fill="#ececff" stroke="#000" opacity=".7" d="M0 0L10 0Z"/></svg>');
+
+    expect(SvgComparison.compare(styled, explicit).samePaint, isTrue);
+  });
+
+  test('resolves inherited styles from a canonicalized root ID selector', () {
+    final stylesheet = SvgSnapshot.fromSvg(
+      '<svg id="diagram"><style>#diagram { fill: #333; }</style><text>Label</text></svg>',
+    );
+    final explicit = SvgSnapshot.fromSvg('<svg><text fill="#333">Label</text></svg>');
+
+    expect(SvgComparison.compare(stylesheet, explicit).samePaint, isTrue);
+  });
+
+  test('normalizes element opacity to equivalent fill and stroke opacity', () {
+    final elementOpacity = SvgSnapshot.fromSvg(
+      '<svg><path fill="#f00" stroke="#000" opacity=".7" d="M0 0L10 0Z"/></svg>',
+    );
+    final channelOpacity = SvgSnapshot.fromSvg(
+      '<svg><path fill="#f00" fill-opacity=".7" stroke="#000" '
+      'stroke-opacity=".7" d="M0 0L10 0Z"/></svg>',
+    );
+
+    expect(SvgComparison.compare(elementOpacity, channelOpacity).samePaint, isTrue);
+  });
+
   test('treats foreignObject and SVG text as equivalent visible text', () {
     final svgText = SvgSnapshot.fromSvg('<svg><text x="1">Multi line</text></svg>');
     final htmlText = SvgSnapshot.fromSvg(

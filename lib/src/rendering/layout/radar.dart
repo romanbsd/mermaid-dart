@@ -16,7 +16,6 @@ const _radarLegendBoxSize = 12.0;
 const _radarLegendTextOffset = 16.0;
 const _radarLegendRowHeight = 20.0;
 const _radarLegendPositionRatio = 3 / 4;
-const _colorAlphaMaximum = 255;
 
 _LayoutResult _layoutRadar(RadarAst ast, _LayoutContext context) {
   final config = context.options.optionsFor(const RadarRenderOptions());
@@ -44,14 +43,14 @@ _LayoutResult _layoutRadar(RadarAst ast, _LayoutContext context) {
           id: context.id('radar-graticule'),
           center: center,
           radius: radius * scale,
-          fill: SolidFill(_withOpacity(config.graticuleColor, config.graticuleOpacity)),
+          fill: SolidFill(_colorWithOpacity(config.graticuleColor, config.graticuleOpacity)),
           stroke: SceneStroke(color: config.graticuleColor, width: _radarGraticuleStrokeWidth),
           cssClasses: const ['radarGraticule'],
         ),
         RadarGraticule.polygon => ScenePolygon(
           id: context.id('radar-graticule'),
           points: [for (var i = 0; i < count; i++) polar(i, scale)],
-          fill: SolidFill(_withOpacity(config.graticuleColor, config.graticuleOpacity)),
+          fill: SolidFill(_colorWithOpacity(config.graticuleColor, config.graticuleOpacity)),
           stroke: SceneStroke(color: config.graticuleColor, width: _radarGraticuleStrokeWidth),
           cssClasses: const ['radarGraticule'],
         ),
@@ -113,7 +112,7 @@ _LayoutResult _layoutRadar(RadarAst ast, _LayoutContext context) {
       points.add(polar(i, normalized));
     }
     final color = _radarSeriesColor(config, curveIndex);
-    final fill = SolidFill(_withOpacity(color, config.seriesOpacity));
+    final fill = SolidFill(_colorWithOpacity(color, config.seriesOpacity));
     final stroke = SceneStroke(color: color, width: _radarSeriesStrokeWidth);
     elements.add(switch (graticule) {
       RadarGraticule.circle => ScenePath(
@@ -146,7 +145,7 @@ _LayoutResult _layoutRadar(RadarAst ast, _LayoutContext context) {
         SceneRect(
           id: context.id('radar-legend-box'),
           bounds: Bounds(left: legendX, top: y, width: _radarLegendBoxSize, height: _radarLegendBoxSize),
-          fill: SolidFill(_withOpacity(color, config.seriesOpacity)),
+          fill: SolidFill(_colorWithOpacity(color, config.seriesOpacity)),
           stroke: SceneStroke(color: color, width: _radarLegendStrokeWidth),
           role: SemanticRole.legend,
           cssClasses: ['radarLegendBox-$i'],
@@ -187,9 +186,6 @@ _LayoutResult _layoutRadar(RadarAst ast, _LayoutContext context) {
     elements,
   );
 }
-
-Color _withOpacity(Color color, double opacity) =>
-    Color(color.red, color.green, color.blue, (opacity.clamp(0, 1) * _colorAlphaMaximum).round());
 
 Color _radarSeriesColor(RadarRenderOptions config, int index) {
   final colors = config.seriesColors.isEmpty ? const RadarRenderOptions().seriesColors : config.seriesColors;
