@@ -30,10 +30,45 @@ sealed class DiagramRenderOptions {
   const DiagramRenderOptions();
 }
 
+final class InfoRenderOptions extends DiagramRenderOptions {
+  const InfoRenderOptions({this.version = '1.0.0'});
+
+  final String version;
+}
+
+final class TreeViewRenderOptions extends DiagramRenderOptions {
+  const TreeViewRenderOptions({this.rowIndent = 10, this.paddingX = 5, this.paddingY = 5, this.lineThickness = 1});
+
+  final double rowIndent;
+  final double paddingX;
+  final double paddingY;
+  final double lineThickness;
+}
+
 final class RailroadRenderOptions extends DiagramRenderOptions {
-  const RailroadRenderOptions({this.verticalGap = 32, this.horizontalGap = 20});
-  final double verticalGap;
-  final double horizontalGap;
+  const RailroadRenderOptions({
+    this.compactMode = false,
+    this.padding = 10,
+    this.verticalSeparation = 8,
+    this.horizontalSeparation = 10,
+    this.arcRadius = 10,
+    this.fontSize = 14,
+    this.fontFamily = 'monospace',
+    this.strokeWidth = 2,
+    this.showMarkers = true,
+    this.markerRadius = 5,
+  });
+
+  final bool compactMode;
+  final double padding;
+  final double verticalSeparation;
+  final double horizontalSeparation;
+  final double arcRadius;
+  final double fontSize;
+  final String fontFamily;
+  final double strokeWidth;
+  final bool showMarkers;
+  final double markerRadius;
 }
 
 final class PacketRenderOptions extends DiagramRenderOptions {
@@ -108,19 +143,23 @@ final class RenderOptions {
   const RenderOptions({
     this.theme = const MermaidTheme(),
     this.padding = 20,
+    this.info = const InfoRenderOptions(),
     this.packet = const PacketRenderOptions(),
     this.pie = const PieRenderOptions(),
     this.radar = const RadarRenderOptions(),
     this.railroad = const RailroadRenderOptions(),
+    this.treeView = const TreeViewRenderOptions(),
     this.diagram = const <Type, DiagramRenderOptions>{},
   });
 
   final MermaidTheme theme;
   final double padding;
+  final InfoRenderOptions info;
   final PacketRenderOptions packet;
   final PieRenderOptions pie;
   final RadarRenderOptions radar;
   final RailroadRenderOptions railroad;
+  final TreeViewRenderOptions treeView;
 
   /// Additional typed options for renderer families added after this API.
   final Map<Type, DiagramRenderOptions> diagram;
@@ -129,10 +168,12 @@ final class RenderOptions {
     final override = diagram[fallback.runtimeType];
     if (override != null) return override as T;
     return switch (fallback) {
+          InfoRenderOptions() => info,
           PacketRenderOptions() => packet,
           PieRenderOptions() => pie,
           RadarRenderOptions() => radar,
           RailroadRenderOptions() => railroad,
+          TreeViewRenderOptions() => treeView,
         }
         as T;
   }

@@ -83,6 +83,29 @@ void main() {
       }
     });
 
+    test('all railroad syntaxes use the same positioned renderer', () {
+      const sources = {
+        DiagramType.railroad: '''railroad-beta
+rule = sequence(terminal("a"), optional(nonterminal("b"))) ;
+''',
+        DiagramType.railroadEbnf: '''railroad-ebnf-beta
+rule = "a" b? ;
+''',
+        DiagramType.railroadAbnf: '''railroad-abnf-beta
+rule = "a" [b] ;
+''',
+        DiagramType.railroadPeg: '''railroad-peg-beta
+rule <- "a" b? ;
+''',
+      };
+      final rendered = [for (final entry in sources.entries) renderDiagramSvg(entry.key, entry.value)];
+
+      expect(rendered.skip(1), everyElement(rendered.first));
+      final document = XmlDocument.parse(rendered.first);
+      expect(document.findAllElements('circle'), hasLength(2));
+      expect(document.findAllElements('path'), isNotEmpty);
+    });
+
     test('fallback text measurement is Unicode grapheme aware', () {
       const measurer = DeterministicTextMeasurer();
       const style = SceneTextStyle(fontSize: 16);

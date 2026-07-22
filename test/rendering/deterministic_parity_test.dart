@@ -17,6 +17,89 @@ void main() {
   const measurer = _ExactTextMeasurer();
 
   group('Mermaid deterministic renderer parity', () {
+    test('info uses Mermaid version-label geometry', () {
+      final scene = layoutDiagram(
+        const InfoAst(),
+        textMeasurer: measurer,
+        options: const RenderOptions(padding: 0, info: InfoRenderOptions(version: '11.9.0')),
+      );
+      final elements = _flatten(scene.elements).toList();
+      final label = elements.whereType<SceneText>().single;
+
+      expect(scene.bounds, const Bounds(left: 0, top: 0, width: 400, height: 100));
+      expect(label.text, 'v11.9.0');
+      expect(label.position, const Point(100, 40));
+      expect(label.style.fontSize, 32);
+      expect(label.cssClasses, contains('version'));
+      expect(elements.whereType<SceneRect>(), isEmpty);
+      expectSvgGolden('info_version', renderSvg(scene));
+    });
+
+    test('tree view aligns descriptions and sizes highlighted rows', () {
+      final scene = layoutDiagram(
+        const TreeViewAst(
+          nodes: [
+            TreeViewNodeAst(name: 'root', cssClass: 'highlight'),
+            TreeViewNodeAst(name: 'child', indent: 2, description: 'details'),
+            TreeViewNodeAst(name: 'peer', indent: 2, description: 'more'),
+          ],
+        ),
+        textMeasurer: measurer,
+        options: const RenderOptions(padding: 0),
+      );
+      final elements = _flatten(scene.elements).toList();
+      final descriptions = elements
+          .whereType<SceneText>()
+          .where((element) => element.cssClasses.contains('treeView-node-description'))
+          .toList();
+      final highlight = elements.whereType<SceneRect>().singleWhere(
+        (element) => element.cssClasses.contains('treeView-highlight-bg'),
+      );
+
+      expect(descriptions.map((description) => description.position.x).toSet(), hasLength(1));
+      expect(highlight.bounds.width, scene.bounds.width - 2);
+      expect(
+        elements.whereType<SceneLine>().where((element) => element.cssClasses.contains('treeView-node-line')),
+        hasLength(4),
+      );
+      expect(elements.whereType<SceneCircle>(), isEmpty);
+      expectSvgGolden('tree_descriptions', renderSvg(scene));
+    });
+
+    test('railroad uses Mermaid baselines, markers, and typed arcs', () {
+      final scene = layoutDiagram(
+        const RailroadAst(
+          rules: [
+            RailroadRuleAst(
+              name: 'value',
+              definition: RailroadChoiceAst([
+                RailroadTerminalAst('yes'),
+                RailroadOptionalAst(RailroadNonTerminalAst('name')),
+              ]),
+            ),
+          ],
+        ),
+        textMeasurer: measurer,
+        options: const RenderOptions(padding: 0),
+      );
+      final elements = _flatten(scene.elements).toList();
+
+      expect(elements.whereType<SceneCircle>(), hasLength(2));
+      expect(
+        elements
+            .whereType<SceneText>()
+            .singleWhere((element) => element.cssClasses.contains('railroad-rule-name'))
+            .text,
+        'value =',
+      );
+      expect(elements.whereType<ScenePath>().expand((path) => path.commands).whereType<ArcTo>(), isNotEmpty);
+      expect(
+        elements.whereType<SceneGroup>().where((element) => element.cssClasses.contains('railroad-terminal')),
+        hasLength(1),
+      );
+      expectSvgGolden('railroad_choice', renderSvg(scene));
+    });
+
     test('packet splits blocks at row boundaries and shows bit labels', () {
       final scene = layoutDiagram(
         const PacketAst(blocks: [PacketRangeBlockAst(start: 0, end: 40, label: 'payload')]),

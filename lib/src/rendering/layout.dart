@@ -137,20 +137,22 @@ SceneStroke _stroke(_LayoutContext context, {double width = 1.5, List<double> da
 );
 
 _LayoutResult _layoutInfo(InfoAst ast, _LayoutContext context) {
-  const width = 240.0;
-  const height = 80.0;
-  return _LayoutResult(width, height, [
-    SceneRect(
-      id: context.id('info'),
-      bounds: const Bounds(left: 0, top: 0, width: width, height: height),
-      radiusX: 6,
-      radiusY: 6,
-      fill: SolidFill(context.options.theme.primary),
-      stroke: SceneStroke(color: context.options.theme.primaryBorder),
-      role: SemanticRole.node,
-      cssClasses: const ['info'],
+  final config = context.options.optionsFor(const InfoRenderOptions());
+  final style = SceneTextStyle(
+    fontFamily: context.options.theme.fontFamily,
+    fontSize: 32,
+    color: context.options.theme.primaryText,
+  );
+  return _LayoutResult(400, 100, [
+    _text(
+      context,
+      'v${config.version}',
+      100,
+      40,
+      anchor: TextAnchor.middle,
+      style: style,
+      cssClasses: const ['version'],
     ),
-    _text(context, 'mermaid-dart', width / 2, height / 2, anchor: TextAnchor.middle),
   ]);
 }
 
@@ -597,221 +599,453 @@ List<PathCommand> _closedRoundCurve(List<Point> points, double tension) {
 }
 
 _LayoutResult _layoutTree(TreeViewAst ast, _LayoutContext context) {
-  const rowHeight = 34.0;
-  const indentWidth = 30.0;
+  final config = context.options.optionsFor(const TreeViewRenderOptions());
+  if (ast.nodes.isEmpty) return const _LayoutResult(1, 1, []);
   final elements = <SceneElement>[];
-  var maxWidth = 220.0;
+  final indentStack = <int>[];
+  final depths = <int>[];
+  for (final node in ast.nodes) {
+    final indent = node.indent ?? 0;
+    while (indentStack.isNotEmpty && indentStack.last >= indent) {
+      indentStack.removeLast();
+    }
+    depths.add(indentStack.length);
+    indentStack.add(indent);
+  }
+
+  final labelRightEdges = <double>[];
+  final rowTops = <double>[];
+  final rowHeights = <double>[];
+  final labelGroups = <List<SceneElement>>[];
+  var totalHeight = 0.0;
+  var totalWidth = 0.0;
   for (var i = 0; i < ast.nodes.length; i++) {
     final node = ast.nodes[i];
-    final indent = node.indent ?? 0;
-    final y = i * rowHeight + rowHeight / 2;
-    final x = indent * indentWidth + 12;
-    if (i > 0 && indent > 0) {
-      elements.add(
-        SceneLine(
-          id: context.id('tree-edge'),
-          start: Point(x - 16, y - rowHeight),
-          end: Point(x - 16, y),
-          stroke: _stroke(context, width: 1),
-          role: SemanticRole.edge,
-        ),
-      );
-      elements.add(
-        SceneLine(
-          id: context.id('tree-edge'),
-          start: Point(x - 16, y),
-          end: Point(x - 4, y),
-          stroke: _stroke(context, width: 1),
-          role: SemanticRole.edge,
-        ),
-      );
-    }
-    elements.add(
-      SceneCircle(
-        id: context.id('tree-node'),
-        center: Point(x, y),
-        radius: 4,
-        fill: SolidFill(context.options.theme.primaryBorder),
-        role: SemanticRole.node,
-        cssClasses: [if (node.cssClass != null) node.cssClass!],
-        label: node.name,
-      ),
-    );
-    var labelX = x + 12;
+    final x = depths[i] * (config.rowIndent + config.paddingX);
+    final measured = context.measurer.measure(node.name, context.textStyle);
+    final height = measured.height + config.paddingY * 2;
+    final centerY = totalHeight + height / 2;
+    final children = <SceneElement>[];
+    final hasIcon = node.icon != null;
+    final labelX = x + config.paddingX + (hasIcon ? 18 : 0);
     if (node.icon != null) {
       final geometry = _iconGeometry(context, node.icon!);
-      elements.add(
+      children.add(
         SceneIcon(
           id: context.id('tree-icon'),
-          position: Point(labelX, y - geometry.bounds.height / 2),
+          position: Point(x + config.paddingX, totalHeight + config.paddingY),
           geometry: geometry,
-          stroke: _stroke(context, width: 1),
+          stroke: _stroke(context, width: config.lineThickness),
           label: node.icon,
+          cssClasses: const ['treeView-node-icon'],
         ),
       );
-      labelX += geometry.bounds.width + 7;
+    }
+    children.add(
+      _text(
+        context,
+        node.name,
+        labelX,
+        centerY,
+        cssClasses: ['treeView-node-label', if (node.cssClass != null) ...node.cssClass!.split(RegExp(r'\s+'))],
+      ),
+    );
+    labelGroups.add(children);
+    labelRightEdges.add(labelX + measured.width);
+    rowTops.add(totalHeight);
+    rowHeights.add(height);
+    totalWidth = math.max(totalWidth, x + measured.width + config.paddingX * 2 + (hasIcon ? 18 : 0));
+    totalHeight += height;
+  }
+
+  final descriptionIndices = <int>[
+    for (var i = 0; i < ast.nodes.length; i++)
+      if (ast.nodes[i].description != null) i,
+  ];
+  if (descriptionIndices.isNotEmpty) {
+    final descriptionX = labelRightEdges.reduce(math.max) + 16;
+    for (final i in descriptionIndices) {
+      final description = ast.nodes[i].description!;
+      labelGroups[i].add(
+        _text(
+          context,
+          description,
+          descriptionX,
+          rowTops[i] + rowHeights[i] / 2,
+          cssClasses: const ['treeView-node-description'],
+        ),
+      );
+      totalWidth = math.max(
+        totalWidth,
+        descriptionX + context.measurer.measure(description, context.textStyle).width + config.paddingX,
+      );
+    }
+  }
+
+  for (var i = 0; i < ast.nodes.length; i++) {
+    final node = ast.nodes[i];
+    final depth = depths[i];
+    final x = depth * (config.rowIndent + config.paddingX);
+    final centerY = rowTops[i] + rowHeights[i] / 2;
+    if (node.cssClass?.split(RegExp(r'\s+')).contains('highlight') ?? false) {
+      final width = totalWidth - x + 8;
+      labelGroups[i].insert(
+        0,
+        SceneRect(
+          id: context.id('tree-highlight'),
+          bounds: Bounds(left: x, top: rowTops[i] + 1, width: width, height: rowHeights[i] - 2),
+          radiusX: 3,
+          radiusY: 3,
+          fill: SolidFill(context.options.theme.tertiary),
+          cssClasses: const ['treeView-highlight-bg'],
+        ),
+      );
+      totalWidth = math.max(totalWidth, x + width + 2);
     }
     elements.add(
-      _text(context, node.description == null ? node.name : '${node.name} — ${node.description}', labelX, y),
+      SceneLine(
+        id: context.id('tree-edge'),
+        start: Point(x - config.rowIndent, centerY),
+        end: Point(x, centerY),
+        stroke: _stroke(context, width: config.lineThickness),
+        role: SemanticRole.edge,
+        cssClasses: const ['treeView-node-line'],
+      ),
     );
-    final measured = context.measurer.measure(node.name, context.textStyle).width + labelX + 18;
-    maxWidth = math.max(maxWidth, measured);
+    var lastDescendant = i;
+    while (lastDescendant + 1 < depths.length && depths[lastDescendant + 1] > depth) {
+      lastDescendant++;
+    }
+    if (lastDescendant > i) {
+      elements.add(
+        SceneLine(
+          id: context.id('tree-edge'),
+          start: Point(x + config.paddingX, rowTops[i] + rowHeights[i]),
+          end: Point(
+            x + config.paddingX,
+            rowTops[lastDescendant] + rowHeights[lastDescendant] / 2 + config.lineThickness / 2,
+          ),
+          stroke: _stroke(context, width: config.lineThickness),
+          role: SemanticRole.edge,
+          cssClasses: const ['treeView-node-line'],
+        ),
+      );
+    }
+    elements.add(
+      SceneGroup(
+        id: context.id('tree-node'),
+        children: labelGroups[i],
+        role: SemanticRole.node,
+        label: node.name,
+        cssClasses: const ['treeView-node'],
+      ),
+    );
   }
-  return _LayoutResult(maxWidth, math.max(rowHeight, ast.nodes.length * rowHeight), elements);
+  return _LayoutResult(totalWidth, totalHeight, [
+    SceneGroup(id: context.id('tree-view'), children: elements, cssClasses: const ['tree-view']),
+  ]);
 }
 
 IconGeometry _iconGeometry(_LayoutContext context, String reference) =>
     context.iconResolver.resolve(reference) ?? const PlaceholderIconResolver().resolve(reference);
 
 final class _RailBox {
-  const _RailBox(this.width, this.height, this.elements);
+  const _RailBox(this.width, this.height, this.up, this.down, this.elements);
   final double width;
   final double height;
+  final double up;
+  final double down;
   final List<SceneElement> elements;
 }
 
 _RailBox _railNode(RailroadNodeAst node, _LayoutContext context) => switch (node) {
   RailroadTerminalAst(:final value) => _railLeaf(value, context, true),
   RailroadNonTerminalAst(:final name) => _railLeaf(name, context, false),
-  RailroadSpecialAst(:final text) => _railLeaf(text, context, false),
+  RailroadSpecialAst(:final text) => _railLeaf('? $text ?', context, false, special: true),
   RailroadSequenceAst(:final elements) => _railSequence(elements, context),
   RailroadChoiceAst(:final alternatives) => _railChoice(alternatives, context),
-  RailroadOptionalAst(:final element) => _railChoice([element, const RailroadSpecialAst('')], context),
+  RailroadOptionalAst(:final element) => _railOptional(element, context),
   RailroadRepetitionAst(:final element, :final min, :final max) => _railRepetition(element, min, max, context),
 };
 
-_RailBox _railLeaf(String label, _LayoutContext context, bool terminal) {
-  final measured = context.measurer.measure(label, context.textStyle);
-  final width = math.max(30.0, measured.width + 20);
-  const height = 34.0;
-  return _RailBox(width, height, [
-    SceneRect(
-      id: context.id('rail-node'),
-      bounds: Bounds(left: 0, top: 0, width: width, height: height),
-      radiusX: terminal ? 10 : 2,
-      radiusY: terminal ? 10 : 2,
-      fill: SolidFill(terminal ? context.options.theme.primary : context.options.theme.secondary),
-      stroke: _stroke(context),
+SceneTextStyle _railTextStyle(_LayoutContext context) {
+  final config = context.options.optionsFor(const RailroadRenderOptions());
+  return SceneTextStyle(
+    fontFamily: config.fontFamily,
+    fontSize: config.fontSize,
+    color: context.options.theme.primaryText,
+  );
+}
+
+SceneStroke _railStroke(_LayoutContext context, {bool dashed = false}) {
+  final config = context.options.optionsFor(const RailroadRenderOptions());
+  return _stroke(context, width: config.strokeWidth, dashes: dashed ? const [5, 5] : const []);
+}
+
+ScenePath _railPath(_LayoutContext context, List<PathCommand> commands) => ScenePath(
+  id: context.id('railroad-line'),
+  commands: commands,
+  fill: const NoFill(),
+  stroke: _railStroke(context),
+  role: SemanticRole.edge,
+  cssClasses: const ['railroad-line'],
+);
+
+_RailBox _railLeaf(String label, _LayoutContext context, bool terminal, {bool special = false}) {
+  final config = context.options.optionsFor(const RailroadRenderOptions());
+  final style = _railTextStyle(context);
+  final measured = context.measurer.measure(label, style);
+  final width = measured.width + config.padding * 2;
+  final height = measured.height + config.padding * 2;
+  final groupClass = terminal ? 'railroad-terminal' : (special ? 'railroad-special' : 'railroad-nonterminal');
+  return _RailBox(width, height, height / 2, height / 2, [
+    SceneGroup(
+      id: context.id(groupClass),
+      cssClasses: [groupClass],
       role: SemanticRole.node,
       label: label,
+      children: [
+        SceneRect(
+          id: context.id('railroad-node'),
+          bounds: Bounds(left: 0, top: 0, width: width, height: height),
+          radiusX: terminal ? 10 : 0,
+          radiusY: terminal ? 10 : 0,
+          fill: SolidFill(terminal ? context.options.theme.primary : context.options.theme.secondary),
+          stroke: _railStroke(context, dashed: special),
+          role: SemanticRole.node,
+          label: label,
+        ),
+        _text(context, label, width / 2, height / 2, anchor: TextAnchor.middle, style: style),
+      ],
     ),
-    _text(context, label, width / 2, height / 2, anchor: TextAnchor.middle),
   ]);
 }
 
 _RailBox _railSequence(List<RailroadNodeAst> nodes, _LayoutContext context) {
-  if (nodes.isEmpty) return const _RailBox(20, 20, []);
+  if (nodes.isEmpty) return const _RailBox(0, 0, 0, 0, []);
+  final config = context.options.optionsFor(const RailroadRenderOptions());
   final boxes = nodes.map((node) => _railNode(node, context)).toList();
-  const gap = 20.0;
-  final height = boxes.map((box) => box.height).reduce(math.max);
+  final up = boxes.map((box) => box.up).reduce(math.max);
+  final down = boxes.map((box) => box.down).reduce(math.max);
+  final height = up + down;
   final elements = <SceneElement>[];
   var x = 0.0;
   for (var i = 0; i < boxes.length; i++) {
     final box = boxes[i];
-    final y = (height - box.height) / 2;
+    final y = up - box.up;
     elements.add(SceneGroup(id: context.id('rail-item'), transforms: [Translate(x, y)], children: box.elements));
     x += box.width;
     if (i != boxes.length - 1) {
-      elements.add(
-        SceneLine(
-          id: context.id('rail-line'),
-          start: Point(x, height / 2),
-          end: Point(x + gap, height / 2),
-          stroke: _stroke(context),
-          role: SemanticRole.edge,
-        ),
-      );
-      x += gap;
+      elements.add(_railPath(context, [MoveTo(Point(x, up)), LineTo(Point(x + config.horizontalSeparation, up))]));
+      x += config.horizontalSeparation;
     }
   }
-  return _RailBox(x, height, elements);
+  return _RailBox(x, height, up, down, [
+    SceneGroup(id: context.id('railroad-sequence'), children: elements, cssClasses: const ['railroad-sequence']),
+  ]);
 }
 
 _RailBox _railChoice(List<RailroadNodeAst> nodes, _LayoutContext context) {
   final boxes = nodes.map((node) => _railNode(node, context)).toList();
-  if (boxes.isEmpty) return const _RailBox(20, 20, []);
-  const gap = 18.0;
-  const side = 24.0;
-  final width = boxes.map((box) => box.width).fold(0.0, math.max) + side * 2;
-  final height = boxes.fold(0.0, (sum, box) => sum + box.height) + gap * (boxes.length - 1);
+  if (boxes.isEmpty) return const _RailBox(0, 0, 0, 0, []);
+  final config = context.options.optionsFor(const RailroadRenderOptions());
+  final radius = config.arcRadius;
+  final maxWidth = boxes.map((box) => box.width).fold(0.0, math.max);
+  final height = boxes.fold(0.0, (sum, box) => sum + box.height) + config.verticalSeparation * (boxes.length - 1);
+  final width = maxWidth + radius * 4;
+  final centerY = height / 2;
   final elements = <SceneElement>[];
   var y = 0.0;
   for (final box in boxes) {
-    final centerY = y + box.height / 2;
-    elements.add(SceneGroup(id: context.id('rail-choice'), transforms: [Translate(side, y)], children: box.elements));
+    final itemCenterY = y + box.up;
+    final itemX = radius * 2 + (maxWidth - box.width) / 2;
+    final below = itemCenterY > centerY;
     elements.add(
-      ScenePolyline(
-        id: context.id('rail-branch'),
-        points: [Point(0, height / 2), Point(side / 2, centerY), Point(side, centerY)],
-        fill: const NoFill(),
-        stroke: _stroke(context),
-        role: SemanticRole.edge,
-      ),
+      SceneGroup(id: context.id('rail-choice-item'), transforms: [Translate(itemX, y)], children: box.elements),
     );
-    elements.add(
-      ScenePolyline(
-        id: context.id('rail-branch'),
-        points: [Point(side + box.width, centerY), Point(width - side / 2, centerY), Point(width, height / 2)],
-        fill: const NoFill(),
-        stroke: _stroke(context),
-        role: SemanticRole.edge,
-      ),
-    );
-    y += box.height + gap;
+    final left = <PathCommand>[MoveTo(Point(0, centerY))];
+    if (itemCenterY == centerY) {
+      left.add(LineTo(Point(itemX, itemCenterY)));
+    } else {
+      left
+        ..add(
+          ArcTo(
+            radiusX: radius,
+            radiusY: radius,
+            clockwise: below,
+            end: Point(radius, centerY + (below ? radius : -radius)),
+          ),
+        )
+        ..add(LineTo(Point(radius, itemCenterY - (below ? radius : -radius))))
+        ..add(ArcTo(radiusX: radius, radiusY: radius, clockwise: !below, end: Point(radius * 2, itemCenterY)))
+        ..add(LineTo(Point(itemX, itemCenterY)));
+    }
+    elements.add(_railPath(context, left));
+    final rightStart = itemX + box.width;
+    final right = <PathCommand>[MoveTo(Point(rightStart, itemCenterY))];
+    if (itemCenterY == centerY) {
+      right.add(LineTo(Point(width, centerY)));
+    } else {
+      right
+        ..add(LineTo(Point(width - radius * 2, itemCenterY)))
+        ..add(
+          ArcTo(
+            radiusX: radius,
+            radiusY: radius,
+            clockwise: !below,
+            end: Point(width - radius, itemCenterY + (below ? -radius : radius)),
+          ),
+        )
+        ..add(LineTo(Point(width - radius, centerY + (below ? radius : -radius))))
+        ..add(ArcTo(radiusX: radius, radiusY: radius, clockwise: below, end: Point(width, centerY)));
+    }
+    elements.add(_railPath(context, right));
+    y += box.height + config.verticalSeparation;
   }
-  return _RailBox(width, height, elements);
+  return _RailBox(width, height, centerY, height - centerY, [
+    SceneGroup(id: context.id('railroad-choice'), children: elements, cssClasses: const ['railroad-choice']),
+  ]);
+}
+
+_RailBox _railOptional(RailroadNodeAst node, _LayoutContext context) {
+  final box = _railNode(node, context);
+  final radius = context.options.optionsFor(const RailroadRenderOptions()).arcRadius;
+  final width = box.width + radius * 4;
+  final height = box.height + radius * 2;
+  final itemY = radius * 2;
+  final centerY = itemY + box.up;
+  final elements = <SceneElement>[
+    SceneGroup(
+      id: context.id('rail-optional-item'),
+      transforms: [Translate(radius * 2, itemY)],
+      children: box.elements,
+    ),
+    _railPath(context, [MoveTo(Point(0, centerY)), LineTo(Point(radius * 2, centerY))]),
+    _railPath(context, [MoveTo(Point(radius * 2 + box.width, centerY)), LineTo(Point(width, centerY))]),
+    _railPath(context, [
+      MoveTo(Point(0, centerY)),
+      ArcTo(radiusX: radius, radiusY: radius, clockwise: false, end: Point(radius, centerY - radius)),
+      LineTo(Point(radius, radius)),
+      ArcTo(radiusX: radius, radiusY: radius, end: Point(radius * 2, 0)),
+      LineTo(Point(width - radius * 2, 0)),
+      ArcTo(radiusX: radius, radiusY: radius, end: Point(width - radius, radius)),
+      LineTo(Point(width - radius, centerY - radius)),
+      ArcTo(radiusX: radius, radiusY: radius, clockwise: false, end: Point(width, centerY)),
+    ]),
+  ];
+  return _RailBox(width, height, centerY, height - centerY, [
+    SceneGroup(id: context.id('railroad-optional'), children: elements, cssClasses: const ['railroad-optional']),
+  ]);
 }
 
 _RailBox _railRepetition(RailroadNodeAst node, int min, num max, _LayoutContext context) {
   final box = _railNode(node, context);
-  final label = max == double.infinity ? '$min…∞' : '$min…$max';
+  final radius = context.options.optionsFor(const RailroadRenderOptions()).arcRadius;
+  final hasBypass = min == 0;
+  final itemY = hasBypass ? radius * 2 : 0.0;
+  final width = box.width + radius * 4;
+  final height = box.height + radius * 2 + (hasBypass ? radius * 2 : 0);
+  final centerY = itemY + box.up;
+  final loopY = itemY + box.height + radius;
   final elements = <SceneElement>[
-    SceneGroup(id: context.id('rail-repeat-item'), transforms: const [Translate(20, 0)], children: box.elements),
-    ScenePath(
-      id: context.id('rail-repeat'),
-      commands: [
-        MoveTo(Point(20 + box.width, box.height / 2)),
-        CubicTo(Point(20 + box.width + 15, box.height + 20), const Point(5, 54), Point(20, box.height / 2)),
-      ],
-      fill: const NoFill(),
-      stroke: _stroke(context),
-      role: SemanticRole.edge,
-    ),
-    _text(context, label, 20 + box.width / 2, box.height + 17, anchor: TextAnchor.middle),
+    SceneGroup(id: context.id('rail-repeat-item'), transforms: [Translate(radius * 2, itemY)], children: box.elements),
+    _railPath(context, [MoveTo(Point(0, centerY)), LineTo(Point(radius * 2, centerY))]),
+    _railPath(context, [MoveTo(Point(radius * 2 + box.width, centerY)), LineTo(Point(width, centerY))]),
+    _railPath(context, [
+      MoveTo(Point(radius * 2 + box.width, centerY)),
+      ArcTo(radiusX: radius, radiusY: radius, end: Point(radius * 3 + box.width, centerY + radius)),
+      LineTo(Point(radius * 3 + box.width, loopY)),
+      ArcTo(radiusX: radius, radiusY: radius, end: Point(radius * 2 + box.width, loopY + radius)),
+      LineTo(Point(radius * 2, loopY + radius)),
+      ArcTo(radiusX: radius, radiusY: radius, end: Point(radius, loopY)),
+      LineTo(Point(radius, centerY + radius)),
+      ArcTo(radiusX: radius, radiusY: radius, end: Point(radius * 2, centerY)),
+    ]),
+    if (hasBypass)
+      _railPath(context, [
+        MoveTo(Point(0, centerY)),
+        ArcTo(radiusX: radius, radiusY: radius, clockwise: false, end: Point(radius, centerY - radius)),
+        LineTo(Point(radius, radius)),
+        ArcTo(radiusX: radius, radiusY: radius, end: Point(radius * 2, 0)),
+        LineTo(Point(width - radius * 2, 0)),
+        ArcTo(radiusX: radius, radiusY: radius, end: Point(width - radius, radius)),
+        LineTo(Point(width - radius, centerY - radius)),
+        ArcTo(radiusX: radius, radiusY: radius, clockwise: false, end: Point(width, centerY)),
+      ]),
   ];
-  return _RailBox(box.width + 40, box.height + 32, elements);
+  return _RailBox(width, height, centerY, height - centerY, [
+    SceneGroup(id: context.id('railroad-repetition'), children: elements, cssClasses: const ['railroad-repetition']),
+  ]);
 }
 
 _LayoutResult _layoutRailroad(RailroadAst ast, _LayoutContext context) {
   final config = context.options.optionsFor(const RailroadRenderOptions());
+  if (ast.rules.isEmpty) return const _LayoutResult(200, 100, []);
+  final style = _railTextStyle(context);
   final elements = <SceneElement>[];
-  var y = 0.0;
-  var width = 200.0;
+  var y = config.padding;
+  var width = 0.0;
   for (final rule in ast.rules) {
-    final nameWidth = context.measurer.measure(rule.name, context.textStyle).width + 24;
+    final ruleName = '${rule.name} =';
+    final nameWidth = context.measurer.measure(ruleName, style).width + 20;
+    final definitionX = nameWidth + 20;
     final box = _railNode(rule.definition, context);
-    final rowHeight = math.max(36.0, box.height);
-    elements.add(_text(context, rule.name, 0, y + rowHeight / 2, role: SemanticRole.title));
-    elements.add(
-      SceneLine(
-        id: context.id('rail-start'),
-        start: Point(nameWidth, y + rowHeight / 2),
-        end: Point(nameWidth + config.horizontalGap, y + rowHeight / 2),
-        stroke: _stroke(context),
-        role: SemanticRole.edge,
-      ),
-    );
-    elements.add(
+    final baselineY = math.max(20.0, box.up);
+    final definitionY = baselineY - box.up;
+    final endX = definitionX + box.width + 10;
+    final ruleElements = <SceneElement>[
       SceneGroup(
         id: context.id('rail-definition'),
-        transforms: [Translate(nameWidth + config.horizontalGap, y + (rowHeight - box.height) / 2)],
+        transforms: [Translate(definitionX, definitionY)],
         children: box.elements,
       ),
+      _text(
+        context,
+        ruleName,
+        0,
+        baselineY,
+        role: SemanticRole.title,
+        style: style,
+        cssClasses: const ['railroad-rule-name'],
+      ),
+      if (config.showMarkers) ...[
+        SceneCircle(
+          id: context.id('railroad-start'),
+          center: Point(nameWidth, baselineY),
+          radius: config.markerRadius,
+          fill: SolidFill(context.options.theme.line),
+          cssClasses: const ['railroad-start'],
+        ),
+        SceneCircle(
+          id: context.id('railroad-end'),
+          center: Point(endX, baselineY),
+          radius: config.markerRadius,
+          fill: SolidFill(context.options.theme.line),
+          cssClasses: const ['railroad-end'],
+        ),
+      ],
+      _railPath(context, [
+        MoveTo(Point(nameWidth + config.markerRadius, baselineY)),
+        LineTo(Point(definitionX, baselineY)),
+      ]),
+      _railPath(context, [
+        MoveTo(Point(definitionX + box.width, baselineY)),
+        LineTo(Point(endX - config.markerRadius, baselineY)),
+      ]),
+    ];
+    elements.add(
+      SceneGroup(
+        id: context.id('railroad-rule'),
+        transforms: [Translate(0, y)],
+        children: ruleElements,
+        cssClasses: const ['railroad-rule'],
+      ),
     );
-    width = math.max(width, nameWidth + config.horizontalGap + box.width);
-    y += rowHeight + config.verticalGap;
+    final rowHeight = math.max(40.0, definitionY + box.height + config.padding * 2);
+    width = math.max(width, endX + config.markerRadius);
+    y += rowHeight + config.verticalSeparation;
   }
-  return _LayoutResult(width, math.max(50, y - config.verticalGap), elements);
+  return _LayoutResult(width + config.padding * 2, y + config.padding, elements);
 }
 
 _LayoutResult _layoutCynefin(CynefinAst ast, _LayoutContext context) {
