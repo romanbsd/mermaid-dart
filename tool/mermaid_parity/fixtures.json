@@ -40,6 +40,54 @@
       }
     },
     {
+      "id": "git-special-commits",
+      "type": "gitGraph",
+      "source": "gitGraph\ncommit id: \"base\" type: HIGHLIGHT tag: \"v1\"\nbranch feature\ncheckout feature\ncommit id: \"rev\" type: REVERSE\ncheckout main\ncommit id: \"trunk\"\nmerge feature id: \"merge\" tag: \"release\"\ncherry-pick id: \"rev\"\n",
+      "textMeasurements": {
+        "main": { "width": 35, "height": 19 },
+        "feature": { "width": 53.078125, "height": 19 },
+        "base": { "width": 20.328125, "height": 11 },
+        "rev": { "width": 14.25, "height": 11 },
+        "trunk": { "width": 23.828125, "height": 11 },
+        "merge": { "width": 28.125, "height": 11.05078125 },
+        "v1": { "width": 10.15625, "height": 11 },
+        "release": { "width": 32.5, "height": 11 },
+        "cherry-pick:rev": { "width": 68.578125, "height": 11.05078125 }
+      }
+    },
+    {
+      "id": "git-special-commits-tb",
+      "type": "gitGraph",
+      "source": "gitGraph TB:\ncommit id: \"base\" type: HIGHLIGHT tag: \"v1\"\nbranch feature\ncheckout feature\ncommit id: \"rev\" type: REVERSE\ncheckout main\ncommit id: \"trunk\"\nmerge feature id: \"merge\" tag: \"release\"\ncherry-pick id: \"rev\"\n",
+      "textMeasurements": {
+        "main": { "width": 35, "height": 19 },
+        "feature": { "width": 53.078125, "height": 19 },
+        "base": { "width": 20.328125, "height": 11 },
+        "rev": { "width": 14.25, "height": 11 },
+        "trunk": { "width": 23.828125, "height": 11 },
+        "merge": { "width": 28.125, "height": 11.05078125 },
+        "v1": { "width": 10.15625, "height": 11 },
+        "release": { "width": 32.5, "height": 11 },
+        "cherry-pick:rev": { "width": 68.578125, "height": 11.05078125 }
+      }
+    },
+    {
+      "id": "git-special-commits-bt",
+      "type": "gitGraph",
+      "source": "gitGraph BT:\ncommit id: \"base\" type: HIGHLIGHT tag: \"v1\"\nbranch feature\ncheckout feature\ncommit id: \"rev\" type: REVERSE\ncheckout main\ncommit id: \"trunk\"\nmerge feature id: \"merge\" tag: \"release\"\ncherry-pick id: \"rev\"\n",
+      "textMeasurements": {
+        "main": { "width": 35, "height": 19 },
+        "feature": { "width": 53.078125, "height": 19 },
+        "base": { "width": 20.328125, "height": 11 },
+        "rev": { "width": 14.25, "height": 11 },
+        "trunk": { "width": 23.828125, "height": 11 },
+        "merge": { "width": 28.125, "height": 11.05078125 },
+        "v1": { "width": 10.15625, "height": 11 },
+        "release": { "width": 32.5, "height": 11 },
+        "cherry-pick:rev": { "width": 68.578125, "height": 11.05078125 }
+      }
+    },
+    {
       "id": "info-version",
       "type": "info",
       "source": "info showInfo\n"
@@ -106,6 +154,11 @@
       "textMeasurements": {
         "1. Critical": { "width": 49.076, "height": 12.628 }
       }
+    },
+    {
+      "id": "wardley-strategies",
+      "type": "wardley",
+      "source": "wardley-beta\nanchor User [0.9, 0.1]\ncomponent Build [0.8, 0.25] (build)\ncomponent Buy [0.6, 0.45] (buy)\ncomponent Outsource [0.4, 0.65] (outsource)\ncomponent Market [0.2, 0.85] (market)\n"
     }
   ]
 }

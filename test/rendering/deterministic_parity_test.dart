@@ -658,6 +658,18 @@ void main() {
         options: const RenderOptions(padding: 0, gitGraph: GitGraphRenderOptions(rotateCommitLabel: false)),
       );
       final elements = _flatten(scene.elements).toList();
+      final highlight = elements.whereType<SceneRect>().singleWhere(
+        (element) => element.cssClasses.contains('git-commit-highlight-outer'),
+      );
+      final commits = elements
+          .whereType<SceneCircle>()
+          .where(
+            (element) =>
+                element.cssClasses.contains('git-commit-normal') ||
+                element.cssClasses.contains('git-commit-merge-outer') ||
+                element.cssClasses.contains('git-commit-cherry-outer'),
+          )
+          .toList();
 
       expect(
         elements
@@ -689,6 +701,39 @@ void main() {
       expect(
         elements.whereType<SceneCircle>().where((element) => element.cssClasses.contains('git-commit-cherry-outer')),
         hasLength(1),
+      );
+      expect(
+        [highlight.bounds.center, ...commits.map((commit) => commit.center)],
+        const [Point(10, -2), Point(60, 48), Point(110, -2), Point(160, -2), Point(210, -2)],
+      );
+      expect(highlight.fill, const SolidFill(Color(19, 19, 0)));
+      expect(
+        elements
+            .whereType<SceneRect>()
+            .singleWhere((element) => element.cssClasses.contains('git-commit-highlight-inner'))
+            .fill,
+        const SolidFill(Color(236, 236, 255)),
+      );
+      expect(
+        elements
+            .whereType<ScenePath>()
+            .singleWhere((element) => element.cssClasses.contains('git-commit-reverse-mark'))
+            .stroke,
+        const SceneStroke(color: Color(236, 236, 255), width: 3),
+      );
+      expect(
+        elements
+            .whereType<SceneCircle>()
+            .singleWhere((element) => element.cssClasses.contains('git-commit-merge-inner'))
+            .fill,
+        const SolidFill(Color(236, 236, 255)),
+      );
+      expect(
+        elements
+            .whereType<SceneCircle>()
+            .singleWhere((element) => element.cssClasses.contains('git-commit-cherry-outer'))
+            .fill,
+        const SolidFill(Color(51, 51, 51)),
       );
       expect(
         elements.whereType<ScenePolygon>().where((element) => element.cssClasses.contains('git-tag-background')),

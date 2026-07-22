@@ -20,14 +20,23 @@ const _gitCommitLabelBaselineOffset = 25.0;
 const _gitCommitLabelBackgroundTopOffset = 13.5;
 const _gitCommitLabelPadding = 2.0;
 const _gitVerticalCommitLabelTopOffset = 12.0;
-const _gitVerticalCommitLabelTextInset = 8.0;
-const _gitVerticalCommitLabelBackgroundInset = 13.0;
+const _gitVerticalCommitLabelTextInset = 16.0;
+const _gitVerticalCommitLabelBackgroundInset = 21.0;
 const _gitCommitLabelRotation = -45.0;
 const _gitRotatedLabelBaseX = -7.5;
 const _gitRotatedLabelBaseY = 10.0;
 const _gitRotatedLabelWidthReference = 25.0;
 const _gitRotatedLabelXScale = 9.5;
 const _gitRotatedLabelYScale = 8.5;
+const _gitTagHorizontalPadding = 4.0;
+const _gitTagPointHalfHeight = 2.0;
+const _gitTagCenterOffset = 19.2;
+const _gitTagTextBaselineOffset = 16.0;
+const _gitTagVerticalSpacing = 20.0;
+const _gitVerticalTagShapeTranslation = 12.0;
+const _gitVerticalTagTextTranslation = 14.0;
+const _gitVerticalTagTextInset = 5.0;
+const _gitVerticalTagTextBaselineOffset = 3.0;
 
 _LayoutResult _layoutGitGraph(GitGraphAst ast, _LayoutContext context) {
   final config = context.options.optionsFor(const GitGraphRenderOptions());
@@ -45,6 +54,11 @@ _LayoutResult _layoutGitGraph(GitGraphAst ast, _LayoutContext context) {
     fontSize: _gitCommitLabelFontSize,
     color: config.commitLabelColor,
   );
+  final tagStyle = SceneTextStyle(
+    fontFamily: context.options.theme.fontFamily,
+    fontSize: _gitCommitLabelFontSize,
+    color: config.tagLabelColor,
+  );
   final branchWidths = {
     for (final branch in model.branches) branch.name: context.measurer.measure(branch.name, branchStyle).width,
   };
@@ -58,7 +72,12 @@ _LayoutResult _layoutGitGraph(GitGraphAst ast, _LayoutContext context) {
         (vertical ? (branchWidths[branch.name] ?? 0) / 2 : 0);
   }
   final axisPositions = <String, double>{};
-  for (final commit in model.commits) {
+  for (var index = 0; index < model.commits.length; index++) {
+    final commit = model.commits[index];
+    if (!config.parallelCommits) {
+      axisPositions[commit.id] = index * config.commitSpacing;
+      continue;
+    }
     final parentAxis = commit.parents
         .map((parent) => axisPositions[parent])
         .whereType<double>()
@@ -76,7 +95,7 @@ _LayoutResult _layoutGitGraph(GitGraphAst ast, _LayoutContext context) {
     positions[commit.id] = switch (direction) {
       GitGraphDirection.leftToRight => Point(_gitLayoutOffset + axis, branch - _gitLaneYCorrection),
       GitGraphDirection.topToBottom => Point(branch, _gitDefaultPosition + _gitLayoutOffset + axis),
-      GitGraphDirection.bottomToTop => Point(branch, maxPosition - _gitLayoutOffset - axis),
+      GitGraphDirection.bottomToTop => Point(branch, maxPosition - _gitDefaultPosition - _gitLayoutOffset - axis),
     };
   }
   final elements = <SceneElement>[];
@@ -197,7 +216,9 @@ _LayoutResult _layoutGitGraph(GitGraphAst ast, _LayoutContext context) {
       elements.add(
         ScenePath(
           id: context.id('git-edge'),
-          commands: _gitEdgeCommands(start, end, direction),
+          commands: commit.kind == GitCommitKind.merge && parentIndex > 0
+              ? _gitMergeEdgeCommands(start, end, direction)
+              : _gitEdgeCommands(start, end, direction),
           fill: const NoFill(),
           stroke: SceneStroke(
             color: _gitBranchColor(config, branchIndex),
@@ -216,7 +237,8 @@ _LayoutResult _layoutGitGraph(GitGraphAst ast, _LayoutContext context) {
     final point = positions[commit.id]!;
     final branchIndex = model.branches.indexWhere((branch) => branch.name == commit.branch);
     final color = _gitBranchColor(config, branchIndex);
-    _addGitCommit(elements, context, commit, point, color, config);
+    final highlightColor = _gitHighlightColor(config, branchIndex);
+    _addGitCommit(elements, context, commit, point, color, highlightColor, config);
     if (config.showCommitLabel &&
         commit.kind != GitCommitKind.cherryPick &&
         (commit.kind != GitCommitKind.merge || commit.customId)) {
@@ -231,7 +253,7 @@ _LayoutResult _layoutGitGraph(GitGraphAst ast, _LayoutContext context) {
         direction,
       );
     }
-    _addGitTags(elements, context, commit.tags, point, commitStyle, config, direction);
+    _addGitTags(elements, context, commit.tags, point, axisPositions[commit.id]!, tagStyle, config, direction);
   }
 
   if (ast.title case final title?) {
@@ -272,6 +294,11 @@ Color _gitBranchLabelColor(GitGraphRenderOptions config, int index) {
   final colors = config.branchLabelColors.isEmpty
       ? GitGraphRenderOptions.defaultBranchLabelColors
       : config.branchLabelColors;
+  return colors[(index < 0 ? 0 : index) % colors.length];
+}
+
+Color _gitHighlightColor(GitGraphRenderOptions config, int index) {
+  final colors = config.highlightColors.isEmpty ? GitGraphRenderOptions.defaultHighlightColors : config.highlightColors;
   return colors[(index < 0 ? 0 : index) % colors.length];
 }
 
@@ -347,17 +374,58 @@ List<PathCommand> _gitEdgeCommands(Point start, Point end, GitGraphDirection dir
   };
 }
 
+List<PathCommand> _gitMergeEdgeCommands(Point start, Point end, GitGraphDirection direction) {
+  if (start.x == end.x || start.y == end.y) return _gitEdgeCommands(start, end, direction);
+  return switch (direction) {
+    GitGraphDirection.leftToRight => [
+      MoveTo(start),
+      LineTo(Point(end.x - _gitEdgeRadius, start.y)),
+      ArcTo(
+        radiusX: _gitEdgeRadius,
+        radiusY: _gitEdgeRadius,
+        clockwise: start.y < end.y,
+        end: Point(end.x, start.y + (start.y < end.y ? _gitEdgeRadius : -_gitEdgeRadius)),
+      ),
+      LineTo(end),
+    ],
+    GitGraphDirection.topToBottom => [
+      MoveTo(start),
+      LineTo(Point(start.x, end.y - _gitEdgeRadius)),
+      ArcTo(
+        radiusX: _gitEdgeRadius,
+        radiusY: _gitEdgeRadius,
+        clockwise: start.x > end.x,
+        end: Point(start.x + (start.x < end.x ? _gitEdgeRadius : -_gitEdgeRadius), end.y),
+      ),
+      LineTo(end),
+    ],
+    GitGraphDirection.bottomToTop => [
+      MoveTo(start),
+      LineTo(Point(start.x, end.y + _gitEdgeRadius)),
+      ArcTo(
+        radiusX: _gitEdgeRadius,
+        radiusY: _gitEdgeRadius,
+        clockwise: start.x < end.x,
+        end: Point(start.x + (start.x < end.x ? _gitEdgeRadius : -_gitEdgeRadius), end.y),
+      ),
+      LineTo(end),
+    ],
+  };
+}
+
 void _addGitCommit(
   List<SceneElement> elements,
   _LayoutContext context,
   GitCommitModel commit,
   Point point,
   Color color,
+  Color highlightColor,
   GitGraphRenderOptions config,
 ) {
   final stroke = SceneStroke(color: color, width: config.commitStrokeWidth);
   final fill = SolidFill(color);
   if (commit.decoratedType == GitGraphCommitType.highlight) {
+    final highlightStroke = SceneStroke(color: highlightColor, width: config.commitStrokeWidth);
     elements.addAll([
       SceneRect(
         id: context.id('git-highlight'),
@@ -367,8 +435,8 @@ void _addGitCommit(
           width: config.commitRadius * 2,
           height: config.commitRadius * 2,
         ),
-        fill: fill,
-        stroke: stroke,
+        fill: SolidFill(highlightColor),
+        stroke: highlightStroke,
         role: SemanticRole.node,
         cssClasses: const ['git-commit-highlight-outer'],
         label: commit.id,
@@ -376,8 +444,8 @@ void _addGitCommit(
       SceneRect(
         id: context.id('git-highlight-inner'),
         bounds: Bounds(left: point.x - 6, top: point.y - 6, width: 12, height: 12),
-        fill: SolidFill(context.options.theme.background),
-        stroke: stroke,
+        fill: SolidFill(config.specialCommitColor),
+        stroke: SceneStroke(color: config.specialCommitColor, width: config.commitStrokeWidth),
         role: SemanticRole.node,
         cssClasses: const ['git-commit-highlight-inner'],
       ),
@@ -391,8 +459,7 @@ void _addGitCommit(
         id: context.id('git-cherry'),
         center: point,
         radius: config.commitRadius,
-        fill: fill,
-        stroke: stroke,
+        fill: SolidFill(config.cherryPickColor),
         role: SemanticRole.node,
         cssClasses: const ['git-commit-cherry-outer'],
         label: commit.id,
@@ -441,8 +508,8 @@ void _addGitCommit(
         id: context.id('git-merge-inner'),
         center: point,
         radius: 6,
-        fill: SolidFill(context.options.theme.background),
-        stroke: stroke,
+        fill: SolidFill(config.specialCommitColor),
+        stroke: SceneStroke(color: config.specialCommitColor, width: config.commitStrokeWidth),
         role: SemanticRole.node,
         cssClasses: const ['git-commit-merge-inner'],
       ),
@@ -458,8 +525,8 @@ void _addGitCommit(
           MoveTo(Point(point.x - 5, point.y + 5)),
           LineTo(Point(point.x + 5, point.y - 5)),
         ],
-        fill: const NoFill(),
-        stroke: SceneStroke(color: context.options.theme.background, width: 2),
+        fill: SolidFill(config.specialCommitColor),
+        stroke: SceneStroke(color: config.specialCommitColor, width: 3),
         role: SemanticRole.node,
         cssClasses: const ['git-commit-reverse-mark'],
       ),
@@ -545,67 +612,129 @@ void _addGitTags(
   _LayoutContext context,
   List<String> tags,
   Point commit,
+  double axisPosition,
   SceneTextStyle style,
   GitGraphRenderOptions config,
   GitGraphDirection direction,
 ) {
+  if (tags.isEmpty) return;
+  final orderedTags = tags.reversed.toList();
+  final sizes = [for (final tag in orderedTags) context.measurer.measure(tag, style)];
+  final maximumWidth = sizes.map((size) => size.width).reduce(math.max);
+  final maximumHeight = sizes.map((size) => size.height).reduce(math.max);
   for (var i = 0; i < tags.length; i++) {
-    final tag = tags[tags.length - i - 1];
-    final size = context.measurer.measure(tag, style);
-    final center = direction == GitGraphDirection.leftToRight
-        ? Point(commit.x, commit.y - 20 - i * 20)
-        : Point(commit.x + 18 + i * 20, commit.y - 18);
-    final left = center.x - size.width / 2 - 4;
-    final right = center.x + size.width / 2 + 4;
-    final top = center.y - size.height / 2 - 2;
-    final bottom = center.y + size.height / 2 + 2;
+    final tag = orderedTags[i];
+    final size = sizes[i];
+    final offset = i * _gitTagVerticalSpacing;
+    if (direction != GitGraphDirection.leftToRight) {
+      final position = commit.y - _gitLayoutOffset;
+      final originY = position + offset;
+      final rotation = Rotate(45, center: Point(commit.x, position));
+      final shapeTransforms = <SceneTransform>[
+        const Translate(_gitVerticalTagShapeTranslation, _gitVerticalTagShapeTranslation),
+        rotation,
+      ];
+      elements.add(
+        SceneGroup(
+          id: context.id('git-tag-shape-group'),
+          transforms: shapeTransforms,
+          cssClasses: const ['git-tag-rotated'],
+          children: [
+            ScenePolygon(
+              id: context.id('git-tag'),
+              points: [
+                Point(commit.x, originY + _gitTagPointHalfHeight),
+                Point(commit.x, originY - _gitTagPointHalfHeight),
+                Point(commit.x + _gitLayoutOffset, originY - maximumHeight / 2 - _gitTagPointHalfHeight),
+                Point(
+                  commit.x + _gitLayoutOffset + maximumWidth + _gitTagHorizontalPadding,
+                  originY - maximumHeight / 2 - _gitTagPointHalfHeight,
+                ),
+                Point(
+                  commit.x + _gitLayoutOffset + maximumWidth + _gitTagHorizontalPadding,
+                  originY + maximumHeight / 2 + _gitTagPointHalfHeight,
+                ),
+                Point(commit.x + _gitLayoutOffset, originY + maximumHeight / 2 + _gitTagPointHalfHeight),
+              ],
+              fill: SolidFill(config.tagBackground),
+              stroke: SceneStroke(color: config.tagBorder),
+              role: SemanticRole.annotation,
+              cssClasses: const ['git-tag-background'],
+              label: tag,
+            ),
+            SceneCircle(
+              id: context.id('git-tag-hole'),
+              center: Point(commit.x + _gitTagHorizontalPadding / 2, originY),
+              radius: 1.5,
+              fill: SolidFill(config.tagHoleColor),
+              role: SemanticRole.annotation,
+              cssClasses: const ['git-tag-hole'],
+            ),
+          ],
+        ),
+      );
+      elements.add(
+        SceneGroup(
+          id: context.id('git-tag-text-group'),
+          transforms: [const Translate(_gitVerticalTagTextTranslation, _gitVerticalTagTextTranslation), rotation],
+          cssClasses: const ['git-tag-rotated'],
+          children: [
+            _text(
+              context,
+              tag,
+              commit.x + _gitVerticalTagTextInset,
+              originY + _gitVerticalTagTextBaselineOffset,
+              baseline: TextBaseline.alphabetic,
+              style: style,
+              cssClasses: const ['git-tag-label'],
+            ),
+          ],
+        ),
+      );
+      continue;
+    }
+    final centerY = commit.y - _gitTagCenterOffset - offset;
+    final left = commit.x - maximumWidth / 2 - _gitTagHorizontalPadding;
+    final right = commit.x + maximumWidth / 2 + _gitTagHorizontalPadding;
+    final top = centerY - maximumHeight / 2 - _gitTagPointHalfHeight;
+    final bottom = centerY + maximumHeight / 2 + _gitTagPointHalfHeight;
+    final pointX = axisPosition - maximumWidth / 2 - _gitTagPointHalfHeight;
     final polygon = ScenePolygon(
       id: context.id('git-tag'),
       points: [
-        Point(left - 6, center.y),
+        Point(pointX, centerY + _gitTagPointHalfHeight),
+        Point(pointX, centerY - _gitTagPointHalfHeight),
         Point(left, top),
         Point(right, top),
         Point(right, bottom),
         Point(left, bottom),
       ],
-      fill: SolidFill(context.options.theme.secondary),
-      stroke: SceneStroke(color: context.options.theme.line),
+      fill: SolidFill(config.tagBackground),
+      stroke: SceneStroke(color: config.tagBorder),
       role: SemanticRole.annotation,
       cssClasses: const ['git-tag-background'],
       label: tag,
     );
-    final children = <SceneElement>[
+    elements.addAll([
       polygon,
       SceneCircle(
         id: context.id('git-tag-hole'),
-        center: Point(left - 2, center.y),
+        center: Point(axisPosition - maximumWidth / 2 + _gitTagPointHalfHeight, centerY),
         radius: 1.5,
-        fill: SolidFill(context.options.theme.background),
+        fill: SolidFill(config.tagHoleColor),
         role: SemanticRole.annotation,
         cssClasses: const ['git-tag-hole'],
       ),
       _text(
         context,
         tag,
-        center.x,
-        center.y,
-        anchor: TextAnchor.middle,
+        commit.x - size.width / 2,
+        commit.y - _gitTagTextBaselineOffset - offset,
+        baseline: TextBaseline.alphabetic,
         style: style,
         cssClasses: const ['git-tag-label'],
       ),
-    ];
-    if (direction != GitGraphDirection.leftToRight) {
-      elements.add(
-        SceneGroup(
-          id: context.id('git-tag-group'),
-          transforms: [Rotate(45, center: commit)],
-          cssClasses: const ['git-tag-rotated'],
-          children: children,
-        ),
-      );
-    } else {
-      elements.addAll(children);
-    }
+    ]);
   }
 }
 

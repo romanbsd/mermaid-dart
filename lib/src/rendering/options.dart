@@ -197,6 +197,19 @@ final class GitGraphRenderOptions extends DiagramRenderOptions {
     Color(0, 0, 0),
   ];
 
+  /// Mermaid's default-theme `gitInv0` through `gitInv7` colors used by
+  /// highlighted commits.
+  static const defaultHighlightColors = [
+    Color(19, 19, 0),
+    Color(0, 0, 161),
+    Color(49, 0, 147),
+    Color(147, 73, 0),
+    Color(147, 0, 0),
+    Color(147, 0, 73),
+    Color(0, 147, 0),
+    Color(0, 147, 147),
+  ];
+
   const GitGraphRenderOptions({
     this.titleTopMargin = 25,
     this.diagramPadding = 8,
@@ -211,6 +224,7 @@ final class GitGraphRenderOptions extends DiagramRenderOptions {
     this.commitSpacing = 50,
     this.branchColors = defaultBranchColors,
     this.branchLabelColors = defaultBranchLabelColors,
+    this.highlightColors = defaultHighlightColors,
     this.branchLineColor = const Color(51, 51, 51),
     this.branchLineWidth = 1,
     this.branchLineDashes = const [2],
@@ -219,6 +233,12 @@ final class GitGraphRenderOptions extends DiagramRenderOptions {
     this.commitEdgeCap = StrokeCap.round,
     this.commitLabelColor = const Color(0, 0, 33),
     this.commitLabelBackground = const Color(255, 255, 222, 128),
+    this.specialCommitColor = const Color(236, 236, 255),
+    this.cherryPickColor = const Color(51, 51, 51),
+    this.tagLabelColor = const Color(19, 19, 0),
+    this.tagBackground = const Color(236, 236, 255),
+    this.tagBorder = const Color(199, 199, 241),
+    this.tagHoleColor = const Color(51, 51, 51),
   });
 
   final double titleTopMargin;
@@ -234,6 +254,7 @@ final class GitGraphRenderOptions extends DiagramRenderOptions {
   final double commitSpacing;
   final List<Color> branchColors;
   final List<Color> branchLabelColors;
+  final List<Color> highlightColors;
   final Color branchLineColor;
   final double branchLineWidth;
   final List<double> branchLineDashes;
@@ -242,6 +263,12 @@ final class GitGraphRenderOptions extends DiagramRenderOptions {
   final StrokeCap commitEdgeCap;
   final Color commitLabelColor;
   final Color commitLabelBackground;
+  final Color specialCommitColor;
+  final Color cherryPickColor;
+  final Color tagLabelColor;
+  final Color tagBackground;
+  final Color tagBorder;
+  final Color tagHoleColor;
 }
 
 final class TreeViewRenderOptions extends DiagramRenderOptions {
