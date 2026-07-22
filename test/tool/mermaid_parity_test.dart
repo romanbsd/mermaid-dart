@@ -11,8 +11,8 @@ void main() {
     final manifest = ParityManifest.load(File('tool/mermaid_parity/fixtures.json'));
 
     expect(manifest.mermaidVersion, '11.16.0');
-    expect(manifest.fixtures.map((fixture) => fixture.id), hasLength(42));
-    expect(manifest.fixtures.map((fixture) => fixture.id).toSet(), hasLength(42));
+    expect(manifest.fixtures.map((fixture) => fixture.id), hasLength(44));
+    expect(manifest.fixtures.map((fixture) => fixture.id).toSet(), hasLength(44));
     expect(
       manifest.fixtures.map((fixture) => fixture.id),
       containsAll([
@@ -42,6 +42,8 @@ void main() {
         'tree-highlighted-styles',
         'tree-unicode-invalid-icon',
         'pie-donut',
+        'pie-bottom-legend',
+        'pie-text-position',
         'packet-complex-no-bits',
         'wardley-strategies',
       ]),
@@ -491,12 +493,14 @@ void main() {
       'id': 'configured',
       'type': 'pie',
       'source': 'pie\n"Dogs": 1',
-      'pieOptions': {'donutHole': 0.4},
+      'pieOptions': {'donutHole': 0.4, 'legendPosition': 'bottom', 'textPosition': 0.9},
     });
 
     expect(configured.renderOptions.pie.donutHole, 0.4);
+    expect(configured.renderOptions.pie.legendPosition, PieLegendPosition.bottom);
+    expect(configured.renderOptions.pie.textPosition, 0.9);
     expect(configured.mermaidConfig, {
-      'pie': {'donutHole': 0.4},
+      'pie': {'donutHole': 0.4, 'legendPosition': 'bottom', 'textPosition': 0.9},
     });
     expect(
       () => ParityFixture.fromJson({
@@ -513,6 +517,15 @@ void main() {
         'type': 'pie',
         'source': 'pie\n"Dogs": 1',
         'pieOptions': {'donutHole': 'wide'},
+      }),
+      throwsFormatException,
+    );
+    expect(
+      () => ParityFixture.fromJson({
+        'id': 'configured',
+        'type': 'pie',
+        'source': 'pie\n"Dogs": 1',
+        'pieOptions': {'legendPosition': 'diagonal'},
       }),
       throwsFormatException,
     );

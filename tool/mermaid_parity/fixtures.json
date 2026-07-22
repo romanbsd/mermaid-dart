@@ -242,6 +242,29 @@
       }
     },
     {
+      "id": "pie-bottom-legend",
+      "type": "pie",
+      "source": "pie title Football Team Member Position\n\"Goalkeeper\": 2\n\"Back\": 8\n\"Midfielder\": 5\n\"Striker\": 3\n",
+      "pieOptions": { "legendPosition": "bottom" },
+      "textMeasurements": {
+        "Goalkeeper": { "width": 87.046875, "height": 20 },
+        "Back": { "width": 35.546875, "height": 20 },
+        "Midfielder": { "width": 77.15625, "height": 20 },
+        "Striker": { "width": 50.828125, "height": 20 },
+        "Football Team Member Position": { "width": 349.703125, "height": 29 }
+      }
+    },
+    {
+      "id": "pie-text-position",
+      "type": "pie",
+      "source": "pie\n\"Dogs\": 50\n\"Cats\": 25\n",
+      "pieOptions": { "textPosition": 0.9 },
+      "textMeasurements": {
+        "Dogs": { "width": 34.96875, "height": 20 },
+        "Cats": { "width": 32.734375, "height": 20 }
+      }
+    },
+    {
       "id": "radar-comparison",
       "type": "radar",
       "source": "radar-beta\naxis speed[\"Speed\"], quality, cost[\"Cost\"]\ncurve current[\"Current\"] { 3, 4, 2 }\n"

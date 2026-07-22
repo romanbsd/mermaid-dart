@@ -89,7 +89,14 @@ final class ParityFixture {
         seed: diagramConfig['seed'] as int? ?? architectureDefaults.seed,
       ),
       packet: PacketRenderOptions(showBits: diagramConfig['showBits'] as bool? ?? packetDefaults.showBits),
-      pie: PieRenderOptions(donutHole: (diagramConfig['donutHole'] as num?)?.toDouble() ?? pieDefaults.donutHole),
+      pie: PieRenderOptions(
+        donutHole: (diagramConfig['donutHole'] as num?)?.toDouble() ?? pieDefaults.donutHole,
+        textPosition: (diagramConfig['textPosition'] as num?)?.toDouble() ?? pieDefaults.textPosition,
+        legendPosition: switch (diagramConfig['legendPosition']) {
+          final String value => _pieLegendPosition(value),
+          _ => pieDefaults.legendPosition,
+        },
+      ),
     );
   }
 }
@@ -147,11 +154,34 @@ Map<String, Object> _architectureConfig(Object? value) {
 
 Map<String, Object> _pieConfig(Object? value) {
   if (value == null) return const {};
-  if (value case {'donutHole': final num donutHole} when value.length == 1) {
-    return Map.unmodifiable({'donutHole': donutHole});
+  if (value is! Map<String, Object?> || value.isEmpty || value.keys.any((key) => !_pieConfigKeys.contains(key))) {
+    throw const FormatException('Invalid fixture pieOptions');
   }
-  throw const FormatException('Invalid fixture pieOptions');
+  final result = <String, Object>{};
+  for (final MapEntry(:key, :value) in value.entries) {
+    final valid = switch ((key, value)) {
+      ('donutHole', final num option) => option,
+      ('textPosition', final num option) => option,
+      ('legendPosition', final String option) when _pieLegendPositionNames.contains(option) => option,
+      _ => null,
+    };
+    if (valid == null) throw const FormatException('Invalid fixture pieOptions');
+    result[key] = valid;
+  }
+  return Map.unmodifiable(result);
 }
+
+const _pieConfigKeys = {'donutHole', 'textPosition', 'legendPosition'};
+const _pieLegendPositionNames = {'top', 'bottom', 'left', 'right', 'center'};
+
+PieLegendPosition _pieLegendPosition(String value) => switch (value) {
+  'top' => PieLegendPosition.top,
+  'bottom' => PieLegendPosition.bottom,
+  'left' => PieLegendPosition.left,
+  'right' => PieLegendPosition.right,
+  'center' => PieLegendPosition.center,
+  _ => throw FormatException('Unknown pie legend position: $value'),
+};
 
 Map<String, Object> _packetConfig(Object? value) {
   if (value case {'showBits': final bool showBits} when value.length == 1) {
