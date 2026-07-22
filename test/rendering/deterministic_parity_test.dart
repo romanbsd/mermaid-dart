@@ -1068,9 +1068,10 @@ void main() {
         hasLength(2),
       );
       expect(
-        elements.whereType<ScenePath>().where((element) => element.cssClasses.contains('wardley-trend')),
+        elements.whereType<SceneLine>().where((element) => element.cssClasses.contains('wardley-trend')),
         hasLength(1),
       );
+      expect(elements.whereType<ScenePath>().where((element) => element.cssClasses.contains('wardley-trend')), isEmpty);
       expect(
         elements.whereType<ScenePath>().where((element) => element.cssClasses.contains('wardley-marker')),
         hasLength(2),
@@ -1079,9 +1080,32 @@ void main() {
         elements.whereType<SceneText>().singleWhere((element) => element.text == 'Watch this').position,
         const Point(124, 104),
       );
+      final title = elements.whereType<SceneText>().singleWhere(
+        (element) => element.cssClasses.contains('wardley-title'),
+      );
+      expect(title.position, const Point(250, 20));
+      expect(title.baseline, TextBaseline.central);
+      final anchor = componentLabels.singleWhere((label) => label.text == 'User');
+      expect(anchor.baseline, TextBaseline.central);
       expect(
-        elements.whereType<SceneText>().singleWhere((element) => element.cssClasses.contains('wardley-title')).position,
-        const Point(250, 20),
+        componentLabels.where((label) => label.text != 'User').map((label) => label.baseline),
+        everyElement(TextBaseline.alphabetic),
+      );
+      final linkLabelGroup = elements.whereType<SceneGroup>().singleWhere(
+        (element) => element.cssClasses.contains('wardley-link-label-group'),
+      );
+      final linkLabelRotation = linkLabelGroup.transforms.single as Rotate;
+      expect(linkLabelRotation.degrees, closeTo(37.31, .01));
+      expect(
+        elements.whereType<SceneText>().singleWhere((element) => element.text == 'Watch this').baseline,
+        TextBaseline.alphabetic,
+      );
+      expect(
+        elements
+            .whereType<SceneText>()
+            .where((element) => element.cssClasses.contains('wardley-marker-label'))
+            .map((element) => element.baseline),
+        everyElement(TextBaseline.alphabetic),
       );
       expectSvgGolden('wardley_semantics', renderSvg(scene));
     });
@@ -1117,6 +1141,25 @@ void main() {
       expect(nodeLabels.map((label) => label.baseline), everyElement(TextBaseline.alphabetic));
       expect(scene.bounds, const Bounds(left: 0, top: 0, width: 900, height: 600));
       expect(scene.viewport, const Bounds(left: 0, top: 0, width: 900, height: 600));
+    });
+
+    test('wardley keeps reverse dependency labels upright like Mermaid', () {
+      final scene = layoutDiagram(
+        const WardleyAst(
+          components: [
+            WardleyComponentAst(name: 'Right', position: WardleyPositionAst(x: 80, y: 50)),
+            WardleyComponentAst(name: 'Left', position: WardleyPositionAst(x: 20, y: 50)),
+          ],
+          links: [WardleyLinkAst(from: 'Right', to: 'Left', style: WardleyLinkStyle.solid, label: 'reverse')],
+        ),
+        textMeasurer: measurer,
+        options: const RenderOptions(padding: 0),
+      );
+      final group = _flatten(
+        scene.elements,
+      ).whereType<SceneGroup>().singleWhere((element) => element.cssClasses.contains('wardley-link-label-group'));
+
+      expect((group.transforms.single as Rotate).degrees, 360);
     });
 
     test('wardley pipelines position their parent and filter child-to-parent links', () {

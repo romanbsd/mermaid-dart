@@ -224,6 +224,8 @@ bool _isComparableGeometryElement(XmlElement element, XmlElement root) {
         _isDisplayNone(ancestor) ||
         ancestor.getAttribute('data-role') == 'icon' ||
         classes.contains('treemapSectionHeader') ||
+        classes.contains('wardley-link-arrow') ||
+        classes.contains('wardley-trend-arrow') ||
         classes.contains('em-arrowhead')) {
       return false;
     }

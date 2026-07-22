@@ -1,5 +1,13 @@
 part of '../layout.dart';
 
+// Non-configurable geometry retained from Mermaid's Wardley renderer. These
+// constants affect label readability and browser-measured annotation boxes.
+const _wardleyTitleFontScale = 1.05;
+const _wardleyLinkLabelOffset = 8.0;
+const _wardleyQuarterTurnDegrees = 90.0;
+const _wardleyHalfTurnDegrees = 180.0;
+const _wardleyAnnotationBoxSafetyWidth = 105.0;
+
 _LayoutResult _layoutWardley(WardleyAst ast, _LayoutContext context) {
   final config = context.options.optionsFor(const WardleyRenderOptions());
   final width = ast.size?.width.toDouble() ?? config.width;
@@ -44,11 +52,11 @@ _LayoutResult _layoutWardley(WardleyAst ast, _LayoutContext context) {
         width / 2,
         config.padding / 2,
         anchor: TextAnchor.middle,
-        baseline: TextBaseline.alphabetic,
+        baseline: TextBaseline.central,
         role: SemanticRole.title,
         style: SceneTextStyle(
           fontFamily: context.options.theme.fontFamily,
-          fontSize: config.axisFontSize * 1.05,
+          fontSize: config.axisFontSize * _wardleyTitleFontScale,
           weight: FontWeight.bold,
           color: config.axisTextColor,
         ),
@@ -290,17 +298,31 @@ _LayoutResult _layoutWardley(WardleyAst ast, _LayoutContext context) {
     }
     if (link.label case final label?) {
       final midpoint = Point((source.x + target.x) / 2, (source.y + target.y) / 2);
-      final labelPoint = Point(midpoint.x + dy / distance * 8, midpoint.y - dx / distance * 8);
+      final labelPoint = Point(
+        midpoint.x + dy / distance * _wardleyLinkLabelOffset,
+        midpoint.y - dx / distance * _wardleyLinkLabelOffset,
+      );
+      var labelAngle = math.atan2(dy, dx) * _wardleyHalfTurnDegrees / math.pi;
+      if (labelAngle > _wardleyQuarterTurnDegrees || labelAngle < -_wardleyQuarterTurnDegrees) {
+        labelAngle += _wardleyHalfTurnDegrees;
+      }
       elements.add(
-        _text(
-          context,
-          label,
-          labelPoint.x,
-          labelPoint.y,
-          anchor: TextAnchor.middle,
-          baseline: TextBaseline.alphabetic,
-          style: labelStyle,
-          cssClasses: const ['wardley-link-label'],
+        SceneGroup(
+          id: context.id('wardley-link-label-group'),
+          transforms: [Rotate(labelAngle, center: labelPoint)],
+          cssClasses: const ['wardley-link-label-group'],
+          children: [
+            _text(
+              context,
+              label,
+              labelPoint.x,
+              labelPoint.y,
+              anchor: TextAnchor.middle,
+              baseline: TextBaseline.central,
+              style: labelStyle,
+              cssClasses: const ['wardley-link-label'],
+            ),
+          ],
         ),
       );
     }
@@ -318,10 +340,10 @@ _LayoutResult _layoutWardley(WardleyAst ast, _LayoutContext context) {
         ? Point(target.x - dx / distance * shorten, target.y - dy / distance * shorten)
         : target;
     elements.add(
-      ScenePath(
+      SceneLine(
         id: context.id('wardley-trend'),
-        commands: [MoveTo(origin), LineTo(end)],
-        fill: const NoFill(),
+        start: origin,
+        end: end,
         stroke: SceneStroke(color: config.evolutionStroke, dashes: const [4, 4]),
         role: SemanticRole.edge,
         cssClasses: const ['wardley-trend'],
@@ -426,7 +448,7 @@ _LayoutResult _layoutWardley(WardleyAst ast, _LayoutContext context) {
         labelX,
         labelY,
         anchor: isAnchor ? TextAnchor.middle : TextAnchor.start,
-        baseline: TextBaseline.alphabetic,
+        baseline: isAnchor ? TextBaseline.central : TextBaseline.alphabetic,
         style: SceneTextStyle(
           fontFamily: labelStyle.fontFamily,
           fontSize: labelStyle.fontSize,
@@ -490,7 +512,7 @@ _LayoutResult _layoutWardley(WardleyAst ast, _LayoutContext context) {
                 context.measurer.measure('${annotation.number}. ${annotation.text}', annotationStyle).height,
           )
           .reduce(math.max);
-      final boxWidth = maxWidth + boxPadding * 2 + 105;
+      final boxWidth = maxWidth + boxPadding * 2 + _wardleyAnnotationBoxSafetyWidth;
       final boxHeight = sorted.length * lineHeight + boxPadding * 2 + textHeight / 2;
       final requested = positioned(ast.annotationsBox!);
       final boxX = requested.x.clamp(config.padding, width - config.padding - boxWidth);
@@ -531,6 +553,7 @@ _LayoutResult _layoutWardley(WardleyAst ast, _LayoutContext context) {
         point.x,
         point.y,
         role: SemanticRole.annotation,
+        baseline: TextBaseline.alphabetic,
         style: SceneTextStyle(
           fontFamily: context.options.theme.fontFamily,
           fontSize: 11,
@@ -562,6 +585,7 @@ _LayoutResult _layoutWardley(WardleyAst ast, _LayoutContext context) {
         point.x + 30,
         point.y + 30,
         anchor: TextAnchor.middle,
+        baseline: TextBaseline.alphabetic,
         style: SceneTextStyle(
           fontFamily: context.options.theme.fontFamily,
           fontSize: 10,

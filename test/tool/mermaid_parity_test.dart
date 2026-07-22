@@ -11,8 +11,8 @@ void main() {
     final manifest = ParityManifest.load(File('tool/mermaid_parity/fixtures.json'));
 
     expect(manifest.mermaidVersion, '11.16.0');
-    expect(manifest.fixtures.map((fixture) => fixture.id), hasLength(12));
-    expect(manifest.fixtures.map((fixture) => fixture.id).toSet(), hasLength(12));
+    expect(manifest.fixtures.map((fixture) => fixture.id), hasLength(13));
+    expect(manifest.fixtures.map((fixture) => fixture.id).toSet(), hasLength(13));
     final railroad = manifest.fixtures.singleWhere((fixture) => fixture.id == 'railroad-sequence');
     expect(railroad.textMeasurements['a'], const Size(8.40625, 19));
     expect(railroad.textMeasurements['rule ='], const Size(41.625, 19));
@@ -179,6 +179,24 @@ void main() {
     );
     final positioned = SvgSnapshot.fromSvg(
       '<svg><path d="M1 2 L3 4"/><polygon class="em-arrowhead" points="3,4 1,2 2,1"/></svg>',
+    );
+
+    final comparison = SvgComparison.compare(positioned, marker);
+    expect(comparison.sameElementCounts, isTrue);
+    expect(comparison.sameGeometry, isTrue);
+  });
+
+  test('ignores backend-specific Wardley marker arrowheads', () {
+    final marker = SvgSnapshot.fromSvg(
+      '<svg><defs><marker><path d="M0 0 L10 5 L0 10Z"/></marker></defs>'
+      '<line class="wardley-link" x1="1" y1="2" x2="3" y2="4"/>'
+      '<line class="wardley-trend" x1="5" y1="6" x2="7" y2="8"/></svg>',
+    );
+    final positioned = SvgSnapshot.fromSvg(
+      '<svg><line class="wardley-link" x1="1" y1="2" x2="3" y2="4"/>'
+      '<polygon class="wardley-link-arrow" points="3,4 1,2 2,1"/>'
+      '<line class="wardley-trend" x1="5" y1="6" x2="7" y2="8"/>'
+      '<polygon class="wardley-trend-arrow" points="7,8 5,6 6,5"/></svg>',
     );
 
     final comparison = SvgComparison.compare(positioned, marker);

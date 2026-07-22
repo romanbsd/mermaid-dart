@@ -93,6 +93,14 @@
       "id": "wardley-components",
       "type": "wardley",
       "source": "wardley-beta\ncomponent API [0.6, 0.5]\ncomponent Database [0.3, 0.8]\nAPI -> Database\n"
+    },
+    {
+      "id": "wardley-advanced",
+      "type": "wardley",
+      "source": "wardley-beta\ntitle Operating model\nevolution Genesis@0.4 -> Product@1.0\nanchor User [0.9, 0.1]\ncomponent API [0.6, 0.5] label [-20, 15] (build) (inertia)\ncomponent Database [0.3, 0.8] (buy)\nAPI +<> Database; depends\nevolve API 0.9\nnote \"Watch this\" [0.2, 0.8]\nannotations [0.65, 0.85]\nannotation 1,[0.7, 0.5] \"Critical\"\naccelerator \"Cloud\" [0.15, 0.75]\ndeaccelerator \"Legacy\" [0.6, 0.2]\n",
+      "textMeasurements": {
+        "1. Critical": { "width": 49.076, "height": 12.628 }
+      }
     }
   ]
 }
