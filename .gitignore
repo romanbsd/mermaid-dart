@@ -9,3 +9,8 @@ pubspec.lock
 # LLMs
 .codebase-memory/
 .serena/
+
+# Generated Mermaid.js parity artifacts and reference toolchain.
+tool/mermaid_parity/out/
+tool/mermaid_parity/references/
+tool/mermaid_parity/reference/node_modules/

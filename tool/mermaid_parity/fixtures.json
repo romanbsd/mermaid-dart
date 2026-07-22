@@ -1,0 +1,65 @@
+{
+  "mermaidVersion": "11.16.0",
+  "fixtures": [
+    {
+      "id": "architecture-services",
+      "type": "architecture",
+      "source": "architecture-beta\ngroup cloud(cloud)[Cloud]\nservice api(server)[API] in cloud\nservice db(database)[Database] in cloud\napi:R --> L:db\n"
+    },
+    {
+      "id": "cynefin-domains",
+      "type": "cynefin",
+      "source": "cynefin-beta\ncomplex \"Probe\"\ncomplicated \"Analyze\"\nclear \"Sense\"\nchaotic \"Act\"\nconfusion \"Collect\"\n"
+    },
+    {
+      "id": "event-modeling-flow",
+      "type": "eventmodeling",
+      "source": "eventmodeling\ntimeframe 01 command Cart.Update\ntf 02 evt Cart.Updated ->> 01 `jsobj`{ a: b }\nresetframe 03 readmodel Cart.Items ->> 02\n"
+    },
+    {
+      "id": "git-branches",
+      "type": "gitGraph",
+      "source": "gitGraph\ncommit id: \"A\"\nbranch develop\ncheckout develop\ncommit id: \"B\"\n"
+    },
+    {
+      "id": "info-version",
+      "type": "info",
+      "source": "info showInfo\n"
+    },
+    {
+      "id": "packet-header",
+      "type": "packet",
+      "source": "packet-beta\n0-7: \"Source\"\n8: \"Flag\"\n+16: \"Payload\"\n"
+    },
+    {
+      "id": "pie-usage",
+      "type": "pie",
+      "source": "pie showData\n\"Used\": 2\n\"Free\": 1\n"
+    },
+    {
+      "id": "radar-comparison",
+      "type": "radar",
+      "source": "radar-beta\naxis speed[\"Speed\"], quality, cost[\"Cost\"]\ncurve current[\"Current\"] { 3, 4, 2 }\n"
+    },
+    {
+      "id": "railroad-sequence",
+      "type": "railroad",
+      "source": "railroad-beta\nrule = sequence(terminal(\"a\"), optional(nonterminal(\"b\"))) ;\n"
+    },
+    {
+      "id": "tree-files",
+      "type": "treeView",
+      "source": "treeView-beta\nsrc/\n    index.js\n    app.dart\n"
+    },
+    {
+      "id": "treemap-products",
+      "type": "treemap",
+      "source": "treemap\n\"Products\"\n  \"Large\": 3\n  \"Small\": 1\n"
+    },
+    {
+      "id": "wardley-components",
+      "type": "wardley",
+      "source": "wardley-beta\ncomponent API [0.6, 0.5]\ncomponent Database [0.3, 0.8]\nAPI -> Database\n"
+    }
+  ]
+}

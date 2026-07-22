@@ -53,6 +53,35 @@ evolution trends, and size directives.
 Use `parseByName(type, source)` when a diagram type arrives from an external
 string-based API. Unsupported names throw `UnsupportedDiagramTypeException`.
 
+## Mermaid.js parity
+
+The differential harness compares deterministic Dart SVG output with SVGs from
+the pinned Mermaid CLI 11.16.0 reference renderer. Its canonical comparison
+ignores XML attribute order, generated IDs and their references, class-token
+order, formatting whitespace, and insignificant numeric precision. Viewport,
+visible text, element counts, geometry, and styles remain visible in the report.
+
+Install the isolated reference toolchain and generate reference SVGs:
+
+```sh
+npm ci --prefix tool/mermaid_parity/reference
+dart run tool/mermaid_parity.dart --update-reference --report-only
+```
+
+The runner uses `PUPPETEER_EXECUTABLE_PATH` when set, otherwise it detects
+common Chrome/Chromium installations before falling back to Puppeteer's
+downloaded browser.
+
+After references exist, rerun the comparison without invoking Node:
+
+```sh
+dart run tool/mermaid_parity.dart --report-only
+dart run tool/mermaid_parity.dart --fixture pie-usage --report-only
+```
+
+Omit `--report-only` to use exact canonical parity as a failing CI gate.
+Generated references and comparison artifacts are intentionally git-ignored.
+
 ## Usage
 
 ```dart
