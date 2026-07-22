@@ -1,5 +1,7 @@
 import 'ast.dart';
+import 'cynefin_parser.dart';
 import 'errors.dart';
+import 'git_graph_parser.dart';
 import 'info_parser.dart';
 import 'packet_parser.dart';
 import 'pie_parser.dart';
@@ -8,6 +10,8 @@ import 'radar_parser.dart';
 typedef _DiagramParser = DiagramAst Function(String source);
 
 const Map<String, _DiagramParser> _parsers = {
+  'cynefin': parseCynefin,
+  'gitGraph': parseGitGraph,
   'info': parseInfo,
   'packet': parsePacket,
   'pie': parsePie,

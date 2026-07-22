@@ -182,3 +182,171 @@ bool _listEquals<T>(List<T> left, List<T> right) {
   }
   return true;
 }
+
+enum CynefinDomain { complex, complicated, clear, chaotic, confusion }
+
+final class CynefinAst extends DiagramAst {
+  const CynefinAst({
+    this.domains = const [],
+    this.transitions = const [],
+    this.title,
+    this.accessibilityTitle,
+    this.accessibilityDescription,
+  });
+
+  final List<CynefinDomainAst> domains;
+  final List<CynefinTransitionAst> transitions;
+  final String? title;
+  final String? accessibilityTitle;
+  final String? accessibilityDescription;
+}
+
+final class CynefinDomainAst {
+  const CynefinDomainAst({required this.domain, this.items = const []});
+
+  final CynefinDomain domain;
+  final List<CynefinItemAst> items;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) || other is CynefinDomainAst && domain == other.domain && _listEquals(items, other.items);
+
+  @override
+  int get hashCode => Object.hash(domain, Object.hashAll(items));
+}
+
+final class CynefinItemAst {
+  const CynefinItemAst({required this.label});
+
+  final String label;
+
+  @override
+  bool operator ==(Object other) => identical(this, other) || other is CynefinItemAst && label == other.label;
+
+  @override
+  int get hashCode => label.hashCode;
+}
+
+final class CynefinTransitionAst {
+  const CynefinTransitionAst({required this.from, required this.to, this.label});
+
+  final CynefinDomain from;
+  final CynefinDomain to;
+  final String? label;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is CynefinTransitionAst && from == other.from && to == other.to && label == other.label;
+
+  @override
+  int get hashCode => Object.hash(from, to, label);
+}
+
+enum GitGraphDirection { leftToRight, topToBottom, bottomToTop }
+
+enum GitGraphCommitType { normal, reverse, highlight }
+
+final class GitGraphAst extends DiagramAst {
+  const GitGraphAst({
+    this.direction,
+    this.statements = const [],
+    this.title,
+    this.accessibilityTitle,
+    this.accessibilityDescription,
+  });
+
+  final GitGraphDirection? direction;
+  final List<GitGraphStatementAst> statements;
+  final String? title;
+  final String? accessibilityTitle;
+  final String? accessibilityDescription;
+}
+
+sealed class GitGraphStatementAst {
+  const GitGraphStatementAst();
+}
+
+final class GitGraphCommitAst extends GitGraphStatementAst {
+  const GitGraphCommitAst({this.id, this.message, this.tags = const [], this.type});
+
+  final String? id;
+  final String? message;
+  final List<String> tags;
+  final GitGraphCommitType? type;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is GitGraphCommitAst &&
+          id == other.id &&
+          message == other.message &&
+          _listEquals(tags, other.tags) &&
+          type == other.type;
+
+  @override
+  int get hashCode => Object.hash(id, message, Object.hashAll(tags), type);
+}
+
+final class GitGraphBranchAst extends GitGraphStatementAst {
+  const GitGraphBranchAst({required this.name, this.order});
+
+  final String name;
+  final int? order;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) || other is GitGraphBranchAst && name == other.name && order == other.order;
+
+  @override
+  int get hashCode => Object.hash(name, order);
+}
+
+final class GitGraphMergeAst extends GitGraphStatementAst {
+  const GitGraphMergeAst({required this.branch, this.id, this.tags = const [], this.type});
+
+  final String branch;
+  final String? id;
+  final List<String> tags;
+  final GitGraphCommitType? type;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is GitGraphMergeAst &&
+          branch == other.branch &&
+          id == other.id &&
+          _listEquals(tags, other.tags) &&
+          type == other.type;
+
+  @override
+  int get hashCode => Object.hash(branch, id, Object.hashAll(tags), type);
+}
+
+final class GitGraphCheckoutAst extends GitGraphStatementAst {
+  const GitGraphCheckoutAst({required this.branch});
+
+  final String branch;
+
+  @override
+  bool operator ==(Object other) => identical(this, other) || other is GitGraphCheckoutAst && branch == other.branch;
+
+  @override
+  int get hashCode => branch.hashCode;
+}
+
+final class GitGraphCherryPickAst extends GitGraphStatementAst {
+  const GitGraphCherryPickAst({this.id, this.parent, this.tags = const []});
+
+  final String? id;
+  final String? parent;
+  final List<String> tags;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is GitGraphCherryPickAst && id == other.id && parent == other.parent && _listEquals(tags, other.tags);
+
+  @override
+  int get hashCode => Object.hash(id, parent, Object.hashAll(tags));
+}
