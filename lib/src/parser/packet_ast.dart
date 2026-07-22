@@ -10,18 +10,46 @@ final class PacketAst extends DiagramAst {
   List<Object?> get diagramFields => [blocks];
 }
 
-/// A bit range or relative-width block in a [PacketAst].
-final class PacketBlockAst with _AstValueEquality {
-  const PacketBlockAst({this.start, this.end, this.bits, required this.label});
+/// A bit allocation block in a [PacketAst].
+sealed class PacketBlockAst with _AstValueEquality {
+  const PacketBlockAst({required this.label});
 
-  final int? start;
-  final int? end;
-  final int? bits;
   final String label;
+}
+
+final class PacketRangeBlockAst extends PacketBlockAst {
+  const PacketRangeBlockAst({required this.start, required this.end, required super.label});
+
+  final int start;
+  final int end;
 
   @override
-  List<Object?> get equalityFields => [start, end, bits, label];
+  List<Object?> get equalityFields => [start, end, label];
 
   @override
-  String toString() => 'PacketBlockAst(start: $start, end: $end, bits: $bits, label: $label)';
+  String toString() => 'PacketRangeBlockAst(start: $start, end: $end, label: $label)';
+}
+
+final class PacketSingleBitBlockAst extends PacketBlockAst {
+  const PacketSingleBitBlockAst({required this.bit, required super.label});
+
+  final int bit;
+
+  @override
+  List<Object?> get equalityFields => [bit, label];
+
+  @override
+  String toString() => 'PacketSingleBitBlockAst(bit: $bit, label: $label)';
+}
+
+final class PacketRelativeWidthBlockAst extends PacketBlockAst {
+  const PacketRelativeWidthBlockAst({required this.bits, required super.label});
+
+  final int bits;
+
+  @override
+  List<Object?> get equalityFields => [bits, label];
+
+  @override
+  String toString() => 'PacketRelativeWidthBlockAst(bits: $bits, label: $label)';
 }

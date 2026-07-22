@@ -41,21 +41,26 @@ final Parser<RadarCurveAst> _curve =
       );
     });
 
+final Parser<RadarOptionAst> _showLegendOption =
+    (string('showLegend') & pattern(' \t').plus() & (string('true') | string('false'))).map((value) {
+      return RadarShowLegendOptionAst(value.last == 'true');
+    });
+
+Parser<RadarOptionAst> _numericOption(String name, RadarOptionAst Function(num value) create) =>
+    (string(name) & pattern(' \t').plus() & _number).map((value) => create(num.parse(value.last as String)));
+
+final Parser<RadarOptionAst> _graticuleOption =
+    (string('graticule') & pattern(' \t').plus() & (string('circle') | string('polygon'))).map((value) {
+      return RadarGraticuleOptionAst(RadarGraticule.values.byName(value.last as String));
+    });
+
 final Parser<RadarOptionAst> _option =
-    ((string('showLegend') & pattern(' \t').plus() & (string('true') | string('false'))) |
-            ((string('ticks') | string('max') | string('min')) & pattern(' \t').plus() & _number) |
-            (string('graticule') & pattern(' \t').plus() & (string('circle') | string('polygon'))))
-        .map((value) {
-          final parts = value as List;
-          final name = RadarOptionName.values.byName(parts.first as String);
-          final raw = parts.last as String;
-          final converted = switch (name) {
-            RadarOptionName.showLegend => raw == 'true',
-            RadarOptionName.graticule => RadarGraticule.values.byName(raw),
-            _ => num.parse(raw),
-          };
-          return RadarOptionAst(name: name, value: converted);
-        });
+    (_showLegendOption |
+            _numericOption('ticks', RadarTicksOptionAst.new) |
+            _numericOption('max', RadarMaxOptionAst.new) |
+            _numericOption('min', RadarMinOptionAst.new) |
+            _graticuleOption)
+        .cast<RadarOptionAst>();
 
 Parser<Object?> _commaSeparated(Parser<Object?> item) =>
     item & (horizontalSpaceParser & char(',') & horizontalSpaceParser & item).star();

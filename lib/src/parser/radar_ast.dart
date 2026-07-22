@@ -50,16 +50,53 @@ final class RadarEntryAst with _AstValueEquality {
   List<Object?> get equalityFields => [axis, value];
 }
 
-final class RadarOptionAst with _AstValueEquality {
-  const RadarOptionAst({required this.name, required this.value});
-
-  final RadarOptionName name;
-  final Object value;
-
-  @override
-  List<Object?> get equalityFields => [name, value];
+sealed class RadarOptionAst with _AstValueEquality {
+  const RadarOptionAst();
 }
 
-enum RadarOptionName { showLegend, ticks, max, min, graticule }
+final class RadarShowLegendOptionAst extends RadarOptionAst {
+  const RadarShowLegendOptionAst(this.value);
+
+  final bool value;
+
+  @override
+  List<Object?> get equalityFields => [value];
+}
+
+final class RadarTicksOptionAst extends RadarOptionAst {
+  const RadarTicksOptionAst(this.value);
+
+  final num value;
+
+  @override
+  List<Object?> get equalityFields => [value];
+}
+
+final class RadarMaxOptionAst extends RadarOptionAst {
+  const RadarMaxOptionAst(this.value);
+
+  final num value;
+
+  @override
+  List<Object?> get equalityFields => [value];
+}
+
+final class RadarMinOptionAst extends RadarOptionAst {
+  const RadarMinOptionAst(this.value);
+
+  final num value;
+
+  @override
+  List<Object?> get equalityFields => [value];
+}
+
+final class RadarGraticuleOptionAst extends RadarOptionAst {
+  const RadarGraticuleOptionAst(this.value);
+
+  final RadarGraticule value;
+
+  @override
+  List<Object?> get equalityFields => [value];
+}
 
 enum RadarGraticule { circle, polygon }

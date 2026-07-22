@@ -55,12 +55,25 @@ showLegend true, ticks 5, min 0, max 10.5, graticule polygon
       expect(ast.title, 'Comparison');
       expect(ast.accessibilityTitle, 'Radar chart');
       expect(ast.options, [
-        const RadarOptionAst(name: RadarOptionName.showLegend, value: true),
-        const RadarOptionAst(name: RadarOptionName.ticks, value: 5),
-        const RadarOptionAst(name: RadarOptionName.min, value: 0),
-        const RadarOptionAst(name: RadarOptionName.max, value: 10.5),
-        const RadarOptionAst(name: RadarOptionName.graticule, value: RadarGraticule.polygon),
+        const RadarShowLegendOptionAst(true),
+        const RadarTicksOptionAst(5),
+        const RadarMinOptionAst(0),
+        const RadarMaxOptionAst(10.5),
+        const RadarGraticuleOptionAst(RadarGraticule.polygon),
       ]);
+
+      expect(
+        ast.options.map(
+          (option) => switch (option) {
+            RadarShowLegendOptionAst(value: final value) => value,
+            RadarTicksOptionAst(value: final value) => value,
+            RadarMinOptionAst(value: final value) => value,
+            RadarMaxOptionAst(value: final value) => value,
+            RadarGraticuleOptionAst(value: final value) => value,
+          },
+        ),
+        [true, 5, 0, 10.5, RadarGraticule.polygon],
+      );
     });
 
     test('rejects mixed positional and detailed entries', () {

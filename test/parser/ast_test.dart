@@ -42,8 +42,8 @@ void main() {
         PieAst(sections: const [PieSectionAst(label: 'A', value: 1)]),
       ),
       (
-        PacketAst(blocks: const [PacketBlockAst(start: 0, label: 'A')]),
-        PacketAst(blocks: const [PacketBlockAst(start: 0, label: 'A')]),
+        PacketAst(blocks: const [PacketSingleBitBlockAst(bit: 0, label: 'A')]),
+        PacketAst(blocks: const [PacketSingleBitBlockAst(bit: 0, label: 'A')]),
       ),
       (RadarAst(axes: const [RadarAxisAst(name: 'cost')]), RadarAst(axes: const [RadarAxisAst(name: 'cost')])),
       (

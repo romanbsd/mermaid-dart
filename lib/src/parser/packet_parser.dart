@@ -44,10 +44,13 @@ PacketBlockAst _blockFromLexeme(String lexeme) {
   ).firstMatch(lexeme)!;
   final labelLexeme = RegExp(r'''["'](?:\\.|[^"'\\])*["']''').matchAsPrefix(lexeme, prefix.end)!;
 
-  return PacketBlockAst(
-    start: int.tryParse(prefix.group(1) ?? ''),
-    end: int.tryParse(prefix.group(2) ?? ''),
-    bits: int.tryParse(prefix.group(3) ?? ''),
-    label: decodeQuotedString(labelLexeme.group(0)!),
-  );
+  final label = decodeQuotedString(labelLexeme.group(0)!);
+  if (int.tryParse(prefix.group(3) ?? '') case final bits?) {
+    return PacketRelativeWidthBlockAst(bits: bits, label: label);
+  }
+  final start = int.parse(prefix.group(1)!);
+  if (int.tryParse(prefix.group(2) ?? '') case final end?) {
+    return PacketRangeBlockAst(start: start, end: end, label: label);
+  }
+  return PacketSingleBitBlockAst(bit: start, label: label);
 }

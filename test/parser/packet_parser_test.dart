@@ -19,9 +19,9 @@ void main() {
               as PacketAst;
 
       expect(ast.blocks, [
-        const PacketBlockAst(start: 0, end: 7, label: 'Source'),
-        const PacketBlockAst(start: 8, label: 'Flag'),
-        const PacketBlockAst(bits: 16, label: 'Payload'),
+        const PacketRangeBlockAst(start: 0, end: 7, label: 'Source'),
+        const PacketSingleBitBlockAst(bit: 8, label: 'Flag'),
+        const PacketRelativeWidthBlockAst(bits: 16, label: 'Payload'),
       ]);
     });
 
