@@ -1,11 +1,49 @@
 /// Base type for syntax trees produced by Mermaid parsers.
-sealed class DiagramAst {
+sealed class DiagramAst with _AstValueEquality {
   const DiagramAst({this.title, this.accessibilityTitle, this.accessibilityDescription});
 
   final String? title;
   final String? accessibilityTitle;
   final String? accessibilityDescription;
+
+  List<Object?> get diagramFields;
+
+  @override
+  List<Object?> get equalityFields => [...diagramFields, title, accessibilityTitle, accessibilityDescription];
 }
+
+mixin _AstValueEquality {
+  List<Object?> get equalityFields;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other.runtimeType == runtimeType &&
+          other is _AstValueEquality &&
+          _deepListEquals(equalityFields, other.equalityFields);
+
+  @override
+  int get hashCode => Object.hash(runtimeType, _deepHash(equalityFields));
+}
+
+bool _deepListEquals(List<Object?> left, List<Object?> right) {
+  if (left.length != right.length) return false;
+  for (var index = 0; index < left.length; index++) {
+    final leftValue = left[index];
+    final rightValue = right[index];
+    if (leftValue is List && rightValue is List) {
+      if (!_deepListEquals(leftValue, rightValue)) return false;
+    } else if (leftValue != rightValue) {
+      return false;
+    }
+  }
+  return true;
+}
+
+int _deepHash(Object? value) => switch (value) {
+  List() => Object.hashAll(value.map(_deepHash)),
+  _ => value.hashCode,
+};
 
 enum WardleyStrategy { build, buy, outsource, market }
 
@@ -42,23 +80,24 @@ final class WardleyAst extends DiagramAst {
   final WardleyPositionAst? annotationsBox;
   final List<WardleyAnnotationAst> annotations;
   final List<WardleyMarkerAst> markers;
-}
-
-mixin _WardleyValueEquality {
-  List<Object?> get equalityFields;
 
   @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other.runtimeType == runtimeType &&
-          other is _WardleyValueEquality &&
-          _listEquals(equalityFields, other.equalityFields);
-
-  @override
-  int get hashCode => Object.hash(runtimeType, Object.hashAll(equalityFields));
+  List<Object?> get diagramFields => [
+    size,
+    evolutionStages,
+    anchors,
+    components,
+    links,
+    evolves,
+    pipelines,
+    notes,
+    annotationsBox,
+    annotations,
+    markers,
+  ];
 }
 
-final class WardleySizeAst with _WardleyValueEquality {
+final class WardleySizeAst with _AstValueEquality {
   const WardleySizeAst({required this.width, required this.height});
   final int width;
   final int height;
@@ -67,7 +106,7 @@ final class WardleySizeAst with _WardleyValueEquality {
   List<Object?> get equalityFields => [width, height];
 }
 
-final class WardleyPositionAst with _WardleyValueEquality {
+final class WardleyPositionAst with _AstValueEquality {
   const WardleyPositionAst({required this.x, required this.y});
   final num x;
   final num y;
@@ -76,7 +115,7 @@ final class WardleyPositionAst with _WardleyValueEquality {
   List<Object?> get equalityFields => [x, y];
 }
 
-final class WardleyLabelAst with _WardleyValueEquality {
+final class WardleyLabelAst with _AstValueEquality {
   const WardleyLabelAst({required this.offsetX, required this.offsetY});
   final int offsetX;
   final int offsetY;
@@ -85,7 +124,7 @@ final class WardleyLabelAst with _WardleyValueEquality {
   List<Object?> get equalityFields => [offsetX, offsetY];
 }
 
-final class WardleyEvolutionStageAst with _WardleyValueEquality {
+final class WardleyEvolutionStageAst with _AstValueEquality {
   const WardleyEvolutionStageAst({required this.name, this.secondName, this.boundary});
   final String name;
   final String? secondName;
@@ -95,7 +134,7 @@ final class WardleyEvolutionStageAst with _WardleyValueEquality {
   List<Object?> get equalityFields => [name, secondName, boundary];
 }
 
-final class WardleyAnchorAst with _WardleyValueEquality {
+final class WardleyAnchorAst with _AstValueEquality {
   const WardleyAnchorAst({required this.name, required this.position});
   final String name;
   final WardleyPositionAst position;
@@ -104,7 +143,7 @@ final class WardleyAnchorAst with _WardleyValueEquality {
   List<Object?> get equalityFields => [name, position];
 }
 
-final class WardleyComponentAst with _WardleyValueEquality {
+final class WardleyComponentAst with _AstValueEquality {
   const WardleyComponentAst({
     required this.name,
     required this.position,
@@ -123,7 +162,7 @@ final class WardleyComponentAst with _WardleyValueEquality {
   List<Object?> get equalityFields => [name, position, label, inertia, strategy];
 }
 
-final class WardleyLinkAst with _WardleyValueEquality {
+final class WardleyLinkAst with _AstValueEquality {
   const WardleyLinkAst({required this.from, required this.to, required this.style, this.flow, this.label});
 
   final String from;
@@ -136,7 +175,7 @@ final class WardleyLinkAst with _WardleyValueEquality {
   List<Object?> get equalityFields => [from, to, style, flow, label];
 }
 
-final class WardleyEvolveAst with _WardleyValueEquality {
+final class WardleyEvolveAst with _AstValueEquality {
   const WardleyEvolveAst({required this.component, required this.target});
   final String component;
   final num target;
@@ -145,21 +184,16 @@ final class WardleyEvolveAst with _WardleyValueEquality {
   List<Object?> get equalityFields => [component, target];
 }
 
-final class WardleyPipelineAst {
+final class WardleyPipelineAst with _AstValueEquality {
   const WardleyPipelineAst({required this.parent, this.components = const []});
   final String parent;
   final List<WardleyPipelineComponentAst> components;
 
   @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is WardleyPipelineAst && parent == other.parent && _listEquals(components, other.components);
-
-  @override
-  int get hashCode => Object.hash(parent, Object.hashAll(components));
+  List<Object?> get equalityFields => [parent, components];
 }
 
-final class WardleyPipelineComponentAst with _WardleyValueEquality {
+final class WardleyPipelineComponentAst with _AstValueEquality {
   const WardleyPipelineComponentAst({required this.name, required this.evolution, this.label});
   final String name;
   final num evolution;
@@ -169,7 +203,7 @@ final class WardleyPipelineComponentAst with _WardleyValueEquality {
   List<Object?> get equalityFields => [name, evolution, label];
 }
 
-final class WardleyNoteAst with _WardleyValueEquality {
+final class WardleyNoteAst with _AstValueEquality {
   const WardleyNoteAst({required this.text, required this.position});
   final String text;
   final WardleyPositionAst position;
@@ -178,7 +212,7 @@ final class WardleyNoteAst with _WardleyValueEquality {
   List<Object?> get equalityFields => [text, position];
 }
 
-final class WardleyAnnotationAst with _WardleyValueEquality {
+final class WardleyAnnotationAst with _AstValueEquality {
   const WardleyAnnotationAst({required this.number, required this.position, required this.text});
   final int number;
   final WardleyPositionAst position;
@@ -188,7 +222,7 @@ final class WardleyAnnotationAst with _WardleyValueEquality {
   List<Object?> get equalityFields => [number, position, text];
 }
 
-sealed class WardleyMarkerAst with _WardleyValueEquality {
+sealed class WardleyMarkerAst with _AstValueEquality {
   const WardleyMarkerAst({required this.name, required this.position});
   final String name;
   final WardleyPositionAst position;
@@ -212,19 +246,10 @@ final class TreemapAst extends DiagramAst {
   final List<TreemapRowAst> rows;
 
   @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is TreemapAst &&
-          _listEquals(rows, other.rows) &&
-          title == other.title &&
-          accessibilityTitle == other.accessibilityTitle &&
-          accessibilityDescription == other.accessibilityDescription;
-
-  @override
-  int get hashCode => Object.hash(Object.hashAll(rows), title, accessibilityTitle, accessibilityDescription);
+  List<Object?> get diagramFields => [rows];
 }
 
-sealed class TreemapRowAst {
+sealed class TreemapRowAst with _AstValueEquality {
   const TreemapRowAst();
 }
 
@@ -235,11 +260,7 @@ final class TreemapNodeRowAst extends TreemapRowAst {
   final TreemapItemAst item;
 
   @override
-  bool operator ==(Object other) =>
-      identical(this, other) || other is TreemapNodeRowAst && indent == other.indent && item == other.item;
-
-  @override
-  int get hashCode => Object.hash(indent, item);
+  List<Object?> get equalityFields => [indent, item];
 }
 
 final class TreemapClassDefAst extends TreemapRowAst {
@@ -249,14 +270,10 @@ final class TreemapClassDefAst extends TreemapRowAst {
   final String? style;
 
   @override
-  bool operator ==(Object other) =>
-      identical(this, other) || other is TreemapClassDefAst && name == other.name && style == other.style;
-
-  @override
-  int get hashCode => Object.hash(name, style);
+  List<Object?> get equalityFields => [name, style];
 }
 
-sealed class TreemapItemAst {
+sealed class TreemapItemAst with _AstValueEquality {
   const TreemapItemAst({required this.name, this.classSelector});
 
   final String name;
@@ -267,12 +284,7 @@ final class TreemapSectionAst extends TreemapItemAst {
   const TreemapSectionAst({required super.name, super.classSelector});
 
   @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is TreemapSectionAst && name == other.name && classSelector == other.classSelector;
-
-  @override
-  int get hashCode => Object.hash(runtimeType, name, classSelector);
+  List<Object?> get equalityFields => [name, classSelector];
 }
 
 final class TreemapLeafAst extends TreemapItemAst {
@@ -281,12 +293,7 @@ final class TreemapLeafAst extends TreemapItemAst {
   final num value;
 
   @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is TreemapLeafAst && name == other.name && value == other.value && classSelector == other.classSelector;
-
-  @override
-  int get hashCode => Object.hash(runtimeType, name, value, classSelector);
+  List<Object?> get equalityFields => [name, value, classSelector];
 }
 
 /// Renderer-ready syntax tree shared by all railroad grammar frontends.
@@ -296,34 +303,21 @@ final class RailroadAst extends DiagramAst {
   final List<RailroadRuleAst> rules;
 
   @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is RailroadAst &&
-          _listEquals(rules, other.rules) &&
-          title == other.title &&
-          accessibilityTitle == other.accessibilityTitle &&
-          accessibilityDescription == other.accessibilityDescription;
-
-  @override
-  int get hashCode => Object.hash(Object.hashAll(rules), title, accessibilityTitle, accessibilityDescription);
+  List<Object?> get diagramFields => [rules];
 }
 
-final class RailroadRuleAst {
+final class RailroadRuleAst with _AstValueEquality {
   const RailroadRuleAst({required this.name, required this.definition});
 
   final String name;
   final RailroadNodeAst definition;
 
   @override
-  bool operator ==(Object other) =>
-      identical(this, other) || other is RailroadRuleAst && name == other.name && definition == other.definition;
-
-  @override
-  int get hashCode => Object.hash(name, definition);
+  List<Object?> get equalityFields => [name, definition];
 }
 
 /// A node understood by the single railroad rendering pipeline.
-sealed class RailroadNodeAst {
+sealed class RailroadNodeAst with _AstValueEquality {
   const RailroadNodeAst();
 }
 
@@ -332,10 +326,7 @@ final class RailroadTerminalAst extends RailroadNodeAst {
   final String value;
 
   @override
-  bool operator ==(Object other) => identical(this, other) || other is RailroadTerminalAst && value == other.value;
-
-  @override
-  int get hashCode => Object.hash(runtimeType, value);
+  List<Object?> get equalityFields => [value];
 }
 
 final class RailroadNonTerminalAst extends RailroadNodeAst {
@@ -343,10 +334,7 @@ final class RailroadNonTerminalAst extends RailroadNodeAst {
   final String name;
 
   @override
-  bool operator ==(Object other) => identical(this, other) || other is RailroadNonTerminalAst && name == other.name;
-
-  @override
-  int get hashCode => Object.hash(runtimeType, name);
+  List<Object?> get equalityFields => [name];
 }
 
 final class RailroadSequenceAst extends RailroadNodeAst {
@@ -354,11 +342,7 @@ final class RailroadSequenceAst extends RailroadNodeAst {
   final List<RailroadNodeAst> elements;
 
   @override
-  bool operator ==(Object other) =>
-      identical(this, other) || other is RailroadSequenceAst && _listEquals(elements, other.elements);
-
-  @override
-  int get hashCode => Object.hash(runtimeType, Object.hashAll(elements));
+  List<Object?> get equalityFields => [elements];
 }
 
 final class RailroadChoiceAst extends RailroadNodeAst {
@@ -366,11 +350,7 @@ final class RailroadChoiceAst extends RailroadNodeAst {
   final List<RailroadNodeAst> alternatives;
 
   @override
-  bool operator ==(Object other) =>
-      identical(this, other) || other is RailroadChoiceAst && _listEquals(alternatives, other.alternatives);
-
-  @override
-  int get hashCode => Object.hash(runtimeType, Object.hashAll(alternatives));
+  List<Object?> get equalityFields => [alternatives];
 }
 
 final class RailroadOptionalAst extends RailroadNodeAst {
@@ -378,10 +358,7 @@ final class RailroadOptionalAst extends RailroadNodeAst {
   final RailroadNodeAst element;
 
   @override
-  bool operator ==(Object other) => identical(this, other) || other is RailroadOptionalAst && element == other.element;
-
-  @override
-  int get hashCode => Object.hash(runtimeType, element);
+  List<Object?> get equalityFields => [element];
 }
 
 final class RailroadRepetitionAst extends RailroadNodeAst {
@@ -392,12 +369,7 @@ final class RailroadRepetitionAst extends RailroadNodeAst {
   final num max;
 
   @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is RailroadRepetitionAst && element == other.element && min == other.min && max == other.max;
-
-  @override
-  int get hashCode => Object.hash(runtimeType, element, min, max);
+  List<Object?> get equalityFields => [element, min, max];
 }
 
 final class RailroadSpecialAst extends RailroadNodeAst {
@@ -405,10 +377,7 @@ final class RailroadSpecialAst extends RailroadNodeAst {
   final String text;
 
   @override
-  bool operator ==(Object other) => identical(this, other) || other is RailroadSpecialAst && text == other.text;
-
-  @override
-  int get hashCode => Object.hash(runtimeType, text);
+  List<Object?> get equalityFields => [text];
 }
 
 /// Syntax tree for an `info` diagram.
@@ -416,15 +385,7 @@ final class InfoAst extends DiagramAst {
   const InfoAst({super.title, super.accessibilityTitle, super.accessibilityDescription});
 
   @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is InfoAst &&
-          title == other.title &&
-          accessibilityTitle == other.accessibilityTitle &&
-          accessibilityDescription == other.accessibilityDescription;
-
-  @override
-  int get hashCode => Object.hash(title, accessibilityTitle, accessibilityDescription);
+  List<Object?> get diagramFields => const [];
 
   @override
   String toString() =>
@@ -444,21 +405,20 @@ final class PieAst extends DiagramAst {
 
   final bool showData;
   final List<PieSectionAst> sections;
+
+  @override
+  List<Object?> get diagramFields => [showData, sections];
 }
 
 /// A labeled numeric section in a [PieAst].
-final class PieSectionAst {
+final class PieSectionAst with _AstValueEquality {
   const PieSectionAst({required this.label, required this.value});
 
   final String label;
   final num value;
 
   @override
-  bool operator ==(Object other) =>
-      identical(this, other) || other is PieSectionAst && label == other.label && value == other.value;
-
-  @override
-  int get hashCode => Object.hash(label, value);
+  List<Object?> get equalityFields => [label, value];
 
   @override
   String toString() => 'PieSectionAst(label: $label, value: $value)';
@@ -469,10 +429,13 @@ final class PacketAst extends DiagramAst {
   const PacketAst({this.blocks = const [], super.title, super.accessibilityTitle, super.accessibilityDescription});
 
   final List<PacketBlockAst> blocks;
+
+  @override
+  List<Object?> get diagramFields => [blocks];
 }
 
 /// A bit range or relative-width block in a [PacketAst].
-final class PacketBlockAst {
+final class PacketBlockAst with _AstValueEquality {
   const PacketBlockAst({this.start, this.end, this.bits, required this.label});
 
   final int? start;
@@ -481,12 +444,7 @@ final class PacketBlockAst {
   final String label;
 
   @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is PacketBlockAst && start == other.start && end == other.end && bits == other.bits && label == other.label;
-
-  @override
-  int get hashCode => Object.hash(start, end, bits, label);
+  List<Object?> get equalityFields => [start, end, bits, label];
 
   @override
   String toString() => 'PacketBlockAst(start: $start, end: $end, bits: $bits, label: $label)';
@@ -506,23 +464,22 @@ final class RadarAst extends DiagramAst {
   final List<RadarAxisAst> axes;
   final List<RadarCurveAst> curves;
   final List<RadarOptionAst> options;
+
+  @override
+  List<Object?> get diagramFields => [axes, curves, options];
 }
 
-final class RadarAxisAst {
+final class RadarAxisAst with _AstValueEquality {
   const RadarAxisAst({required this.name, this.label});
 
   final String name;
   final String? label;
 
   @override
-  bool operator ==(Object other) =>
-      identical(this, other) || other is RadarAxisAst && name == other.name && label == other.label;
-
-  @override
-  int get hashCode => Object.hash(name, label);
+  List<Object?> get equalityFields => [name, label];
 }
 
-final class RadarCurveAst {
+final class RadarCurveAst with _AstValueEquality {
   const RadarCurveAst({required this.name, this.label, required this.entries});
 
   final String name;
@@ -530,53 +487,32 @@ final class RadarCurveAst {
   final List<RadarEntryAst> entries;
 
   @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is RadarCurveAst && name == other.name && label == other.label && _listEquals(entries, other.entries);
-
-  @override
-  int get hashCode => Object.hash(name, label, Object.hashAll(entries));
+  List<Object?> get equalityFields => [name, label, entries];
 }
 
-final class RadarEntryAst {
+final class RadarEntryAst with _AstValueEquality {
   const RadarEntryAst({this.axis, required this.value});
 
   final String? axis;
   final num value;
 
   @override
-  bool operator ==(Object other) =>
-      identical(this, other) || other is RadarEntryAst && axis == other.axis && value == other.value;
-
-  @override
-  int get hashCode => Object.hash(axis, value);
+  List<Object?> get equalityFields => [axis, value];
 }
 
-final class RadarOptionAst {
+final class RadarOptionAst with _AstValueEquality {
   const RadarOptionAst({required this.name, required this.value});
 
   final RadarOptionName name;
   final Object value;
 
   @override
-  bool operator ==(Object other) =>
-      identical(this, other) || other is RadarOptionAst && name == other.name && value == other.value;
-
-  @override
-  int get hashCode => Object.hash(name, value);
+  List<Object?> get equalityFields => [name, value];
 }
 
 enum RadarOptionName { showLegend, ticks, max, min, graticule }
 
 enum RadarGraticule { circle, polygon }
-
-bool _listEquals<T>(List<T> left, List<T> right) {
-  if (left.length != right.length) return false;
-  for (var index = 0; index < left.length; index++) {
-    if (left[index] != right[index]) return false;
-  }
-  return true;
-}
 
 enum CynefinDomain { complex, complicated, clear, chaotic, confusion }
 
@@ -591,35 +527,31 @@ final class CynefinAst extends DiagramAst {
 
   final List<CynefinDomainAst> domains;
   final List<CynefinTransitionAst> transitions;
+
+  @override
+  List<Object?> get diagramFields => [domains, transitions];
 }
 
-final class CynefinDomainAst {
+final class CynefinDomainAst with _AstValueEquality {
   const CynefinDomainAst({required this.domain, this.items = const []});
 
   final CynefinDomain domain;
   final List<CynefinItemAst> items;
 
   @override
-  bool operator ==(Object other) =>
-      identical(this, other) || other is CynefinDomainAst && domain == other.domain && _listEquals(items, other.items);
-
-  @override
-  int get hashCode => Object.hash(domain, Object.hashAll(items));
+  List<Object?> get equalityFields => [domain, items];
 }
 
-final class CynefinItemAst {
+final class CynefinItemAst with _AstValueEquality {
   const CynefinItemAst({required this.label});
 
   final String label;
 
   @override
-  bool operator ==(Object other) => identical(this, other) || other is CynefinItemAst && label == other.label;
-
-  @override
-  int get hashCode => label.hashCode;
+  List<Object?> get equalityFields => [label];
 }
 
-final class CynefinTransitionAst {
+final class CynefinTransitionAst with _AstValueEquality {
   const CynefinTransitionAst({required this.from, required this.to, this.label});
 
   final CynefinDomain from;
@@ -627,12 +559,7 @@ final class CynefinTransitionAst {
   final String? label;
 
   @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is CynefinTransitionAst && from == other.from && to == other.to && label == other.label;
-
-  @override
-  int get hashCode => Object.hash(from, to, label);
+  List<Object?> get equalityFields => [from, to, label];
 }
 
 enum GitGraphDirection { leftToRight, topToBottom, bottomToTop }
@@ -650,9 +577,12 @@ final class GitGraphAst extends DiagramAst {
 
   final GitGraphDirection? direction;
   final List<GitGraphStatementAst> statements;
+
+  @override
+  List<Object?> get diagramFields => [direction, statements];
 }
 
-sealed class GitGraphStatementAst {
+sealed class GitGraphStatementAst with _AstValueEquality {
   const GitGraphStatementAst();
 }
 
@@ -665,16 +595,7 @@ final class GitGraphCommitAst extends GitGraphStatementAst {
   final GitGraphCommitType? type;
 
   @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is GitGraphCommitAst &&
-          id == other.id &&
-          message == other.message &&
-          _listEquals(tags, other.tags) &&
-          type == other.type;
-
-  @override
-  int get hashCode => Object.hash(id, message, Object.hashAll(tags), type);
+  List<Object?> get equalityFields => [id, message, tags, type];
 }
 
 final class GitGraphBranchAst extends GitGraphStatementAst {
@@ -684,11 +605,7 @@ final class GitGraphBranchAst extends GitGraphStatementAst {
   final int? order;
 
   @override
-  bool operator ==(Object other) =>
-      identical(this, other) || other is GitGraphBranchAst && name == other.name && order == other.order;
-
-  @override
-  int get hashCode => Object.hash(name, order);
+  List<Object?> get equalityFields => [name, order];
 }
 
 final class GitGraphMergeAst extends GitGraphStatementAst {
@@ -700,16 +617,7 @@ final class GitGraphMergeAst extends GitGraphStatementAst {
   final GitGraphCommitType? type;
 
   @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is GitGraphMergeAst &&
-          branch == other.branch &&
-          id == other.id &&
-          _listEquals(tags, other.tags) &&
-          type == other.type;
-
-  @override
-  int get hashCode => Object.hash(branch, id, Object.hashAll(tags), type);
+  List<Object?> get equalityFields => [branch, id, tags, type];
 }
 
 final class GitGraphCheckoutAst extends GitGraphStatementAst {
@@ -718,10 +626,7 @@ final class GitGraphCheckoutAst extends GitGraphStatementAst {
   final String branch;
 
   @override
-  bool operator ==(Object other) => identical(this, other) || other is GitGraphCheckoutAst && branch == other.branch;
-
-  @override
-  int get hashCode => branch.hashCode;
+  List<Object?> get equalityFields => [branch];
 }
 
 final class GitGraphCherryPickAst extends GitGraphStatementAst {
@@ -732,12 +637,7 @@ final class GitGraphCherryPickAst extends GitGraphStatementAst {
   final List<String> tags;
 
   @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is GitGraphCherryPickAst && id == other.id && parent == other.parent && _listEquals(tags, other.tags);
-
-  @override
-  int get hashCode => Object.hash(id, parent, Object.hashAll(tags));
+  List<Object?> get equalityFields => [id, parent, tags];
 }
 
 enum ArchitectureDirection { left, right, top, bottom }
@@ -761,9 +661,12 @@ final class ArchitectureAst extends DiagramAst {
   final List<ArchitectureJunctionAst> junctions;
   final List<ArchitectureEdgeAst> edges;
   final List<ArchitectureAlignmentAst> alignments;
+
+  @override
+  List<Object?> get diagramFields => [groups, services, junctions, edges, alignments];
 }
 
-final class ArchitectureGroupAst {
+final class ArchitectureGroupAst with _AstValueEquality {
   const ArchitectureGroupAst({required this.id, this.icon, this.title, this.parent});
 
   final String id;
@@ -772,19 +675,10 @@ final class ArchitectureGroupAst {
   final String? parent;
 
   @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is ArchitectureGroupAst &&
-          id == other.id &&
-          icon == other.icon &&
-          title == other.title &&
-          parent == other.parent;
-
-  @override
-  int get hashCode => Object.hash(id, icon, title, parent);
+  List<Object?> get equalityFields => [id, icon, title, parent];
 }
 
-final class ArchitectureServiceAst {
+final class ArchitectureServiceAst with _AstValueEquality {
   const ArchitectureServiceAst({required this.id, this.icon, this.iconText, this.title, this.parent});
 
   final String id;
@@ -794,34 +688,20 @@ final class ArchitectureServiceAst {
   final String? parent;
 
   @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is ArchitectureServiceAst &&
-          id == other.id &&
-          icon == other.icon &&
-          iconText == other.iconText &&
-          title == other.title &&
-          parent == other.parent;
-
-  @override
-  int get hashCode => Object.hash(id, icon, iconText, title, parent);
+  List<Object?> get equalityFields => [id, icon, iconText, title, parent];
 }
 
-final class ArchitectureJunctionAst {
+final class ArchitectureJunctionAst with _AstValueEquality {
   const ArchitectureJunctionAst({required this.id, this.parent});
 
   final String id;
   final String? parent;
 
   @override
-  bool operator ==(Object other) =>
-      identical(this, other) || other is ArchitectureJunctionAst && id == other.id && parent == other.parent;
-
-  @override
-  int get hashCode => Object.hash(id, parent);
+  List<Object?> get equalityFields => [id, parent];
 }
 
-final class ArchitectureEdgeAst {
+final class ArchitectureEdgeAst with _AstValueEquality {
   const ArchitectureEdgeAst({
     required this.leftId,
     required this.leftDirection,
@@ -845,46 +725,39 @@ final class ArchitectureEdgeAst {
   final String? title;
 
   @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is ArchitectureEdgeAst &&
-          leftId == other.leftId &&
-          leftDirection == other.leftDirection &&
-          leftArrow == other.leftArrow &&
-          leftGroup == other.leftGroup &&
-          rightId == other.rightId &&
-          rightDirection == other.rightDirection &&
-          rightArrow == other.rightArrow &&
-          rightGroup == other.rightGroup &&
-          title == other.title;
-
-  @override
-  int get hashCode =>
-      Object.hash(leftId, leftDirection, leftArrow, leftGroup, rightId, rightDirection, rightArrow, rightGroup, title);
+  List<Object?> get equalityFields => [
+    leftId,
+    leftDirection,
+    leftArrow,
+    leftGroup,
+    rightId,
+    rightDirection,
+    rightArrow,
+    rightGroup,
+    title,
+  ];
 }
 
-final class ArchitectureAlignmentAst {
+final class ArchitectureAlignmentAst with _AstValueEquality {
   const ArchitectureAlignmentAst({required this.direction, required this.members});
 
   final ArchitectureAlignmentDirection direction;
   final List<String> members;
 
   @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is ArchitectureAlignmentAst && direction == other.direction && _listEquals(members, other.members);
-
-  @override
-  int get hashCode => Object.hash(direction, Object.hashAll(members));
+  List<Object?> get equalityFields => [direction, members];
 }
 
 final class TreeViewAst extends DiagramAst {
   const TreeViewAst({this.nodes = const [], super.title, super.accessibilityTitle, super.accessibilityDescription});
 
   final List<TreeViewNodeAst> nodes;
+
+  @override
+  List<Object?> get diagramFields => [nodes];
 }
 
-final class TreeViewNodeAst {
+final class TreeViewNodeAst with _AstValueEquality {
   const TreeViewNodeAst({required this.name, this.indent, this.cssClass, this.icon, this.description});
 
   final String name;
@@ -894,17 +767,7 @@ final class TreeViewNodeAst {
   final String? description;
 
   @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is TreeViewNodeAst &&
-          name == other.name &&
-          indent == other.indent &&
-          cssClass == other.cssClass &&
-          icon == other.icon &&
-          description == other.description;
-
-  @override
-  int get hashCode => Object.hash(name, indent, cssClass, icon, description);
+  List<Object?> get equalityFields => [name, indent, cssClass, icon, description];
 }
 
 enum EventModelEntityType { readModel, ui, command, event, processor }
@@ -928,20 +791,20 @@ final class EventModelingAst extends DiagramAst {
   final List<EventModelDataEntityAst> dataEntities;
   final List<EventModelNoteAst> notes;
   final List<EventModelScenarioAst> scenarios;
+
+  @override
+  List<Object?> get diagramFields => [modelEntities, frames, dataEntities, notes, scenarios];
 }
 
-final class EventModelEntityAst {
+final class EventModelEntityAst with _AstValueEquality {
   const EventModelEntityAst({required this.name});
   final String name;
 
   @override
-  bool operator ==(Object other) => identical(this, other) || other is EventModelEntityAst && name == other.name;
-
-  @override
-  int get hashCode => name.hashCode;
+  List<Object?> get equalityFields => [name];
 }
 
-sealed class EventModelFrameAst {
+sealed class EventModelFrameAst with _AstValueEquality {
   const EventModelFrameAst({
     required this.name,
     required this.entityType,
@@ -961,29 +824,15 @@ sealed class EventModelFrameAst {
   final String? dataInlineValue;
 
   @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other.runtimeType == runtimeType &&
-          other is EventModelFrameAst &&
-          name == other.name &&
-          entityType == other.entityType &&
-          entityIdentifier == other.entityIdentifier &&
-          _listEquals(sourceFrames, other.sourceFrames) &&
-          dataReference == other.dataReference &&
-          dataType == other.dataType &&
-          dataInlineValue == other.dataInlineValue;
-
-  @override
-  int get hashCode => Object.hash(
-    runtimeType,
+  List<Object?> get equalityFields => [
     name,
     entityType,
     entityIdentifier,
-    Object.hashAll(sourceFrames),
+    sourceFrames,
     dataReference,
     dataType,
     dataInlineValue,
-  );
+  ];
 }
 
 final class EventModelTimeFrameAst extends EventModelFrameAst {
@@ -1010,7 +859,7 @@ final class EventModelResetFrameAst extends EventModelFrameAst {
   });
 }
 
-final class EventModelDataEntityAst {
+final class EventModelDataEntityAst with _AstValueEquality {
   const EventModelDataEntityAst({required this.name, this.dataType, required this.value});
 
   final String name;
@@ -1018,15 +867,10 @@ final class EventModelDataEntityAst {
   final String value;
 
   @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is EventModelDataEntityAst && name == other.name && dataType == other.dataType && value == other.value;
-
-  @override
-  int get hashCode => Object.hash(name, dataType, value);
+  List<Object?> get equalityFields => [name, dataType, value];
 }
 
-final class EventModelNoteAst {
+final class EventModelNoteAst with _AstValueEquality {
   const EventModelNoteAst({required this.sourceFrame, this.dataType, required this.value});
 
   final String sourceFrame;
@@ -1034,33 +878,20 @@ final class EventModelNoteAst {
   final String value;
 
   @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is EventModelNoteAst &&
-          sourceFrame == other.sourceFrame &&
-          dataType == other.dataType &&
-          value == other.value;
-
-  @override
-  int get hashCode => Object.hash(sourceFrame, dataType, value);
+  List<Object?> get equalityFields => [sourceFrame, dataType, value];
 }
 
-final class EventModelStatementAst {
+final class EventModelStatementAst with _AstValueEquality {
   const EventModelStatementAst({required this.entityType, required this.entityIdentifier});
 
   final EventModelEntityType entityType;
   final String entityIdentifier;
 
   @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is EventModelStatementAst && entityType == other.entityType && entityIdentifier == other.entityIdentifier;
-
-  @override
-  int get hashCode => Object.hash(entityType, entityIdentifier);
+  List<Object?> get equalityFields => [entityType, entityIdentifier];
 }
 
-final class EventModelScenarioAst {
+final class EventModelScenarioAst with _AstValueEquality {
   const EventModelScenarioAst({
     required this.sourceFrame,
     required this.given,
@@ -1074,14 +905,5 @@ final class EventModelScenarioAst {
   final List<EventModelStatementAst> then;
 
   @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is EventModelScenarioAst &&
-          sourceFrame == other.sourceFrame &&
-          _listEquals(given, other.given) &&
-          _listEquals(when, other.when) &&
-          _listEquals(then, other.then);
-
-  @override
-  int get hashCode => Object.hash(sourceFrame, Object.hashAll(given), Object.hashAll(when), Object.hashAll(then));
+  List<Object?> get equalityFields => [sourceFrame, given, when, then];
 }

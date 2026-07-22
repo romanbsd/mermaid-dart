@@ -13,4 +13,81 @@ void main() {
     expect(ast.accessibilityTitle, 'Accessible title');
     expect(ast.accessibilityDescription, 'Description');
   });
+
+  test('all diagram ASTs use deep value equality and matching hash codes', () {
+    final pairs = <(DiagramAst, DiagramAst)>[
+      (
+        WardleyAst(size: const WardleySizeAst(width: 1, height: 2), title: 'Map'),
+        WardleyAst(size: const WardleySizeAst(width: 1, height: 2), title: 'Map'),
+      ),
+      (
+        TreemapAst(
+          rows: const [TreemapNodeRowAst(indent: 0, item: TreemapSectionAst(name: 'Root'))],
+        ),
+        TreemapAst(
+          rows: const [TreemapNodeRowAst(indent: 0, item: TreemapSectionAst(name: 'Root'))],
+        ),
+      ),
+      (
+        RailroadAst(
+          rules: const [RailroadRuleAst(name: 'rule', definition: RailroadTerminalAst('value'))],
+        ),
+        RailroadAst(
+          rules: const [RailroadRuleAst(name: 'rule', definition: RailroadTerminalAst('value'))],
+        ),
+      ),
+      (InfoAst(title: 'Info'), InfoAst(title: 'Info')),
+      (
+        PieAst(sections: const [PieSectionAst(label: 'A', value: 1)]),
+        PieAst(sections: const [PieSectionAst(label: 'A', value: 1)]),
+      ),
+      (
+        PacketAst(blocks: const [PacketBlockAst(start: 0, label: 'A')]),
+        PacketAst(blocks: const [PacketBlockAst(start: 0, label: 'A')]),
+      ),
+      (RadarAst(axes: const [RadarAxisAst(name: 'cost')]), RadarAst(axes: const [RadarAxisAst(name: 'cost')])),
+      (
+        CynefinAst(domains: const [CynefinDomainAst(domain: CynefinDomain.clear)]),
+        CynefinAst(domains: const [CynefinDomainAst(domain: CynefinDomain.clear)]),
+      ),
+      (
+        GitGraphAst(statements: const [GitGraphCommitAst(id: '1')]),
+        GitGraphAst(statements: const [GitGraphCommitAst(id: '1')]),
+      ),
+      (
+        ArchitectureAst(groups: const [ArchitectureGroupAst(id: 'api')]),
+        ArchitectureAst(groups: const [ArchitectureGroupAst(id: 'api')]),
+      ),
+      (
+        TreeViewAst(nodes: const [TreeViewNodeAst(name: 'root')]),
+        TreeViewAst(nodes: const [TreeViewNodeAst(name: 'root')]),
+      ),
+      (
+        EventModelingAst(modelEntities: const [EventModelEntityAst(name: 'Order')]),
+        EventModelingAst(modelEntities: const [EventModelEntityAst(name: 'Order')]),
+      ),
+    ];
+
+    for (final (left, right) in pairs) {
+      expect(left, right);
+      expect(left.hashCode, right.hashCode);
+    }
+  });
+
+  test('value equality observes nested changes and concrete runtime types', () {
+    expect(
+      const PieAst(sections: [PieSectionAst(label: 'A', value: 1)]),
+      isNot(const PieAst(sections: [PieSectionAst(label: 'A', value: 2)])),
+    );
+    expect(
+      const WardleyAcceleratorAst(name: 'market', position: WardleyPositionAst(x: 1, y: 2)),
+      isNot(const WardleyDeacceleratorAst(name: 'market', position: WardleyPositionAst(x: 1, y: 2))),
+    );
+    expect(
+      const EventModelTimeFrameAst(name: '1', entityType: EventModelEntityType.event, entityIdentifier: 'Created'),
+      isNot(
+        const EventModelResetFrameAst(name: '1', entityType: EventModelEntityType.event, entityIdentifier: 'Created'),
+      ),
+    );
+  });
 }
