@@ -31,7 +31,13 @@ final class ParityManifest {
 }
 
 final class ParityFixture {
-  const ParityFixture({required this.id, required this.type, required this.source, this.textMeasurements = const {}});
+  const ParityFixture({
+    required this.id,
+    required this.type,
+    required this.source,
+    this.textMeasurements = const {},
+    this.architectureIdealEdgeLengthMultiplier,
+  });
 
   factory ParityFixture.fromJson(Object? json) {
     if (json case {'id': final String id, 'type': final String type, 'source': final String source}) {
@@ -43,11 +49,20 @@ final class ParityFixture {
         },
         _ => throw const FormatException('Invalid fixture textMeasurements'),
       };
+      final architectureIdealEdgeLengthMultiplier = switch (json['architectureOptions']) {
+        null => null,
+        {'idealEdgeLengthMultiplier': final num multiplier} when multiplier > 0 => multiplier.toDouble(),
+        _ => throw const FormatException('Invalid fixture architectureOptions'),
+      };
+      if (architectureIdealEdgeLengthMultiplier != null && DiagramType.fromWireName(type) != DiagramType.architecture) {
+        throw const FormatException('architectureOptions require an architecture fixture');
+      }
       return ParityFixture(
         id: id,
         type: DiagramType.fromWireName(type),
         source: source,
         textMeasurements: textMeasurements,
+        architectureIdealEdgeLengthMultiplier: architectureIdealEdgeLengthMultiplier,
       );
     }
     throw const FormatException('Invalid parity fixture');
@@ -57,8 +72,17 @@ final class ParityFixture {
   final DiagramType type;
   final String source;
   final Map<String, Size> textMeasurements;
+  final double? architectureIdealEdgeLengthMultiplier;
 
   TextMeasurer get textMeasurer => _FixtureTextMeasurer(textMeasurements);
+
+  RenderOptions get renderOptions => RenderOptions(
+    padding: 0,
+    architecture: ArchitectureRenderOptions(
+      idealEdgeLengthMultiplier:
+          architectureIdealEdgeLengthMultiplier ?? const ArchitectureRenderOptions().idealEdgeLengthMultiplier,
+    ),
+  );
 }
 
 Size _textMeasurement(Object? json) {

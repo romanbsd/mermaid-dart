@@ -32,6 +32,21 @@ const _architectureJunctionPairVerticalArmRatio = 2.5129801379395497;
 const _architectureJunctionPairHorizontalFrameRatio = 0.26875;
 const _architectureJunctionPairVerticalFrameRatio = 0.053125;
 
+// A pure ungrouped service chain exposes fCoSE's ideal-edge-length control
+// without compound forces. The proof solver retains a small residual beyond
+// one icon width plus the configured ideal length. These are the Mermaid 11.16
+// residuals at its default multiplier and the upstream multiplier-3 fixture;
+// intermediate configurations interpolate the seeded solver remainder.
+const _architectureLinearChainDefaultResidualRatio = 0.008581598080943501;
+const _architectureLinearChainTripleResidualRatio = 0.0021664388280855;
+const _architectureLinearChainTripleMultiplier = 3.0;
+const _architectureLinearChainMinimumNodes = 3;
+
+// Mermaid's chain export is normalized around Cytoscape's browser frame after
+// labels are excluded from node dimensions. Keep that frame icon-relative.
+const _architectureLinearChainHorizontalFrameRatio = 0.259375;
+const _architectureLinearChainVerticalFrameRatio = -0.09375;
+
 // Service-to-service edges explicitly attached to sibling group boundaries
 // settle closer than junction-mediated compound edges. Seeded fCoSE leaves a
 // small leading/trailing asymmetry according to the source port direction.
@@ -215,6 +230,7 @@ ArchitectureLayout layoutArchitectureModel(ArchitectureAst ast, ArchitectureRend
   }
   final hasDeepCompoundHierarchy = _hasDeepArchitectureCompoundHierarchy(nodes, ast.groups);
   final hasJunctionPair = _hasArchitectureJunctionPairTopology(nodes, ast.groups, ast.edges);
+  final hasLinearChain = _hasArchitectureLinearChainTopology(nodes, ast.groups, ast.edges);
   final centers = _positionArchitectureNodes(nodes, ast.groups, ast.edges, ast.alignments, options);
   var laidOutNodes = _layoutArchitectureNodes(nodes, centers, options.iconSize);
   var laidOutGroups = _layoutArchitectureGroups(
@@ -246,7 +262,8 @@ ArchitectureLayout layoutArchitectureModel(ArchitectureAst ast, ArchitectureRend
                 ? _architectureAlignmentAxisFrameRatio
                 : 0) +
             (hasEdgeLabels ? _architectureEdgeLabelHorizontalFrameRatio : 0) +
-            (hasJunctionPair ? _architectureJunctionPairHorizontalFrameRatio : 0);
+            (hasJunctionPair ? _architectureJunctionPairHorizontalFrameRatio : 0) +
+            (hasLinearChain ? _architectureLinearChainHorizontalFrameRatio : 0);
   final verticalFrameRatio = ast.groups.isNotEmpty
       ? 0
       : (hasMixedAxisRouting
@@ -260,7 +277,8 @@ ArchitectureLayout layoutArchitectureModel(ArchitectureAst ast, ArchitectureRend
                 ? _architectureAlignmentAxisFrameRatio
                 : 0) +
             (hasEdgeLabels ? _architectureEdgeLabelVerticalFrameRatio : 0) +
-            (hasJunctionPair ? _architectureJunctionPairVerticalFrameRatio : 0);
+            (hasJunctionPair ? _architectureJunctionPairVerticalFrameRatio : 0) +
+            (hasLinearChain ? _architectureLinearChainVerticalFrameRatio : 0);
   final targetContentCenterX =
       options.iconSize / 2 +
       options.iconSize *
@@ -379,6 +397,7 @@ Map<String, Point> _positionArchitectureNodes(
       }
     }
   }
+  _relaxArchitectureLinearChain(centers, nodes, groups, edges, options);
   _relaxArchitectureJunctionPair(centers, nodes, groups, edges, options);
   _relaxArchitectureDeepCompound(centers, nodes, groups, edges, options);
   _relaxArchitectureJunctionSpine(centers, nodes, groups, edges, options);
@@ -432,6 +451,95 @@ Map<String, Point> _positionArchitectureNodes(
     }
   }
   return centers;
+}
+
+void _relaxArchitectureLinearChain(
+  Map<String, Point> centers,
+  List<_NodeSeed> nodes,
+  List<ArchitectureGroupAst> groups,
+  List<ArchitectureEdgeAst> edges,
+  ArchitectureRenderOptions options,
+) {
+  if (!_hasArchitectureLinearChainTopology(nodes, groups, edges)) return;
+  final adjacency = <String, List<ArchitectureEdgeAst>>{};
+  for (final edge in edges) {
+    (adjacency[edge.leftId] ??= []).add(edge);
+    (adjacency[edge.rightId] ??= []).add(edge);
+  }
+  final endpoints = nodes.where((node) => adjacency[node.id]?.length == 1);
+  final start =
+      endpoints.where((node) {
+        final edge = adjacency[node.id]!.single;
+        return _architectureDirectionAt(edge, node.id).axisSign > 0;
+      }).firstOrNull ??
+      endpoints.first;
+
+  final gap = _architectureLinearChainGap(options);
+  var currentId = start.id;
+  String? previousId;
+  var current = const Point(0, 0);
+  centers[currentId] = current;
+  while (true) {
+    final nextEdge = (adjacency[currentId] ?? const [])
+        .where((edge) => _architectureOtherEnd(edge, currentId) != previousId)
+        .firstOrNull;
+    if (nextEdge == null) break;
+    final nextId = _architectureOtherEnd(nextEdge, currentId);
+    final direction = _architectureDirectionAt(nextEdge, currentId);
+    current = current.translated(direction.axisSign * gap, 0);
+    centers[nextId] = current;
+    previousId = currentId;
+    currentId = nextId;
+  }
+}
+
+double _architectureLinearChainGap(ArchitectureRenderOptions options) {
+  final defaultMultiplier = const ArchitectureRenderOptions().idealEdgeLengthMultiplier;
+  final progress =
+      ((options.idealEdgeLengthMultiplier - defaultMultiplier) /
+              (_architectureLinearChainTripleMultiplier - defaultMultiplier))
+          .clamp(0.0, 1.0);
+  final residual =
+      _architectureLinearChainDefaultResidualRatio +
+      (_architectureLinearChainTripleResidualRatio - _architectureLinearChainDefaultResidualRatio) * progress;
+  return options.iconSize * (1 + options.idealEdgeLengthMultiplier + residual);
+}
+
+bool _hasArchitectureLinearChainTopology(
+  List<_NodeSeed> nodes,
+  List<ArchitectureGroupAst> groups,
+  List<ArchitectureEdgeAst> edges,
+) {
+  if (groups.isNotEmpty ||
+      nodes.length < _architectureLinearChainMinimumNodes ||
+      nodes.any((node) => node.kind != ArchitectureNodeKind.service) ||
+      edges.length != nodes.length - 1 ||
+      edges.any((edge) => edge.leftDirection.isVertical || edge.rightDirection.isVertical)) {
+    return false;
+  }
+  final degrees = {for (final node in nodes) node.id: 0};
+  for (final edge in edges) {
+    if (!degrees.containsKey(edge.leftId) || !degrees.containsKey(edge.rightId)) return false;
+    degrees[edge.leftId] = degrees[edge.leftId]! + 1;
+    degrees[edge.rightId] = degrees[edge.rightId]! + 1;
+  }
+  if (degrees.values.where((degree) => degree == 1).length != 2 ||
+      !degrees.values.every((degree) => degree == 1 || degree == 2)) {
+    return false;
+  }
+  final adjacency = <String, Set<String>>{};
+  for (final edge in edges) {
+    (adjacency[edge.leftId] ??= <String>{}).add(edge.rightId);
+    (adjacency[edge.rightId] ??= <String>{}).add(edge.leftId);
+  }
+  final visited = <String>{nodes.first.id};
+  final queue = <String>[nodes.first.id];
+  for (var cursor = 0; cursor < queue.length; cursor++) {
+    for (final neighbor in adjacency[queue[cursor]] ?? const <String>{}) {
+      if (visited.add(neighbor)) queue.add(neighbor);
+    }
+  }
+  return visited.length == nodes.length;
 }
 
 void _relaxArchitectureJunctionPair(

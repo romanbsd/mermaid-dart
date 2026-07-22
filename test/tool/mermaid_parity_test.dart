@@ -11,8 +11,8 @@ void main() {
     final manifest = ParityManifest.load(File('tool/mermaid_parity/fixtures.json'));
 
     expect(manifest.mermaidVersion, '11.16.0');
-    expect(manifest.fixtures.map((fixture) => fixture.id), hasLength(33));
-    expect(manifest.fixtures.map((fixture) => fixture.id).toSet(), hasLength(33));
+    expect(manifest.fixtures.map((fixture) => fixture.id), hasLength(35));
+    expect(manifest.fixtures.map((fixture) => fixture.id).toSet(), hasLength(35));
     expect(
       manifest.fixtures.map((fixture) => fixture.id),
       containsAll([
@@ -26,6 +26,8 @@ void main() {
         'architecture-directional-arrows',
         'architecture-edge-labels',
         'architecture-simple-junctions',
+        'architecture-edge-length-default',
+        'architecture-edge-length-3',
         'architecture-reasonable-height',
         'architecture-deeply-nested',
         'event-modeling-unicode-multiline',
@@ -40,6 +42,8 @@ void main() {
     final railroad = manifest.fixtures.singleWhere((fixture) => fixture.id == 'railroad-sequence');
     expect(railroad.textMeasurements['a'], const Size(8.40625, 19));
     expect(railroad.textMeasurements['rule ='], const Size(41.625, 19));
+    final stretched = manifest.fixtures.singleWhere((fixture) => fixture.id == 'architecture-edge-length-3');
+    expect(stretched.renderOptions.architecture.idealEdgeLengthMultiplier, 3);
     expect(
       manifest.fixtures.map((fixture) => fixture.type.name).toSet(),
       containsAll({
@@ -443,6 +447,18 @@ void main() {
       }),
       throwsFormatException,
     );
+  });
+
+  test('fixture architecture options are positive and architecture-only', () {
+    Object fixture(String type, num multiplier) => {
+      'id': 'configured',
+      'type': type,
+      'source': type,
+      'architectureOptions': {'idealEdgeLengthMultiplier': multiplier},
+    };
+
+    expect(() => ParityFixture.fromJson(fixture('architecture', 0)), throwsFormatException);
+    expect(() => ParityFixture.fromJson(fixture('info', 3)), throwsFormatException);
   });
 
   test('fixture text measurer uses exact entries and deterministic fallback', () {

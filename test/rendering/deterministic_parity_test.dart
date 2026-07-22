@@ -1602,6 +1602,43 @@ void main() {
       expect(second.x - first.x, 120);
     });
 
+    test('architecture scales a linear chain with Mermaid ideal-edge-length geometry', () {
+      final ast =
+          parse(
+                DiagramType.architecture,
+                'architecture-beta\n'
+                'service a(server)[A]\n'
+                'service b(server)[B]\n'
+                'service c(server)[C]\n'
+                'a:R --> L:b\n'
+                'b:R --> L:c\n',
+              )
+              as ArchitectureAst;
+
+      List<Translate> positions(double multiplier) =>
+          _flatten(
+                layoutDiagram(
+                  ast,
+                  textMeasurer: measurer,
+                  options: RenderOptions(
+                    padding: 0,
+                    architecture: ArchitectureRenderOptions(idealEdgeLengthMultiplier: multiplier),
+                  ),
+                ).elements,
+              )
+              .whereType<SceneGroup>()
+              .where((element) => element.cssClasses.contains('architecture-service'))
+              .map((service) => service.transforms.single as Translate)
+              .toList();
+
+      final defaults = positions(1.5);
+      final stretched = positions(3);
+      expect(defaults[1].x - defaults[0].x, closeTo(200.68652784647548, 1e-9));
+      expect(defaults[2].x - defaults[1].x, closeTo(200.68652784647548, 1e-9));
+      expect(stretched[1].x - stretched[0].x, closeTo(320.17331510624684, 1e-9));
+      expect(stretched[2].x - stretched[1].x, closeTo(320.17331510624684, 1e-9));
+    });
+
     test('architecture encloses nested groups and routes group edges to their boundary', () {
       final scene = layoutDiagram(
         const ArchitectureAst(

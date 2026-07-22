@@ -71,6 +71,7 @@ Future<void> main(List<String> arguments) async {
     final reference = File('${references.path}/${fixture.id}.svg');
     if (updateReference) {
       final source = File('${sources.path}/${fixture.id}.mmd')..writeAsStringSync(fixture.source);
+      final mermaidConfig = _writeMermaidConfig(output, fixture);
       final process = await Process.run(referenceRenderer.path, [
         '--input',
         source.path,
@@ -78,6 +79,7 @@ Future<void> main(List<String> arguments) async {
         reference.path,
         '--backgroundColor',
         'transparent',
+        if (mermaidConfig != null) ...['--configFile', mermaidConfig.path],
         if (puppeteerConfig != null) ...['--puppeteerConfigFile', puppeteerConfig.path],
         '--quiet',
       ]);
@@ -100,7 +102,7 @@ Future<void> main(List<String> arguments) async {
       final dartSvg = renderDiagramSvg(
         fixture.type,
         fixture.source,
-        options: const RenderOptions(padding: 0),
+        options: fixture.renderOptions,
         textMeasurer: fixture.textMeasurer,
       );
       File('${output.path}/${fixture.id}.dart.svg').writeAsStringSync(dartSvg);
@@ -129,6 +131,16 @@ Future<void> main(List<String> arguments) async {
   stdout.writeln('Result: $exact exact, $visual visual, $differences different, $errors errors');
   stdout.writeln('Artifacts: ${output.path}');
   if (!reportOnly && (differences > 0 || errors > 0)) exitCode = 1;
+}
+
+File? _writeMermaidConfig(Directory output, ParityFixture fixture) {
+  final multiplier = fixture.architectureIdealEdgeLengthMultiplier;
+  if (multiplier == null) return null;
+  return File('${output.path}/${fixture.id}.config.json')..writeAsStringSync(
+    const JsonEncoder.withIndent(' ').convert({
+      'architecture': {'idealEdgeLengthMultiplier': multiplier},
+    }),
+  );
 }
 
 File? _writePuppeteerConfig(Directory output) {
