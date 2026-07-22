@@ -45,6 +45,28 @@ final class TreeViewRenderOptions extends DiagramRenderOptions {
   final double lineThickness;
 }
 
+enum TreemapValueFormat { plain, grouped, currencyGrouped }
+
+final class TreemapRenderOptions extends DiagramRenderOptions {
+  const TreemapRenderOptions({
+    this.width = 960,
+    this.height = 500,
+    this.innerPadding = 10,
+    this.sectionPadding = 10,
+    this.sectionHeaderHeight = 25,
+    this.showValues = true,
+    this.valueFormat = TreemapValueFormat.grouped,
+  });
+
+  final double width;
+  final double height;
+  final double innerPadding;
+  final double sectionPadding;
+  final double sectionHeaderHeight;
+  final bool showValues;
+  final TreemapValueFormat valueFormat;
+}
+
 final class RailroadRenderOptions extends DiagramRenderOptions {
   const RailroadRenderOptions({
     this.compactMode = false,
@@ -149,6 +171,7 @@ final class RenderOptions {
     this.radar = const RadarRenderOptions(),
     this.railroad = const RailroadRenderOptions(),
     this.treeView = const TreeViewRenderOptions(),
+    this.treemap = const TreemapRenderOptions(),
     this.diagram = const <Type, DiagramRenderOptions>{},
   });
 
@@ -160,6 +183,7 @@ final class RenderOptions {
   final RadarRenderOptions radar;
   final RailroadRenderOptions railroad;
   final TreeViewRenderOptions treeView;
+  final TreemapRenderOptions treemap;
 
   /// Additional typed options for renderer families added after this API.
   final Map<Type, DiagramRenderOptions> diagram;
@@ -174,6 +198,7 @@ final class RenderOptions {
           RadarRenderOptions() => radar,
           RailroadRenderOptions() => railroad,
           TreeViewRenderOptions() => treeView,
+          TreemapRenderOptions() => treemap,
         }
         as T;
   }

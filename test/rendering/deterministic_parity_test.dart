@@ -100,6 +100,93 @@ void main() {
       expectSvgGolden('railroad_choice', renderSvg(scene));
     });
 
+    test('treemap squarifies sorted values inside the root section', () {
+      final scene = layoutDiagram(
+        const TreemapAst(
+          title: 'Revenue',
+          rows: [
+            TreemapNodeRowAst(indent: 0, item: TreemapSectionAst(name: 'Root')),
+            TreemapNodeRowAst(indent: 2, item: TreemapLeafAst(name: 'Large', value: 3)),
+            TreemapNodeRowAst(indent: 2, item: TreemapLeafAst(name: 'Small', value: 1)),
+          ],
+        ),
+        textMeasurer: measurer,
+        options: const RenderOptions(padding: 0),
+      );
+      final elements = _flatten(scene.elements).toList();
+      final leaves = elements
+          .whereType<SceneRect>()
+          .where((element) => element.cssClasses.contains('treemapLeaf'))
+          .toList();
+
+      expect(scene.bounds, const Bounds(left: 0, top: 0, width: 960, height: 530));
+      expect(leaves, hasLength(2));
+      expect(leaves[0].label, 'Large');
+      expect(leaves[0].bounds, const Bounds(left: 10, top: 65, width: 703, height: 455));
+      expect(leaves[1].bounds, const Bounds(left: 723, top: 65, width: 227, height: 455));
+      expect(
+        elements
+            .whereType<SceneText>()
+            .where((element) => element.cssClasses.contains('treemapValue'))
+            .map((element) => element.text),
+        ['3', '1'],
+      );
+      expectSvgGolden('treemap_squarified', renderSvg(scene));
+    });
+
+    test('treemap typed options hide values and preserve class selectors', () {
+      final scene = layoutDiagram(
+        const TreemapAst(
+          rows: [
+            TreemapNodeRowAst(indent: 0, item: TreemapSectionAst(name: 'Root')),
+            TreemapNodeRowAst(
+              indent: 2,
+              item: TreemapLeafAst(name: 'Only', value: 10, classSelector: 'important'),
+            ),
+          ],
+        ),
+        textMeasurer: measurer,
+        options: const RenderOptions(
+          padding: 0,
+          treemap: TreemapRenderOptions(width: 400, height: 240, showValues: false),
+        ),
+      );
+      final elements = _flatten(scene.elements).toList();
+      final leaf = elements.whereType<SceneGroup>().singleWhere(
+        (element) => element.cssClasses.contains('treemapLeafGroup'),
+      );
+
+      expect(scene.bounds, const Bounds(left: 0, top: 0, width: 400, height: 240));
+      expect(leaf.cssClasses, contains('important'));
+      expect(elements.whereType<SceneText>().where((element) => element.cssClasses.contains('treemapValue')), isEmpty);
+    });
+
+    test('treemap class definitions resolve into backend-neutral styles', () {
+      final scene = layoutDiagram(
+        const TreemapAst(
+          rows: [
+            TreemapClassDefAst(name: 'important', style: 'fill:#112233,stroke:#445566,color:#ffffff'),
+            TreemapNodeRowAst(indent: 0, item: TreemapSectionAst(name: 'Root')),
+            TreemapNodeRowAst(
+              indent: 2,
+              item: TreemapLeafAst(name: 'Only', value: 10, classSelector: 'important'),
+            ),
+          ],
+        ),
+        textMeasurer: measurer,
+        options: const RenderOptions(padding: 0),
+      );
+      final elements = _flatten(scene.elements).toList();
+      final leaf = elements.whereType<SceneRect>().singleWhere((element) => element.cssClasses.contains('treemapLeaf'));
+      final label = elements.whereType<SceneText>().singleWhere(
+        (element) => element.cssClasses.contains('treemapLabel'),
+      );
+
+      expect(leaf.fill, const SolidFill(Color(17, 34, 51)));
+      expect(leaf.stroke?.color, const Color(68, 85, 102));
+      expect(label.style.color, const Color(255, 255, 255));
+    });
+
     test('packet splits blocks at row boundaries and shows bit labels', () {
       final scene = layoutDiagram(
         const PacketAst(blocks: [PacketRangeBlockAst(start: 0, end: 40, label: 'payload')]),

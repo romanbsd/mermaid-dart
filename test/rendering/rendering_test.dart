@@ -141,8 +141,9 @@ rule <- "a" b? ;
         const TreemapAst(
           rows: [
             TreemapNodeRowAst(indent: 0, item: TreemapSectionAst(name: 'Products')),
-            TreemapNodeRowAst(indent: 1, item: TreemapLeafAst(name: 'A', value: 2)),
-            TreemapNodeRowAst(indent: 1, item: TreemapLeafAst(name: 'B', value: 1)),
+            TreemapNodeRowAst(indent: 1, item: TreemapSectionAst(name: 'Category')),
+            TreemapNodeRowAst(indent: 2, item: TreemapLeafAst(name: 'A', value: 2)),
+            TreemapNodeRowAst(indent: 2, item: TreemapLeafAst(name: 'B', value: 1)),
           ],
         ),
       );
