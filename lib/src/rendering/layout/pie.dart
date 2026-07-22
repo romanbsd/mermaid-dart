@@ -22,7 +22,12 @@ _LayoutResult _layoutPie(PieAst ast, _LayoutContext context) {
     fontSize: textStyle.fontSize,
     color: config.legendText,
   );
-  final titleStyle = _mermaidTextStyle(context, _pieTitleFontSize);
+  final inheritedTitleStyle = _mermaidTextStyle(context, _pieTitleFontSize);
+  final titleStyle = SceneTextStyle(
+    fontFamily: inheritedTitleStyle.fontFamily,
+    fontSize: inheritedTitleStyle.fontSize,
+    color: config.titleText,
+  );
   final radius = config.radius ?? config.size / 2 - config.margin;
   final total = ast.sections.fold<double>(0, (sum, section) => sum + math.max(0, section.value.toDouble()));
   final rendered = <({int index, PieSectionAst section})>[

@@ -478,6 +478,9 @@ final class PacketRenderOptions extends DiagramRenderOptions {
 enum PieLegendPosition { top, bottom, left, right, center }
 
 final class PieRenderOptions extends DiagramRenderOptions {
+  /// Mermaid's default light-theme color for pie chart titles.
+  static const defaultTitleTextColor = Color(0, 0, 0);
+
   const PieRenderOptions({
     this.size = 450,
     this.margin = 40,
@@ -491,6 +494,7 @@ final class PieRenderOptions extends DiagramRenderOptions {
     this.sectionStroke = const Color(0, 0, 0),
     this.outerStroke = const Color(0, 0, 0),
     this.legendText = const Color(0, 0, 0),
+    this.titleText = defaultTitleTextColor,
     this.sectionColors = const [
       Color(236, 236, 255),
       Color(255, 255, 222),
@@ -519,6 +523,7 @@ final class PieRenderOptions extends DiagramRenderOptions {
   final Color sectionStroke;
   final Color outerStroke;
   final Color legendText;
+  final Color titleText;
   final List<Color> sectionColors;
 }
 

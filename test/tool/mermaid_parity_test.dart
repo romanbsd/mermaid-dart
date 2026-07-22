@@ -11,8 +11,8 @@ void main() {
     final manifest = ParityManifest.load(File('tool/mermaid_parity/fixtures.json'));
 
     expect(manifest.mermaidVersion, '11.16.0');
-    expect(manifest.fixtures.map((fixture) => fixture.id), hasLength(40));
-    expect(manifest.fixtures.map((fixture) => fixture.id).toSet(), hasLength(40));
+    expect(manifest.fixtures.map((fixture) => fixture.id), hasLength(41));
+    expect(manifest.fixtures.map((fixture) => fixture.id).toSet(), hasLength(41));
     expect(
       manifest.fixtures.map((fixture) => fixture.id),
       containsAll([
@@ -41,6 +41,7 @@ void main() {
         'git-special-commits-bt',
         'tree-highlighted-styles',
         'tree-unicode-invalid-icon',
+        'pie-donut',
         'wardley-strategies',
       ]),
     );
@@ -479,6 +480,38 @@ void main() {
         'type': 'architecture',
         'source': 'architecture-beta',
         'architectureOptions': {'edgeElasticity': 1.1},
+      }),
+      throwsFormatException,
+    );
+  });
+
+  test('fixture pie options are typed and pie-only', () {
+    final configured = ParityFixture.fromJson({
+      'id': 'configured',
+      'type': 'pie',
+      'source': 'pie\n"Dogs": 1',
+      'pieOptions': {'donutHole': 0.4},
+    });
+
+    expect(configured.renderOptions.pie.donutHole, 0.4);
+    expect(configured.mermaidConfig, {
+      'pie': {'donutHole': 0.4},
+    });
+    expect(
+      () => ParityFixture.fromJson({
+        'id': 'configured',
+        'type': 'packet',
+        'source': 'packet\n0: "Flag"',
+        'pieOptions': {'donutHole': 0.4},
+      }),
+      throwsFormatException,
+    );
+    expect(
+      () => ParityFixture.fromJson({
+        'id': 'configured',
+        'type': 'pie',
+        'source': 'pie\n"Dogs": 1',
+        'pieOptions': {'donutHole': 'wide'},
       }),
       throwsFormatException,
     );

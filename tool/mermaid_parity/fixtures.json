@@ -224,6 +224,18 @@
       }
     },
     {
+      "id": "pie-donut",
+      "type": "pie",
+      "source": "pie title What Koalas Do In A Day\n\"Sleep\": 20\n\"Eat\": 3\n\"Roam\": 1\n",
+      "pieOptions": { "donutHole": 0.4 },
+      "textMeasurements": {
+        "Sleep": { "width": 41.21875, "height": 20 },
+        "Eat": { "width": 24.78125, "height": 20 },
+        "Roam": { "width": 41.375, "height": 20 },
+        "What Koalas Do In A Day": { "width": 268.609375, "height": 29 }
+      }
+    },
+    {
       "id": "radar-comparison",
       "type": "radar",
       "source": "radar-beta\naxis speed[\"Speed\"], quality, cost[\"Cost\"]\ncurve current[\"Current\"] { 3, 4, 2 }\n"

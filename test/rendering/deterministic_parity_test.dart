@@ -1091,6 +1091,7 @@ void main() {
       expect(scene.bounds.height, 450);
       expect(title.position, const Point(225, 25));
       expect(title.style.fontSize, 25);
+      expect(title.style.color, PieRenderOptions.defaultTitleTextColor);
       expect(title.baseline, TextBaseline.alphabetic);
     });
 

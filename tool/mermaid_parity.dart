@@ -134,9 +134,9 @@ Future<void> main(List<String> arguments) async {
 }
 
 File? _writeMermaidConfig(Directory output, ParityFixture fixture) {
-  if (fixture.architectureConfig.isEmpty) return null;
+  if (fixture.mermaidConfig.isEmpty) return null;
   return File('${output.path}/${fixture.id}.config.json')
-    ..writeAsStringSync(const JsonEncoder.withIndent(' ').convert({'architecture': fixture.architectureConfig}));
+    ..writeAsStringSync(const JsonEncoder.withIndent(' ').convert(fixture.mermaidConfig));
 }
 
 File? _writePuppeteerConfig(Directory output) {

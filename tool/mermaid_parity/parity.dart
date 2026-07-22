@@ -37,6 +37,7 @@ final class ParityFixture {
     required this.source,
     this.textMeasurements = const {},
     this.architectureConfig = const {},
+    this.pieConfig = const {},
   });
 
   factory ParityFixture.fromJson(Object? json) {
@@ -49,16 +50,22 @@ final class ParityFixture {
         },
         _ => throw const FormatException('Invalid fixture textMeasurements'),
       };
+      final diagramType = DiagramType.fromWireName(type);
       final architectureConfig = _architectureConfig(json['architectureOptions']);
-      if (json['architectureOptions'] != null && DiagramType.fromWireName(type) != DiagramType.architecture) {
+      final pieConfig = _pieConfig(json['pieOptions']);
+      if (json['architectureOptions'] != null && diagramType != DiagramType.architecture) {
         throw const FormatException('architectureOptions require an architecture fixture');
+      }
+      if (json['pieOptions'] != null && diagramType != DiagramType.pie) {
+        throw const FormatException('pieOptions require a pie fixture');
       }
       return ParityFixture(
         id: id,
-        type: DiagramType.fromWireName(type),
+        type: diagramType,
         source: source,
         textMeasurements: textMeasurements,
         architectureConfig: architectureConfig,
+        pieConfig: pieConfig,
       );
     }
     throw const FormatException('Invalid parity fixture');
@@ -69,21 +76,31 @@ final class ParityFixture {
   final String source;
   final Map<String, Size> textMeasurements;
   final Map<String, Object> architectureConfig;
+  final Map<String, Object> pieConfig;
+
+  Map<String, Object> get mermaidConfig => {
+    if (architectureConfig.isNotEmpty) 'architecture': architectureConfig,
+    if (pieConfig.isNotEmpty) 'pie': pieConfig,
+  };
 
   TextMeasurer get textMeasurer => _FixtureTextMeasurer(textMeasurements);
 
   RenderOptions get renderOptions {
-    const defaults = ArchitectureRenderOptions();
+    const architectureDefaults = ArchitectureRenderOptions();
+    const pieDefaults = PieRenderOptions();
     return RenderOptions(
       padding: 0,
       architecture: ArchitectureRenderOptions(
-        randomize: architectureConfig['randomize'] as bool? ?? defaults.randomize,
+        randomize: architectureConfig['randomize'] as bool? ?? architectureDefaults.randomize,
         idealEdgeLengthMultiplier:
-            (architectureConfig['idealEdgeLengthMultiplier'] as num?)?.toDouble() ?? defaults.idealEdgeLengthMultiplier,
-        edgeElasticity: (architectureConfig['edgeElasticity'] as num?)?.toDouble() ?? defaults.edgeElasticity,
-        numIter: architectureConfig['numIter'] as int? ?? defaults.numIter,
-        seed: architectureConfig['seed'] as int? ?? defaults.seed,
+            (architectureConfig['idealEdgeLengthMultiplier'] as num?)?.toDouble() ??
+            architectureDefaults.idealEdgeLengthMultiplier,
+        edgeElasticity:
+            (architectureConfig['edgeElasticity'] as num?)?.toDouble() ?? architectureDefaults.edgeElasticity,
+        numIter: architectureConfig['numIter'] as int? ?? architectureDefaults.numIter,
+        seed: architectureConfig['seed'] as int? ?? architectureDefaults.seed,
       ),
+      pie: PieRenderOptions(donutHole: (pieConfig['donutHole'] as num?)?.toDouble() ?? pieDefaults.donutHole),
     );
   }
 }
@@ -109,6 +126,14 @@ Map<String, Object> _architectureConfig(Object? value) {
     result[key] = valid;
   }
   return Map.unmodifiable(result);
+}
+
+Map<String, Object> _pieConfig(Object? value) {
+  if (value == null) return const {};
+  if (value case {'donutHole': final num donutHole} when value.length == 1) {
+    return Map.unmodifiable({'donutHole': donutHole});
+  }
+  throw const FormatException('Invalid fixture pieOptions');
 }
 
 Size _textMeasurement(Object? json) {
