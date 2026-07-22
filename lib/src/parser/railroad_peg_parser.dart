@@ -3,18 +3,14 @@ import 'railroad_parser_base.dart';
 
 final _identifier = RegExp(r'[A-Z_a-z][\w-]*');
 
-RailroadAst parseRailroadPeg(String source) {
-  final document = prepareRailroadDocument(source, RailroadDialect.peg);
-  final scanner = document.scanner;
-  final rules = <RailroadRuleAst>[];
-  while (!scanner.isAtEnd) {
-    final name = scanner.identifier(_identifier, description: 'rule name');
-    scanner.expect('<-');
-    final definition = _parseChoice(scanner);
-    scanner.expect(';');
-    rules.add(RailroadRuleAst(name: name, definition: definition));
-  }
-  return railroadAst(document.metadata, rules);
+RailroadAst parseRailroadPeg(String source) => parseRailroadRules(source, RailroadDialect.peg, _parseRule);
+
+RailroadRuleAst _parseRule(RailroadScanner scanner) {
+  final name = scanner.identifier(_identifier, description: 'rule name');
+  scanner.expect('<-');
+  final definition = _parseChoice(scanner);
+  scanner.expect(';');
+  return RailroadRuleAst(name: name, definition: definition);
 }
 
 RailroadNodeAst _parseChoice(RailroadScanner scanner) {

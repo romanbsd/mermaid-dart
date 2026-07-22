@@ -14,11 +14,8 @@ final Parser<Object?> _infoGrammar =
 
 /// Parses the Mermaid `info` grammar.
 InfoAst parseInfo(String source) {
-  final visibleSource = hideIgnoredSyntax(source);
-  final result = _infoGrammar.parse(visibleSource);
-  if (result is Failure) throwParseFailure(source, result);
-
-  final metadata = readCommonMetadata(hideHeader(visibleSource, 'info', modifier: 'showInfo'));
+  final value = parseGrammar(_infoGrammar, source);
+  final metadata = commonMetadataFromParserValues(value);
   return InfoAst(
     title: metadata.title,
     accessibilityTitle: metadata.accessibilityTitle,

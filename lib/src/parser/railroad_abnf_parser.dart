@@ -5,18 +5,14 @@ final _ruleName = RegExp(r'[A-Za-z][A-Za-z0-9-]*');
 final _repeat = RegExp(r'(?:[0-9]*\*[0-9]*|[0-9]+)');
 final _numVal = RegExp(r'%[xXdDbB][0-9A-Fa-f]+(?:[-.][0-9A-Fa-f]+)*');
 
-RailroadAst parseRailroadAbnf(String source) {
-  final document = prepareRailroadDocument(source, RailroadDialect.abnf);
-  final scanner = document.scanner;
-  final rules = <RailroadRuleAst>[];
-  while (!scanner.isAtEnd) {
-    final name = scanner.identifier(_ruleName, description: 'rule name');
-    scanner.expect('=');
-    final definition = _parseAlternation(scanner);
-    scanner.expect(';');
-    rules.add(RailroadRuleAst(name: name, definition: definition));
-  }
-  return railroadAst(document.metadata, rules);
+RailroadAst parseRailroadAbnf(String source) => parseRailroadRules(source, RailroadDialect.abnf, _parseRule);
+
+RailroadRuleAst _parseRule(RailroadScanner scanner) {
+  final name = scanner.identifier(_ruleName, description: 'rule name');
+  scanner.expect('=');
+  final definition = _parseAlternation(scanner);
+  scanner.expect(';');
+  return RailroadRuleAst(name: name, definition: definition);
 }
 
 RailroadNodeAst _parseAlternation(RailroadScanner scanner) {

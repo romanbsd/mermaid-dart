@@ -23,6 +23,18 @@ void main() {
       expect(ast.accessibilityDescription, 'First line\nSecond line');
     });
 
+    test('reads metadata that starts on the header line', () {
+      final ast =
+          parse(
+                DiagramType.architecture,
+                'architecture-beta title Header title\naccTitle: First label\naccTitle: Architecture\n',
+              )
+              as ArchitectureAst;
+
+      expect(ast.title, 'Header title');
+      expect(ast.accessibilityTitle, 'Architecture');
+    });
+
     test('parses groups, services, and junctions', () {
       final ast =
           parse(DiagramType.architecture, '''architecture-beta

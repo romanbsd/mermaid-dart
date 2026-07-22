@@ -10,19 +10,43 @@ final Parser<Object?> quotedStringParser =
     (char('"') & (char('\\') & any() | pattern('^"\\\\')).star() & char('"')) |
     (char("'") & (char('\\') & any() | pattern("^'\\\\")).star() & char("'"));
 
-final Parser<Object?> _titleParser =
-    string('title') & ((pattern(' \t').plus() & lineTextParser & lineEndParser) | lineEndParser);
-final Parser<Object?> _accessibilityTitleParser =
-    string('accTitle') & horizontalSpaceParser & char(':') & lineTextParser & lineEndParser;
+final Parser<CommonMetadataEntry> _titleParser =
+    (string('title') & ((pattern(' \t').plus() & lineTextParser & lineEndParser) | lineEndParser)).flatten().map(
+      (lexeme) => DiagramTitleEntry(normalizeSingleLine(lexeme.substring('title'.length))),
+    );
+final Parser<CommonMetadataEntry> _accessibilityTitleParser =
+    (string('accTitle') & horizontalSpaceParser & char(':') & lineTextParser & lineEndParser).flatten().map(
+      (lexeme) => AccessibilityTitleEntry(normalizeSingleLine(lexeme.substring(lexeme.indexOf(':') + 1))),
+    );
 final Parser<Object?> _singleLineAccessibilityDescriptionParser = char(':') & lineTextParser & lineEndParser;
 final Parser<Object?> _multiLineAccessibilityDescriptionParser =
     char('{') & any().starLazy(char('}')) & char('}') & horizontalSpaceParser & lineEndParser;
-final Parser<Object?> _accessibilityDescriptionParser =
-    string('accDescr') &
-    horizontalSpaceParser &
-    (_singleLineAccessibilityDescriptionParser | _multiLineAccessibilityDescriptionParser);
+final Parser<CommonMetadataEntry> _accessibilityDescriptionParser =
+    (string('accDescr') &
+            horizontalSpaceParser &
+            (_singleLineAccessibilityDescriptionParser | _multiLineAccessibilityDescriptionParser))
+        .flatten()
+        .map((lexeme) => AccessibilityDescriptionEntry(_metadataDescriptionValue(lexeme)));
 
 final Parser<Object?> commonMetadataParser = _titleParser | _accessibilityTitleParser | _accessibilityDescriptionParser;
+
+sealed class CommonMetadataEntry {
+  const CommonMetadataEntry(this.value);
+
+  final String value;
+}
+
+final class DiagramTitleEntry extends CommonMetadataEntry {
+  const DiagramTitleEntry(super.value);
+}
+
+final class AccessibilityTitleEntry extends CommonMetadataEntry {
+  const AccessibilityTitleEntry(super.value);
+}
+
+final class AccessibilityDescriptionEntry extends CommonMetadataEntry {
+  const AccessibilityDescriptionEntry(super.value);
+}
 
 final class CommonMetadata {
   const CommonMetadata({this.title, this.accessibilityTitle, this.accessibilityDescription});
@@ -30,6 +54,56 @@ final class CommonMetadata {
   final String? title;
   final String? accessibilityTitle;
   final String? accessibilityDescription;
+}
+
+Object? parseGrammar(
+  Parser<Object?> grammar,
+  String source, {
+  void Function(String syntax, Failure failure)? onFailure,
+}) {
+  final syntax = hideIgnoredSyntax(source);
+  final result = grammar.parse(syntax);
+  if (result is Failure) {
+    onFailure?.call(syntax, result);
+    throwParseFailure(source, result);
+  }
+  return result.value;
+}
+
+List<T> flattenParserValues<T>(Object? value) {
+  final values = <T>[];
+  void collect(Object? part) {
+    switch (part) {
+      case T():
+        values.add(part);
+      case Iterable<Object?>():
+        part.forEach(collect);
+    }
+  }
+
+  collect(value);
+  return values;
+}
+
+CommonMetadata commonMetadataFromParserValues(Object? value) {
+  String? title;
+  String? accessibilityTitle;
+  String? accessibilityDescription;
+  for (final entry in flattenParserValues<CommonMetadataEntry>(value)) {
+    switch (entry) {
+      case DiagramTitleEntry():
+        title = entry.value;
+      case AccessibilityTitleEntry():
+        accessibilityTitle = entry.value;
+      case AccessibilityDescriptionEntry():
+        accessibilityDescription = entry.value;
+    }
+  }
+  return CommonMetadata(
+    title: title,
+    accessibilityTitle: accessibilityTitle,
+    accessibilityDescription: accessibilityDescription,
+  );
 }
 
 final class PreparedDiagramSource {
@@ -83,14 +157,6 @@ String hideIgnoredSyntax(String source) {
     });
   }
   return result;
-}
-
-String hideHeader(String source, String keyword, {String? modifier}) {
-  final modifierPattern = modifier == null ? '' : '(?:[\\t \\r\\n]+${RegExp.escape(modifier)})?';
-  final expression = RegExp('^([\\t \\r\\n]*)${RegExp.escape(keyword)}$modifierPattern');
-  return source.replaceFirstMapped(expression, (match) {
-    return _hideNonNewlines(match.group(0)!);
-  });
 }
 
 CommonMetadata readCommonMetadata(String source) => CommonMetadata(
@@ -163,6 +229,17 @@ String? _accessibilityDescriptionValue(String source) {
 }
 
 String normalizeSingleLine(String value) => value.trim().replaceAll(RegExp(r'[\t ]{2,}'), ' ');
+
+String _metadataDescriptionValue(String lexeme) {
+  final body = lexeme.substring('accDescr'.length).trim();
+  if (body.startsWith(':')) return normalizeSingleLine(body.substring(1));
+  return body
+      .substring(1, body.length - 1)
+      .split(RegExp(r'\r?\n|\r'))
+      .map(normalizeSingleLine)
+      .where((line) => line.isNotEmpty)
+      .join('\n');
+}
 
 String decodeQuotedString(String lexeme) {
   final value = StringBuffer();

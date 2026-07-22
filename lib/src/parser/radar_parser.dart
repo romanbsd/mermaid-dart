@@ -34,24 +34,11 @@ final Parser<Object?> _entries = _entryList(_numberEntry) | _entryList(_detailed
 
 final Parser<RadarCurveAst> _curve =
     (_identifier & _label.optional() & horizontalSpaceParser & char('{') & _entries & char('}')).map((value) {
-      final entries = <RadarEntryAst>[];
-      String? name;
-      String? label;
-      void collect(Object? item) {
-        switch (item) {
-          case RadarEntryAst():
-            entries.add(item);
-          case _Label():
-            label = item.value;
-          case String() when name == null:
-            name = item;
-          case Iterable<Object?>():
-            item.forEach(collect);
-        }
-      }
-
-      collect(value);
-      return RadarCurveAst(name: name!, label: label, entries: List.unmodifiable(entries));
+      return RadarCurveAst(
+        name: value[0] as String,
+        label: flattenParserValues<_Label>(value).firstOrNull?.value,
+        entries: List.unmodifiable(flattenParserValues<RadarEntryAst>(value)),
+      );
     });
 
 final Parser<RadarOptionAst> _option =
@@ -87,32 +74,12 @@ final Parser<Object?> _radarGrammar =
         .end();
 
 RadarAst parseRadar(String source) {
-  final visibleSource = hideIgnoredSyntax(source);
-  final result = _radarGrammar.parse(visibleSource);
-  if (result is Failure) throwParseFailure(source, result);
-
-  final axes = <RadarAxisAst>[];
-  final curves = <RadarCurveAst>[];
-  final options = <RadarOptionAst>[];
-  void collect(Object? value) {
-    switch (value) {
-      case RadarAxisAst():
-        axes.add(value);
-      case RadarCurveAst():
-        curves.add(value);
-      case RadarOptionAst():
-        options.add(value);
-      case Iterable<Object?>():
-        value.forEach(collect);
-    }
-  }
-
-  collect(result.value);
-  final metadata = readCommonMetadata(hideHeader(visibleSource, 'radar-beta'));
+  final value = parseGrammar(_radarGrammar, source);
+  final metadata = commonMetadataFromParserValues(value);
   return RadarAst(
-    axes: List.unmodifiable(axes),
-    curves: List.unmodifiable(curves),
-    options: List.unmodifiable(options),
+    axes: List.unmodifiable(flattenParserValues<RadarAxisAst>(value)),
+    curves: List.unmodifiable(flattenParserValues<RadarCurveAst>(value)),
+    options: List.unmodifiable(flattenParserValues<RadarOptionAst>(value)),
     title: metadata.title,
     accessibilityTitle: metadata.accessibilityTitle,
     accessibilityDescription: metadata.accessibilityDescription,

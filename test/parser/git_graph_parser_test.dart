@@ -82,6 +82,13 @@ commit msg:"Initial release"
       expect(ast.statements, [const GitGraphCommitAst(message: 'Initial release')]);
     });
 
+    test('reads metadata that starts on the header line', () {
+      final ast = parse(DiagramType.gitGraph, 'gitGraph title Release history\ncommit\n') as GitGraphAst;
+
+      expect(ast.title, 'Release history');
+      expect(ast.statements, [const GitGraphCommitAst()]);
+    });
+
     test('rejects malformed properties and invalid branch order', () {
       expect(
         () => parse(DiagramType.gitGraph, 'gitGraph\ncommit unknown:"oops"\n'),

@@ -1,44 +1,23 @@
 import 'ast.dart';
 import 'common_syntax.dart';
 
-final RegExp _header = RegExp(r'^[\t \r\n]*treeView-beta(?![\w-])');
 final RegExp _annotationStart = RegExp(r'[ \t]+(?=:::[ \t]*[A-Za-z_]|icon\(|##)');
 final RegExp _classAnnotation = RegExp(r'^:::[ \t]*([A-Za-z_][A-Za-z0-9_-]*)');
 final RegExp _iconAnnotation = RegExp(r'^icon\(([A-Za-z0-9_-]*(?::[A-Za-z0-9_-]+)?)\)');
 final RegExp _descriptionAnnotation = RegExp(r'^##([^\r\n]*)');
 
 TreeViewAst parseTreeView(String source) {
-  final visibleSource = hideIgnoredSyntax(source);
-  final header = _header.firstMatch(visibleSource);
-  if (header == null) {
-    final offset = RegExp(r'\S').firstMatch(visibleSource)?.start ?? 0;
-    throwParseError(source, 'Expected "treeView-beta"', offset);
-  }
-
-  final metadata = readCommonMetadata(visibleSource);
-  final bodyOffset = header.end;
-  final body = visibleSource.substring(bodyOffset);
-  final syntaxBody = hideCommonMetadata(body);
-  final nodes = <TreeViewNodeAst>[];
-
-  var offset = 0;
-  while (offset < syntaxBody.length) {
-    final newline = syntaxBody.indexOf('\n', offset);
-    final end = newline < 0 ? syntaxBody.length : newline;
-    var line = syntaxBody.substring(offset, end);
-    if (line.endsWith('\r')) line = line.substring(0, line.length - 1);
-    if (line.trim().isNotEmpty) {
-      nodes.add(_parseNode(line, source, bodyOffset + offset));
-    }
-    if (newline < 0) break;
-    offset = newline + 1;
-  }
+  final prepared = prepareDiagramSource(source, headers: const ['treeView-beta']);
+  final nodes = [
+    for (final line in sourceLines(prepared.syntax))
+      if (line.text.trim().isNotEmpty) _parseNode(line.text, source, line.offset),
+  ];
 
   return TreeViewAst(
     nodes: List.unmodifiable(nodes),
-    title: metadata.title,
-    accessibilityTitle: metadata.accessibilityTitle,
-    accessibilityDescription: metadata.accessibilityDescription,
+    title: prepared.metadata.title,
+    accessibilityTitle: prepared.metadata.accessibilityTitle,
+    accessibilityDescription: prepared.metadata.accessibilityDescription,
   );
 }
 

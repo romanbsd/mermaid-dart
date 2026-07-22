@@ -28,25 +28,10 @@ final Parser<Object?> _packetGrammar =
 
 /// Parses the Mermaid `packet` grammar.
 PacketAst parsePacket(String source) {
-  final visibleSource = hideIgnoredSyntax(source);
-  final result = _packetGrammar.parse(visibleSource);
-  if (result is Failure) throwParseFailure(source, result);
-
-  final blocks = <PacketBlockAst>[];
-  void collect(Object? value) {
-    switch (value) {
-      case PacketBlockAst():
-        blocks.add(value);
-      case Iterable<Object?>():
-        value.forEach(collect);
-    }
-  }
-
-  collect(result.value);
-  final beta = RegExp(r'^[\t \r\n]*packet-beta\b').hasMatch(visibleSource);
-  final metadata = readCommonMetadata(hideHeader(visibleSource, beta ? 'packet-beta' : 'packet'));
+  final value = parseGrammar(_packetGrammar, source);
+  final metadata = commonMetadataFromParserValues(value);
   return PacketAst(
-    blocks: List.unmodifiable(blocks),
+    blocks: List.unmodifiable(flattenParserValues<PacketBlockAst>(value)),
     title: metadata.title,
     accessibilityTitle: metadata.accessibilityTitle,
     accessibilityDescription: metadata.accessibilityDescription,

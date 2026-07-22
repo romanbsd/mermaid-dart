@@ -78,7 +78,7 @@ final Parser<GitGraphBranchAst> _branch =
             horizontalSpaceParser &
             lineEndParser)
         .map((value) {
-          final integers = _values<int>(value);
+          final integers = flattenParserValues<int>(value);
           return GitGraphBranchAst(name: value[2] as String, order: integers.firstOrNull);
         });
 
@@ -140,7 +140,9 @@ final Parser<_Header> _header =
             horizontalSpaceParser &
             (((string('LR') | string('TB') | string('BT')) & horizontalSpaceParser & char(':')) | char(':')).optional())
         .map((value) {
-          final direction = _values<String>(value).where((part) => part == 'LR' || part == 'TB' || part == 'BT');
+          final direction = flattenParserValues<String>(
+            value,
+          ).where((part) => part == 'LR' || part == 'TB' || part == 'BT');
           return _Header(
             direction.isEmpty
                 ? null
@@ -161,47 +163,16 @@ final Parser<Object?> _gitGraphGrammar =
         .end();
 
 GitGraphAst parseGitGraph(String source) {
-  final visibleSource = hideIgnoredSyntax(source);
-  final result = _gitGraphGrammar.parse(visibleSource);
-  if (result is Failure) throwParseFailure(source, result);
-
-  _Header? header;
-  final statements = <GitGraphStatementAst>[];
-  void collect(Object? value) {
-    switch (value) {
-      case _Header():
-        header = value;
-      case GitGraphStatementAst():
-        statements.add(value);
-      case Iterable<Object?>():
-        value.forEach(collect);
-    }
-  }
-
-  collect(result.value);
-  final metadata = readCommonMetadata(visibleSource);
+  final value = parseGrammar(_gitGraphGrammar, source);
+  final header = flattenParserValues<_Header>(value).single;
+  final metadata = commonMetadataFromParserValues(value);
   return GitGraphAst(
-    direction: header?.direction,
-    statements: List.unmodifiable(statements),
+    direction: header.direction,
+    statements: List.unmodifiable(flattenParserValues<GitGraphStatementAst>(value)),
     title: metadata.title,
     accessibilityTitle: metadata.accessibilityTitle,
     accessibilityDescription: metadata.accessibilityDescription,
   );
 }
 
-List<_Property> _properties(Object? value) => _values<_Property>(value);
-
-List<T> _values<T>(Object? value) {
-  final values = <T>[];
-  void collect(Object? part) {
-    switch (part) {
-      case T():
-        values.add(part);
-      case Iterable<Object?>():
-        part.forEach(collect);
-    }
-  }
-
-  collect(value);
-  return values;
-}
+List<_Property> _properties(Object? value) => flattenParserValues<_Property>(value);

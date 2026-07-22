@@ -23,6 +23,19 @@ final class RailroadDocumentContext {
   final CommonMetadata metadata;
 }
 
+RailroadAst parseRailroadRules(
+  String source,
+  RailroadDialect dialect,
+  RailroadRuleAst Function(RailroadScanner scanner) parseRule,
+) {
+  final document = prepareRailroadDocument(source, dialect);
+  final rules = <RailroadRuleAst>[];
+  while (!document.scanner.isAtEnd) {
+    rules.add(parseRule(document.scanner));
+  }
+  return railroadAst(document.metadata, rules);
+}
+
 RailroadDocumentContext prepareRailroadDocument(String source, RailroadDialect dialect) {
   final prepared = prepareDiagramSource(source, headers: [dialect.header]);
   var syntax = prepared.syntax;

@@ -34,36 +34,22 @@ final Parser<Object?> _pieGrammar =
 
 /// Parses the Mermaid `pie` grammar.
 PieAst parsePie(String source) {
-  final visibleSource = hideIgnoredSyntax(source);
-  final result = _pieGrammar.parse(visibleSource);
-  if (result is Failure) {
-    final malformedSection = RegExp(
-      r'''[\t \r\n]*["'](?:\\.|[^"'\\])*["'][\t ]*:[\t ]*''',
-    ).matchAsPrefix(visibleSource, result.position);
-    if (malformedSection != null) {
-      throwParseError(source, 'number expected', malformedSection.end);
-    }
-    throwParseFailure(source, result);
-  }
-
-  final sections = <PieSectionAst>[];
-  var showData = false;
-  void collect(Object? value) {
-    switch (value) {
-      case _ShowData():
-        showData = true;
-      case PieSectionAst():
-        sections.add(value);
-      case Iterable<Object?>():
-        value.forEach(collect);
-    }
-  }
-
-  collect(result.value);
-  final metadata = readCommonMetadata(hideHeader(visibleSource, 'pie', modifier: 'showData'));
+  final value = parseGrammar(
+    _pieGrammar,
+    source,
+    onFailure: (visibleSource, result) {
+      final malformedSection = RegExp(
+        r'''[\t \r\n]*["'](?:\\.|[^"'\\])*["'][\t ]*:[\t ]*''',
+      ).matchAsPrefix(visibleSource, result.position);
+      if (malformedSection != null) {
+        throwParseError(source, 'number expected', malformedSection.end);
+      }
+    },
+  );
+  final metadata = commonMetadataFromParserValues(value);
   return PieAst(
-    showData: showData,
-    sections: List.unmodifiable(sections),
+    showData: flattenParserValues<_ShowData>(value).isNotEmpty,
+    sections: List.unmodifiable(flattenParserValues<PieSectionAst>(value)),
     title: metadata.title,
     accessibilityTitle: metadata.accessibilityTitle,
     accessibilityDescription: metadata.accessibilityDescription,

@@ -166,40 +166,14 @@ final Parser<Object?> _architectureGrammar =
         .end();
 
 ArchitectureAst parseArchitecture(String source) {
-  final visibleSource = hideIgnoredSyntax(source);
-  final result = _architectureGrammar.parse(visibleSource);
-  if (result is Failure) throwParseFailure(source, result);
-
-  final groups = <ArchitectureGroupAst>[];
-  final services = <ArchitectureServiceAst>[];
-  final junctions = <ArchitectureJunctionAst>[];
-  final edges = <ArchitectureEdgeAst>[];
-  final alignments = <ArchitectureAlignmentAst>[];
-  void collect(Object? value) {
-    switch (value) {
-      case ArchitectureGroupAst():
-        groups.add(value);
-      case ArchitectureServiceAst():
-        services.add(value);
-      case ArchitectureJunctionAst():
-        junctions.add(value);
-      case ArchitectureEdgeAst():
-        edges.add(value);
-      case ArchitectureAlignmentAst():
-        alignments.add(value);
-      case Iterable<Object?>():
-        value.forEach(collect);
-    }
-  }
-
-  collect(result.value);
-  final metadata = readCommonMetadata(visibleSource);
+  final value = parseGrammar(_architectureGrammar, source);
+  final metadata = commonMetadataFromParserValues(value);
   return ArchitectureAst(
-    groups: List.unmodifiable(groups),
-    services: List.unmodifiable(services),
-    junctions: List.unmodifiable(junctions),
-    edges: List.unmodifiable(edges),
-    alignments: List.unmodifiable(alignments),
+    groups: List.unmodifiable(flattenParserValues<ArchitectureGroupAst>(value)),
+    services: List.unmodifiable(flattenParserValues<ArchitectureServiceAst>(value)),
+    junctions: List.unmodifiable(flattenParserValues<ArchitectureJunctionAst>(value)),
+    edges: List.unmodifiable(flattenParserValues<ArchitectureEdgeAst>(value)),
+    alignments: List.unmodifiable(flattenParserValues<ArchitectureAlignmentAst>(value)),
     title: metadata.title,
     accessibilityTitle: metadata.accessibilityTitle,
     accessibilityDescription: metadata.accessibilityDescription,
