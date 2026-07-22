@@ -137,7 +137,7 @@ enum FontStyle { normal, italic }
 
 enum TextAnchor { start, middle, end }
 
-enum TextBaseline { alphabetic, middle, hanging }
+enum TextBaseline { alphabetic, central, middle, hanging }
 
 final class SceneTextStyle with _SceneValue {
   const SceneTextStyle({

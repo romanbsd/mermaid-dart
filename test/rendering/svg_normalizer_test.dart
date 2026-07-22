@@ -9,6 +9,13 @@ void main() {
         '<svg a="1" b="2"><text>Label</text></svg>',
       );
     });
+
+    test('escapes quotes in normalized attribute values', () {
+      expect(
+        normalizeSvg('<svg font-family="&quot;Example Sans&quot;, sans-serif"/>'),
+        '<svg font-family="&quot;Example Sans&quot;, sans-serif"></svg>',
+      );
+    });
   });
 
   group('canonicalizeSvgForComparison', () {

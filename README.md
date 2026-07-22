@@ -79,7 +79,9 @@ dart run tool/mermaid_parity.dart --report-only
 dart run tool/mermaid_parity.dart --fixture pie-usage --report-only
 ```
 
-Omit `--report-only` to use exact canonical parity as a failing CI gate.
+Omit `--report-only` to use visual parity as a failing CI gate. Exact canonical
+SVG matches are reported separately because Mermaid uses CSS and wrapper markup
+while the Dart serializer emits resolved backend-neutral scene styles.
 Generated references and comparison artifacts are intentionally git-ignored.
 
 ## Usage

@@ -17,6 +17,15 @@ void main() {
   const measurer = _ExactTextMeasurer();
 
   group('Mermaid deterministic renderer parity', () {
+    test('info defaults match the pinned Mermaid renderer', () {
+      final scene = layoutDiagram(const InfoAst(), textMeasurer: measurer, options: const RenderOptions(padding: 0));
+      final label = _flatten(scene.elements).whereType<SceneText>().single;
+
+      expect(label.text, 'v11.16.0');
+      expect(label.baseline, TextBaseline.alphabetic);
+      expect(label.style.fontFamily, '"trebuchet ms", verdana, arial, sans-serif');
+    });
+
     test('info uses Mermaid version-label geometry', () {
       final scene = layoutDiagram(
         const InfoAst(),
@@ -525,12 +534,32 @@ void main() {
           .where((element) => element.cssClasses.contains('packetByte'))
           .map((element) => element.text);
 
-      expect(scene.bounds, const Bounds(left: 0, top: 0, width: 1026, height: 79));
+      expect(scene.bounds, const Bounds(left: 0, top: 0, width: 1026, height: 109));
       expect(blocks, hasLength(2));
-      expect(blocks[0].bounds, const Bounds(left: 1, top: 5, width: 1019, height: 32));
-      expect(blocks[1].bounds, const Bounds(left: 1, top: 42, width: 283, height: 32));
+      expect(blocks[0].bounds, const Bounds(left: 1, top: 15, width: 1019, height: 32));
+      expect(blocks[1].bounds, const Bounds(left: 1, top: 62, width: 283, height: 32));
       expect(bitLabels, ['0', '31', '32', '40']);
       expectSvgGolden('packet_wrapped', renderSvg(scene));
+    });
+
+    test('packet applies Mermaid bit-label padding and middle baseline', () {
+      final scene = layoutDiagram(
+        const PacketAst(
+          blocks: [
+            PacketRangeBlockAst(start: 0, end: 7, label: 'Source'),
+            PacketSingleBitBlockAst(bit: 8, label: 'Flag'),
+            PacketRelativeWidthBlockAst(bits: 16, label: 'Payload'),
+          ],
+        ),
+        textMeasurer: measurer,
+        options: const RenderOptions(padding: 0),
+      );
+      final elements = _flatten(scene.elements).toList();
+      final labels = elements.whereType<SceneText>().where((element) => element.cssClasses.contains('packetLabel'));
+
+      expect(scene.bounds, const Bounds(left: 0, top: 0, width: 1026, height: 62));
+      expect(elements.whereType<SceneRect>().map((block) => block.bounds.top), everyElement(15));
+      expect(labels.map((label) => label.baseline), everyElement(TextBaseline.middle));
     });
 
     test('packet applies typed sizing options and can hide bit labels', () {
@@ -570,8 +599,8 @@ void main() {
         scene.elements,
       ).whereType<SceneText>().singleWhere((element) => element.cssClasses.contains('packetTitle'));
 
-      expect(scene.bounds.height, 111);
-      expect(title.position, const Point(513, 92.5));
+      expect(scene.bounds.height, 141);
+      expect(title.position, const Point(513, 117.5));
     });
 
     test('pie filters sub-one-percent slices and places percentage labels', () {

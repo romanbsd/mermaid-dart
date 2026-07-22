@@ -63,6 +63,7 @@ Future<void> main(List<String> arguments) async {
     'Mermaid.js ${manifest.mermaidVersion} parity (${fixtures.length} fixture${fixtures.length == 1 ? '' : 's'})',
   );
   var exact = 0;
+  var visual = 0;
   var differences = 0;
   var errors = 0;
 
@@ -96,7 +97,7 @@ Future<void> main(List<String> arguments) async {
     }
 
     try {
-      final dartSvg = renderDiagramSvg(fixture.type, fixture.source);
+      final dartSvg = renderDiagramSvg(fixture.type, fixture.source, options: const RenderOptions(padding: 0));
       File('${output.path}/${fixture.id}.dart.svg').writeAsStringSync(dartSvg);
       final dartSnapshot = SvgSnapshot.fromSvg(dartSvg);
       final mermaidSnapshot = SvgSnapshot.fromSvg(reference.readAsStringSync());
@@ -106,7 +107,10 @@ Future<void> main(List<String> arguments) async {
       final comparison = SvgComparison.compare(dartSnapshot, mermaidSnapshot);
       if (comparison.exact) {
         exact++;
-        stdout.writeln('PASS  ${fixture.id}');
+        stdout.writeln('EXACT ${fixture.id}');
+      } else if (comparison.visualParity) {
+        visual++;
+        stdout.writeln('PASS  ${fixture.id}: visual parity');
       } else {
         differences++;
         stdout.writeln('DIFF  ${fixture.id}: ${comparison.summary}');
@@ -117,7 +121,7 @@ Future<void> main(List<String> arguments) async {
     }
   }
 
-  stdout.writeln('Result: $exact exact, $differences different, $errors errors');
+  stdout.writeln('Result: $exact exact, $visual visual, $differences different, $errors errors');
   stdout.writeln('Artifacts: ${output.path}');
   if (!reportOnly && (differences > 0 || errors > 0)) exitCode = 1;
 }

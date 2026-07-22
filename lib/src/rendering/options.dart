@@ -77,7 +77,7 @@ final class CynefinRenderOptions extends DiagramRenderOptions {
 }
 
 final class InfoRenderOptions extends DiagramRenderOptions {
-  const InfoRenderOptions({this.version = '1.0.0'});
+  const InfoRenderOptions({this.version = '11.16.0'});
 
   final String version;
 }

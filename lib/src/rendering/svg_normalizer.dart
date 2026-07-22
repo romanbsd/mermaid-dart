@@ -71,10 +71,12 @@ String _serialize(XmlNode node, _Canonicalization options) {
   ]..sort((left, right) => left.name.compareTo(right.name));
   final children = node.children.map((child) => _serialize(child, options)).where((child) => child.isNotEmpty).join();
   final attributeText = attributes
-      .map((attribute) => ' ${attribute.name}="${XmlText(attribute.value).toXmlString()}"')
+      .map((attribute) => ' ${attribute.name}="${_escapeAttribute(attribute.value)}"')
       .join();
   return '<${node.name.qualified}$attributeText>$children</${node.name.qualified}>';
 }
+
+String _escapeAttribute(String value) => XmlText(value).toXmlString().replaceAll('"', '&quot;');
 
 String _canonicalAttribute(String name, String value, _Canonicalization options) {
   final identifiers = options.identifiers;

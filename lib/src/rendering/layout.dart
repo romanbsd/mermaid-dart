@@ -118,7 +118,7 @@ SceneText _text(
   double x,
   double y, {
   TextAnchor anchor = TextAnchor.start,
-  TextBaseline baseline = TextBaseline.middle,
+  TextBaseline baseline = TextBaseline.central,
   SemanticRole role = SemanticRole.label,
   SceneTextStyle? style,
   List<String> cssClasses = const [],
@@ -154,7 +154,7 @@ SceneStroke _stroke(_LayoutContext context, {double width = 1.5, List<double> da
 _LayoutResult _layoutInfo(InfoAst ast, _LayoutContext context) {
   final config = context.options.optionsFor(const InfoRenderOptions());
   final style = SceneTextStyle(
-    fontFamily: context.options.theme.fontFamily,
+    fontFamily: '"trebuchet ms", verdana, arial, sans-serif',
     fontSize: 32,
     color: context.options.theme.primaryText,
   );
@@ -165,6 +165,7 @@ _LayoutResult _layoutInfo(InfoAst ast, _LayoutContext context) {
       100,
       40,
       anchor: TextAnchor.middle,
+      baseline: TextBaseline.alphabetic,
       style: style,
       cssClasses: const ['version'],
     ),
@@ -173,6 +174,7 @@ _LayoutResult _layoutInfo(InfoAst ast, _LayoutContext context) {
 
 _LayoutResult _layoutPacket(PacketAst ast, _LayoutContext context) {
   final config = context.options.optionsFor(const PacketRenderOptions());
+  final paddingY = config.paddingY + (config.showBits ? 10 : 0);
   final width = config.bitWidth * config.bitsPerRow + 2;
   final elements = <SceneElement>[];
   var cursor = 0;
@@ -188,7 +190,7 @@ _LayoutResult _layoutPacket(PacketAst ast, _LayoutContext context) {
       final rowEnd = (row + 1) * config.bitsPerRow - 1;
       final segmentEnd = math.min(end, rowEnd);
       final x = (segmentStart % config.bitsPerRow) * config.bitWidth + 1;
-      final y = row * (config.rowHeight + config.paddingY) + config.paddingY;
+      final y = row * (config.rowHeight + paddingY) + paddingY;
       final blockWidth = (segmentEnd - segmentStart + 1) * config.bitWidth - config.paddingX;
       elements.add(
         SceneRect(
@@ -208,6 +210,7 @@ _LayoutResult _layoutPacket(PacketAst ast, _LayoutContext context) {
           x + blockWidth / 2,
           y + config.rowHeight / 2,
           anchor: TextAnchor.middle,
+          baseline: TextBaseline.middle,
           cssClasses: const ['packetLabel'],
         ),
       );
@@ -243,7 +246,7 @@ _LayoutResult _layoutPacket(PacketAst ast, _LayoutContext context) {
     cursor = end + 1;
   }
   final rows = math.max(1, (cursor + config.bitsPerRow - 1) ~/ config.bitsPerRow);
-  final totalRowHeight = config.rowHeight + config.paddingY;
+  final totalRowHeight = config.rowHeight + paddingY;
   final height = totalRowHeight * (rows + 1) - (ast.title == null ? config.rowHeight : 0);
   if (ast.title != null) {
     elements.add(

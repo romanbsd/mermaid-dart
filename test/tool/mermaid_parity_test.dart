@@ -51,12 +51,15 @@ void main() {
 
     expect(SvgComparison.compare(left, equivalent).exact, isTrue);
     expect(SvgComparison.compare(left, equivalent).sameViewport, isTrue);
+    expect(SvgComparison.compare(left, equivalent).visualParity, isTrue);
     final comparison = SvgComparison.compare(left, different);
     expect(comparison.exact, isFalse);
     expect(comparison.sameViewport, isFalse);
     expect(comparison.sameText, isFalse);
     expect(comparison.sameElementCounts, isFalse);
-    expect(comparison.summary, 'viewport, text, elements, geometry/style');
+    expect(comparison.sameGeometry, isFalse);
+    expect(comparison.visualParity, isFalse);
+    expect(comparison.summary, 'viewport, text, elements, geometry');
   });
 
   test('treats foreignObject and SVG text as equivalent visible text', () {
@@ -68,6 +71,40 @@ void main() {
     final comparison = SvgComparison.compare(svgText, htmlText);
     expect(comparison.sameText, isTrue);
     expect(comparison.sameElementCounts, isTrue);
+    expect(comparison.exact, isFalse);
+  });
+
+  test('ignores empty text and normalizes SVG text defaults', () {
+    final explicit = SvgSnapshot.fromSvg(
+      '<svg><text x="1" y="2" font-size="16" '
+      'dominant-baseline="alphabetic">Label</text></svg>',
+    );
+    final implicit = SvgSnapshot.fromSvg(
+      '<svg><text x="1" y="2" dominant-baseline="auto">Label</text>'
+      '<text x="0" y="0"></text></svg>',
+    );
+
+    final comparison = SvgComparison.compare(explicit, implicit);
+    expect(comparison.sameText, isTrue);
+    expect(comparison.sameElementCounts, isTrue);
+    expect(comparison.sameGeometry, isTrue);
+  });
+
+  test('compares visual text geometry across equivalent SVG styling forms', () {
+    final mermaid = SvgSnapshot.fromSvg(
+      '<svg><g><text x="100" y="40" font-size="32" '
+      'style="text-anchor: middle">v11.16.0</text></g></svg>',
+    );
+    final dart = SvgSnapshot.fromSvg(
+      '<svg viewBox="0 0 400 100"><text x="100" y="40" '
+      'font-size="32" text-anchor="middle" dominant-baseline="alphabetic">'
+      'v11.16.0</text></svg>',
+    );
+
+    final comparison = SvgComparison.compare(dart, mermaid);
+    expect(comparison.sameViewport, isTrue, reason: 'an absent viewport is compatible');
+    expect(comparison.sameGeometry, isTrue);
+    expect(comparison.visualParity, isTrue);
     expect(comparison.exact, isFalse);
   });
 

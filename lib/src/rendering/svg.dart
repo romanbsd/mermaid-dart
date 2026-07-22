@@ -159,7 +159,8 @@ void _element(XmlBuilder builder, SceneElement element, {bool omitIdentity = fal
           'text-anchor': anchor.name,
           'dominant-baseline': switch (baseline) {
             TextBaseline.alphabetic => 'alphabetic',
-            TextBaseline.middle => 'central',
+            TextBaseline.central => 'central',
+            TextBaseline.middle => 'middle',
             TextBaseline.hanging => 'hanging',
           },
           'font-family': style.fontFamily,
