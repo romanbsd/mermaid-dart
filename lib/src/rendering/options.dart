@@ -84,6 +84,8 @@ final class ArchitectureRenderOptions extends DiagramRenderOptions {
     this.fontSize = 16,
     this.nodeSeparation = 75,
     this.idealEdgeLengthMultiplier = 1.5,
+    this.groupBorderColor = const Color(199, 199, 241),
+    this.edgeColor = const Color(51, 51, 51),
   });
 
   final double padding;
@@ -91,6 +93,8 @@ final class ArchitectureRenderOptions extends DiagramRenderOptions {
   final double fontSize;
   final double nodeSeparation;
   final double idealEdgeLengthMultiplier;
+  final Color groupBorderColor;
+  final Color edgeColor;
 }
 
 final class CynefinRenderOptions extends DiagramRenderOptions {
@@ -296,13 +300,16 @@ final class WardleyRenderOptions extends DiagramRenderOptions {
     this.labelFontSize = 10,
     this.showGrid = false,
     this.backgroundColor = const Color(255, 255, 255),
-    this.axisColor = const Color(0, 0, 0),
-    this.axisTextColor = const Color(34, 34, 34),
+    this.axisColor = const Color(51, 51, 51),
+    this.axisTextColor = const Color(19, 19, 0),
+    this.stageBoundaryColor = const Color(0, 0, 0, 204),
     this.gridColor = const Color(100, 100, 100, 51),
     this.componentFill = const Color(255, 255, 255),
-    this.componentStroke = const Color(0, 0, 0),
-    this.componentLabelColor = const Color(34, 34, 34),
-    this.linkStroke = const Color(0, 0, 0),
+    this.componentStroke = const Color(51, 51, 51),
+    this.componentLabelColor = const Color(19, 19, 0),
+    this.anchorLabelColor = const Color(0, 0, 0),
+    this.buildStrategyStroke = const Color(0, 0, 0),
+    this.linkStroke = const Color(51, 51, 51),
     this.evolutionStroke = const Color(220, 53, 69),
   });
 
@@ -317,10 +324,13 @@ final class WardleyRenderOptions extends DiagramRenderOptions {
   final Color backgroundColor;
   final Color axisColor;
   final Color axisTextColor;
+  final Color stageBoundaryColor;
   final Color gridColor;
   final Color componentFill;
   final Color componentStroke;
   final Color componentLabelColor;
+  final Color anchorLabelColor;
+  final Color buildStrategyStroke;
   final Color linkStroke;
   final Color evolutionStroke;
 }

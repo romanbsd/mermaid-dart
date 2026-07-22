@@ -1216,6 +1216,9 @@ void main() {
           .whereType<SceneText>()
           .where((element) => element.cssClasses.contains('wardley-node-label'))
           .toList();
+      final stageBoundary = elements.whereType<SceneLine>().singleWhere(
+        (element) => element.cssClasses.contains('wardley-stage-boundary'),
+      );
 
       expect(scene.bounds, const Bounds(left: 0, top: 0, width: 500, height: 400));
       expect(axes.map((axis) => (axis.start, axis.end)), [
@@ -1228,14 +1231,8 @@ void main() {
         elements.whereType<SceneLine>().where((element) => element.cssClasses.contains('wardley-grid-line')),
         hasLength(6),
       );
-      expect(
-        elements
-            .whereType<SceneLine>()
-            .singleWhere((element) => element.cssClasses.contains('wardley-stage-boundary'))
-            .start
-            .x,
-        208,
-      );
+      expect(stageBoundary.start.x, 208);
+      expect(stageBoundary.stroke?.color, const Color(0, 0, 0, 204));
       expect(
         elements.whereType<SceneLine>().where((element) => element.cssClasses.contains('wardley-link')),
         hasLength(1),
@@ -1264,6 +1261,15 @@ void main() {
       expect(title.baseline, TextBaseline.central);
       final anchor = componentLabels.singleWhere((label) => label.text == 'User');
       expect(anchor.baseline, TextBaseline.central);
+      expect(anchor.style.color, const Color(0, 0, 0));
+      expect(
+        elements
+            .whereType<SceneCircle>()
+            .singleWhere((element) => element.cssClasses.contains('wardley-build-overlay'))
+            .stroke
+            ?.color,
+        const Color(0, 0, 0),
+      );
       expect(
         componentLabels.where((label) => label.text != 'User').map((label) => label.baseline),
         everyElement(TextBaseline.alphabetic),
@@ -1308,11 +1314,18 @@ void main() {
       final nodeLabels = elements.whereType<SceneText>().where(
         (element) => element.cssClasses.contains('wardley-node-label'),
       );
+      final components = elements.whereType<SceneCircle>().where(
+        (element) => element.cssClasses.contains('wardley-component'),
+      );
 
       expect(link.start.x, closeTo(455.084, 1e-3));
       expect(link.start.y, closeTo(252.787, 1e-3));
       expect(link.end.x, closeTo(686.116, 1e-3));
       expect(link.end.y, closeTo(397.613, 1e-3));
+      expect(link.stroke?.color, const Color(51, 51, 51));
+      expect(components.map((component) => component.stroke?.color), everyElement(const Color(51, 51, 51)));
+      expect(axisLabels.map((label) => label.style.color), everyElement(const Color(19, 19, 0)));
+      expect(nodeLabels.map((label) => label.style.color), everyElement(const Color(19, 19, 0)));
       expect(elements.whereType<ScenePath>().where((element) => element.cssClasses.contains('wardley-link')), isEmpty);
       expect(axisLabels.map((label) => label.baseline), everyElement(TextBaseline.alphabetic));
       expect(nodeLabels.map((label) => label.baseline), everyElement(TextBaseline.alphabetic));
@@ -1481,6 +1494,7 @@ void main() {
       expect(group.bounds.top, -25.5);
       expect(group.bounds.width, closeTo(365.6865657611851, 1e-9));
       expect(group.bounds.height, 182);
+      expect(group.stroke, const SceneStroke(color: Color(199, 199, 241), width: 2, dashes: [8]));
       expect(api.x, closeTo(-60.34328288059254, 1e-9));
       expect(api.y, 57);
       expect(database.x, closeTo(140.34328288059251, 1e-9));
@@ -1496,6 +1510,8 @@ void main() {
         closeTo(100.34328288059251, 1e-9),
       ]);
       expect(edgePoints.map((point) => point.y), everyElement(57));
+      expect(edge.stroke?.cap, StrokeCap.butt);
+      expect(edge.stroke?.join, StrokeJoin.miter);
       expect(arrow.points.first.x, closeTo(102.34328288059251, 1e-9));
       expect(arrow.points.first.y, 57);
       expect(scene.bounds, group.bounds);

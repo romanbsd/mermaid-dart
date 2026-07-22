@@ -145,7 +145,7 @@ _LayoutResult _layoutWardley(WardleyAst ast, _LayoutContext context) {
           id: context.id('wardley-stage-boundary'),
           start: Point(startX, config.padding),
           end: Point(startX, height - config.padding),
-          stroke: SceneStroke(color: config.axisColor, dashes: const [5, 5]),
+          stroke: SceneStroke(color: config.stageBoundaryColor, dashes: const [5, 5]),
           role: SemanticRole.edge,
           cssClasses: const ['wardley-stage-boundary'],
         ),
@@ -376,13 +376,16 @@ _LayoutResult _layoutWardley(WardleyAst ast, _LayoutContext context) {
             WardleyStrategy.outsource => const Color(102, 102, 102),
             WardleyStrategy.market => throw StateError('handled separately'),
           };
+          final strategyStroke = strategy == WardleyStrategy.build
+              ? SceneStroke(color: config.buildStrategyStroke)
+              : componentStroke;
           elements.add(
             SceneCircle(
               id: context.id('wardley-strategy'),
               center: point,
               radius: config.nodeRadius * 2,
               fill: SolidFill(fill),
-              stroke: componentStroke,
+              stroke: strategyStroke,
               role: SemanticRole.node,
               cssClasses: ['wardley-${strategy.name}-overlay'],
             ),
@@ -453,7 +456,7 @@ _LayoutResult _layoutWardley(WardleyAst ast, _LayoutContext context) {
           fontFamily: labelStyle.fontFamily,
           fontSize: labelStyle.fontSize,
           weight: isAnchor ? FontWeight.bold : FontWeight.normal,
-          color: isAnchor ? config.axisColor : config.componentLabelColor,
+          color: isAnchor ? config.anchorLabelColor : config.componentLabelColor,
         ),
         cssClasses: const ['wardley-node-label'],
       ),
