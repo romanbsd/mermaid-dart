@@ -30,8 +30,8 @@ final class ArchitectureNodeLayout {
   ArchitectureNodeLayout translated(double x, double y) => ArchitectureNodeLayout(
     id: id,
     kind: kind,
-    center: Point(center.x + x, center.y + y),
-    bounds: Bounds(left: bounds.left + x, top: bounds.top + y, width: bounds.width, height: bounds.height),
+    center: center.translated(x, y),
+    bounds: bounds.translated(x, y),
     label: label,
     icon: icon,
     iconText: iconText,
@@ -48,13 +48,8 @@ final class ArchitectureGroupLayout {
   final String? icon;
   final String? parent;
 
-  ArchitectureGroupLayout translated(double x, double y) => ArchitectureGroupLayout(
-    id: id,
-    bounds: Bounds(left: bounds.left + x, top: bounds.top + y, width: bounds.width, height: bounds.height),
-    label: label,
-    icon: icon,
-    parent: parent,
-  );
+  ArchitectureGroupLayout translated(double x, double y) =>
+      ArchitectureGroupLayout(id: id, bounds: bounds.translated(x, y), label: label, icon: icon, parent: parent);
 }
 
 final class ArchitectureEdgeLayout {
@@ -76,19 +71,7 @@ final class ArchitectureLayout {
 }
 
 ArchitectureLayout layoutArchitectureModel(ArchitectureAst ast, ArchitectureRenderOptions options) {
-  final nodes = <_NodeSeed>[
-    for (final service in ast.services)
-      _NodeSeed(
-        id: service.id,
-        kind: ArchitectureNodeKind.service,
-        label: service.title ?? service.id,
-        icon: service.icon,
-        iconText: service.iconText,
-        parent: service.parent,
-      ),
-    for (final junction in ast.junctions)
-      _NodeSeed(id: junction.id, kind: ArchitectureNodeKind.junction, parent: junction.parent),
-  ];
+  final nodes = _architectureNodes(ast);
   if (nodes.isEmpty) {
     return const ArchitectureLayout(
       nodes: [],
@@ -97,24 +80,59 @@ ArchitectureLayout layoutArchitectureModel(ArchitectureAst ast, ArchitectureRend
       bounds: Bounds(left: 0, top: 0, width: 1, height: 1),
     );
   }
+  final spacing = math.max(
+    options.iconSize + options.nodeSeparation,
+    options.iconSize * options.idealEdgeLengthMultiplier,
+  );
+  final centers = _positionArchitectureNodes(nodes, ast.edges, ast.alignments, spacing);
+  var laidOutNodes = _layoutArchitectureNodes(nodes, centers, options.iconSize);
+  var laidOutGroups = _layoutArchitectureGroups(ast.groups, laidOutNodes, options);
+  final contentBounds = _architectureContentBounds(laidOutNodes, laidOutGroups);
+  final offsetX = -contentBounds.left;
+  final offsetY = -contentBounds.top;
+  laidOutNodes = [for (final node in laidOutNodes) node.translated(offsetX, offsetY)];
+  laidOutGroups = [for (final group in laidOutGroups) group.translated(offsetX, offsetY)];
 
+  return ArchitectureLayout(
+    nodes: laidOutNodes,
+    groups: laidOutGroups,
+    edges: _routeArchitectureEdges(ast.edges, laidOutNodes, laidOutGroups),
+    bounds: Bounds(left: 0, top: 0, width: contentBounds.width, height: contentBounds.height),
+  );
+}
+
+List<_NodeSeed> _architectureNodes(ArchitectureAst ast) => [
+  for (final service in ast.services)
+    _NodeSeed(
+      id: service.id,
+      kind: ArchitectureNodeKind.service,
+      label: service.title ?? service.id,
+      icon: service.icon,
+      iconText: service.iconText,
+      parent: service.parent,
+    ),
+  for (final junction in ast.junctions)
+    _NodeSeed(id: junction.id, kind: ArchitectureNodeKind.junction, parent: junction.parent),
+];
+
+Map<String, Point> _positionArchitectureNodes(
+  List<_NodeSeed> nodes,
+  List<ArchitectureEdgeAst> edges,
+  List<ArchitectureAlignmentAst> alignments,
+  double spacing,
+) {
   final nodeIds = {for (final node in nodes) node.id};
   final adjacency = <String, List<({ArchitectureEdgeAst edge, bool forward})>>{};
-  for (final edge in ast.edges) {
+  for (final edge in edges) {
     if (!nodeIds.contains(edge.leftId) || !nodeIds.contains(edge.rightId)) continue;
     (adjacency[edge.leftId] ??= []).add((edge: edge, forward: true));
     (adjacency[edge.rightId] ??= []).add((edge: edge, forward: false));
   }
   final centers = <String, Point>{};
-  final spacing = math.max(
-    options.iconSize + options.nodeSeparation,
-    options.iconSize * options.idealEdgeLengthMultiplier,
-  );
   var component = 0;
   for (final root in nodes) {
     if (centers.containsKey(root.id)) continue;
-    centers[root.id] = Point(0, component * spacing * 1.5);
-    component++;
+    centers[root.id] = Point(0, component++ * spacing * 1.5);
     final queue = <String>[root.id];
     for (var cursor = 0; cursor < queue.length; cursor++) {
       final currentId = queue[cursor];
@@ -124,63 +142,68 @@ ArchitectureLayout layoutArchitectureModel(ArchitectureAst ast, ArchitectureRend
         final nextId = relation.forward ? edge.rightId : edge.leftId;
         if (centers.containsKey(nextId)) continue;
         final delta = _edgeDelta(edge, spacing);
-        centers[nextId] = relation.forward
-            ? Point(current.x + delta.x, current.y + delta.y)
-            : Point(current.x - delta.x, current.y - delta.y);
+        centers[nextId] = current.translated(
+          relation.forward ? delta.x : -delta.x,
+          relation.forward ? delta.y : -delta.y,
+        );
         queue.add(nextId);
       }
     }
   }
-
-  for (final alignment in ast.alignments) {
+  for (final alignment in alignments) {
     final members = alignment.members.where(centers.containsKey).toList();
     if (members.length < 2) continue;
     final origin = centers[members.first]!;
     for (var index = 1; index < members.length; index++) {
-      final id = members[index];
-      centers[id] = switch (alignment.direction) {
-        ArchitectureAlignmentDirection.row => Point(origin.x + index * spacing, origin.y),
-        ArchitectureAlignmentDirection.column => Point(origin.x, origin.y + index * spacing),
+      centers[members[index]] = switch (alignment.direction) {
+        ArchitectureAlignmentDirection.row => origin.translated(index * spacing, 0),
+        ArchitectureAlignmentDirection.column => origin.translated(0, index * spacing),
       };
     }
   }
+  return centers;
+}
 
-  var laidOutNodes = <ArchitectureNodeLayout>[
-    for (final node in nodes)
-      ArchitectureNodeLayout(
-        id: node.id,
-        kind: node.kind,
-        center: centers[node.id]!,
-        bounds: Bounds(
-          left: centers[node.id]!.x - options.iconSize / 2,
-          top: centers[node.id]!.y - options.iconSize / 2,
-          width: options.iconSize,
-          height: options.iconSize,
-        ),
-        label: node.label,
-        icon: node.icon,
-        iconText: node.iconText,
-        parent: node.parent,
-      ),
-  ];
-  final groupAsts = {for (final group in ast.groups) group.id: group};
-  final groupBounds = <String, Bounds>{};
+List<ArchitectureNodeLayout> _layoutArchitectureNodes(
+  List<_NodeSeed> nodes,
+  Map<String, Point> centers,
+  double iconSize,
+) => [
+  for (final node in nodes)
+    ArchitectureNodeLayout(
+      id: node.id,
+      kind: node.kind,
+      center: centers[node.id]!,
+      bounds: Bounds.fromCenter(centers[node.id]!, Size(iconSize, iconSize)),
+      label: node.label,
+      icon: node.icon,
+      iconText: node.iconText,
+      parent: node.parent,
+    ),
+];
+
+List<ArchitectureGroupLayout> _layoutArchitectureGroups(
+  List<ArchitectureGroupAst> groups,
+  List<ArchitectureNodeLayout> nodes,
+  ArchitectureRenderOptions options,
+) {
+  final groupIds = {for (final group in groups) group.id};
+  final boundsById = <String, Bounds>{};
   final nodesByParent = <String, List<ArchitectureNodeLayout>>{};
-  for (final node in laidOutNodes) {
+  for (final node in nodes) {
     if (node.parent case final parent?) (nodesByParent[parent] ??= []).add(node);
   }
   final groupsByParent = <String, List<ArchitectureGroupAst>>{};
-  for (final group in ast.groups) {
+  for (final group in groups) {
     if (group.parent case final parent?) (groupsByParent[parent] ??= []).add(group);
   }
 
-  Bounds? calculateGroup(String id, Set<String> visiting) {
-    if (groupBounds[id] case final cached?) return cached;
-    final group = groupAsts[id];
-    if (group == null || !visiting.add(id)) return null;
+  Bounds? calculateBounds(String id, Set<String> visiting) {
+    if (boundsById[id] case final cached?) return cached;
+    if (!groupIds.contains(id) || !visiting.add(id)) return null;
     Bounds? content;
     for (final node in nodesByParent[id] ?? const []) {
-      final visual = node.kind == ArchitectureNodeKind.service && node.label != null
+      final bounds = node.kind == ArchitectureNodeKind.service && node.label != null
           ? Bounds(
               left: node.bounds.left,
               top: node.bounds.top,
@@ -188,76 +211,72 @@ ArchitectureLayout layoutArchitectureModel(ArchitectureAst ast, ArchitectureRend
               height: node.bounds.height + options.fontSize + 4,
             )
           : node.bounds;
-      content = content == null ? visual : content.union(visual);
+      content = content == null ? bounds : content.union(bounds);
     }
     for (final child in groupsByParent[id] ?? const []) {
-      final bounds = calculateGroup(child.id, visiting);
+      final bounds = calculateBounds(child.id, visiting);
       if (bounds != null) content = content == null ? bounds : content.union(bounds);
     }
     visiting.remove(id);
-    content ??= const Bounds(left: 0, top: 0, width: 1, height: 1);
-    final bounds = Bounds(
-      left: content.left - options.padding,
-      top: content.top - options.padding,
-      width: content.width + options.padding * 2,
-      height: content.height + options.padding * 2,
-    );
-    groupBounds[id] = bounds;
-    return bounds;
+    return boundsById[id] = (content ?? const Bounds(left: 0, top: 0, width: 1, height: 1)).expand(options.padding);
   }
 
-  for (final group in ast.groups) {
-    calculateGroup(group.id, <String>{});
+  for (final group in groups) {
+    calculateBounds(group.id, <String>{});
   }
-  var laidOutGroups = <ArchitectureGroupLayout>[
-    for (final group in ast.groups)
+  return [
+    for (final group in groups)
       ArchitectureGroupLayout(
         id: group.id,
-        bounds: groupBounds[group.id] ?? const Bounds(left: 0, top: 0, width: 1, height: 1),
+        bounds: boundsById[group.id] ?? const Bounds(left: 0, top: 0, width: 1, height: 1),
         label: group.title ?? group.id,
         icon: group.icon,
         parent: group.parent,
       ),
   ];
+}
 
-  Bounds contentBounds =
-      laidOutGroups
-          .where((group) => group.parent == null)
-          .fold<Bounds?>(null, (bounds, group) => bounds == null ? group.bounds : bounds.union(group.bounds)) ??
-      laidOutNodes.first.bounds;
-  for (final node in laidOutNodes.where((node) => node.parent == null)) {
-    contentBounds = contentBounds.union(node.bounds);
+Bounds _architectureContentBounds(List<ArchitectureNodeLayout> nodes, List<ArchitectureGroupLayout> groups) {
+  var bounds = groups
+      .where((group) => group.parent == null)
+      .map((group) => group.bounds)
+      .fold<Bounds?>(null, (result, item) => result == null ? item : result.union(item));
+  for (final node in nodes.where((node) => node.parent == null)) {
+    bounds = bounds == null ? node.bounds : bounds.union(node.bounds);
   }
-  final offsetX = -contentBounds.left;
-  final offsetY = -contentBounds.top;
-  laidOutNodes = [for (final node in laidOutNodes) node.translated(offsetX, offsetY)];
-  laidOutGroups = [for (final group in laidOutGroups) group.translated(offsetX, offsetY)];
-  final translatedNodes = {for (final node in laidOutNodes) node.id: node};
-  final translatedGroups = {for (final group in laidOutGroups) group.id: group};
+  return bounds ?? nodes.first.bounds;
+}
 
-  final edges = <ArchitectureEdgeLayout>[];
-  for (final edge in ast.edges) {
-    final source = translatedNodes[edge.leftId];
-    final target = translatedNodes[edge.rightId];
+List<ArchitectureEdgeLayout> _routeArchitectureEdges(
+  List<ArchitectureEdgeAst> edges,
+  List<ArchitectureNodeLayout> nodes,
+  List<ArchitectureGroupLayout> groups,
+) {
+  final nodesById = {for (final node in nodes) node.id: node};
+  final groupsById = {for (final group in groups) group.id: group};
+  final result = <ArchitectureEdgeLayout>[];
+  for (final edge in edges) {
+    final source = nodesById[edge.leftId];
+    final target = nodesById[edge.rightId];
     if (source == null || target == null) continue;
     final sourceBounds = edge.leftGroup && source.parent != null
-        ? translatedGroups[source.parent!]?.bounds ?? source.bounds
+        ? groupsById[source.parent!]?.bounds ?? source.bounds
         : source.bounds;
     final targetBounds = edge.rightGroup && target.parent != null
-        ? translatedGroups[target.parent!]?.bounds ?? target.bounds
+        ? groupsById[target.parent!]?.bounds ?? target.bounds
         : target.bounds;
     final start = _port(source, sourceBounds, edge.leftDirection, edge.leftGroup);
     final end = _port(target, targetBounds, edge.rightDirection, edge.rightGroup);
-    final bend = _bend(start, end, edge.leftDirection, edge.rightDirection);
-    edges.add(ArchitectureEdgeLayout(data: edge, start: start, bend: bend, end: end));
+    result.add(
+      ArchitectureEdgeLayout(
+        data: edge,
+        start: start,
+        bend: _bend(start, end, edge.leftDirection, edge.rightDirection),
+        end: end,
+      ),
+    );
   }
-
-  return ArchitectureLayout(
-    nodes: laidOutNodes,
-    groups: laidOutGroups,
-    edges: edges,
-    bounds: Bounds(left: 0, top: 0, width: contentBounds.width, height: contentBounds.height),
-  );
+  return result;
 }
 
 Point _edgeDelta(ArchitectureEdgeAst edge, double spacing) {

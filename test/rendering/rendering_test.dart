@@ -4,6 +4,18 @@ import 'package:xml/xml.dart';
 
 void main() {
   group('geometry-first rendering', () {
+    test('geometry primitives translate and create centered bounds', () {
+      expect(const Point(2, 3).translated(4, -1), const Point(6, 2));
+      expect(
+        const Bounds(left: 2, top: 3, width: 5, height: 7).translated(4, -1),
+        const Bounds(left: 6, top: 2, width: 5, height: 7),
+      );
+      expect(
+        Bounds.fromCenter(const Point(10, 20), const Size(8, 6)),
+        const Bounds(left: 6, top: 17, width: 8, height: 6),
+      );
+    });
+
     test('lays out positioned backend-neutral geometry deterministically', () {
       const ast = PieAst(
         title: 'Usage',

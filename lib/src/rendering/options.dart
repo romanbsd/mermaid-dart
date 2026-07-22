@@ -37,7 +37,6 @@ final class ArchitectureRenderOptions extends DiagramRenderOptions {
     this.fontSize = 16,
     this.nodeSeparation = 75,
     this.idealEdgeLengthMultiplier = 1.5,
-    this.arrowSize,
   });
 
   final double padding;
@@ -45,7 +44,6 @@ final class ArchitectureRenderOptions extends DiagramRenderOptions {
   final double fontSize;
   final double nodeSeparation;
   final double idealEdgeLengthMultiplier;
-  final double? arrowSize;
 }
 
 final class CynefinRenderOptions extends DiagramRenderOptions {

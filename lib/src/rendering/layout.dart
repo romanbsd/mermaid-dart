@@ -642,14 +642,14 @@ _LayoutResult _layoutTree(TreeViewAst ast, _LayoutContext context) {
     final hasIcon = node.icon != null;
     final labelX = x + config.paddingX + (hasIcon ? 18 : 0);
     if (node.icon != null) {
-      final geometry = _iconGeometry(context, node.icon!);
       children.add(
-        SceneIcon(
-          id: context.id('tree-icon'),
-          position: Point(x + config.paddingX, totalHeight + config.paddingY),
-          geometry: geometry,
+        _scaledIcon(
+          context,
+          node.icon!,
+          Point(x + config.paddingX, totalHeight + config.paddingY),
+          18,
+          idPrefix: 'tree',
           stroke: _stroke(context, width: config.lineThickness),
-          label: node.icon,
           cssClasses: const ['treeView-node-icon'],
         ),
       );
@@ -2502,10 +2502,32 @@ _LayoutResult _layoutWardley(WardleyAst ast, _LayoutContext context) {
       ),
     );
     if (link.flow case WardleyLinkFlow.forward || WardleyLinkFlow.bidirectional) {
-      elements.add(_wardleyArrow(context, end, start, config.linkStroke, 'wardley-link-arrow'));
+      elements.add(
+        _triangleArrow(
+          context,
+          tip: end,
+          tail: start,
+          length: 6,
+          halfWidth: 3,
+          color: config.linkStroke,
+          idPrefix: 'wardley',
+          cssClasses: const ['wardley-link-arrow'],
+        ),
+      );
     }
     if (link.flow case WardleyLinkFlow.backward || WardleyLinkFlow.bidirectional) {
-      elements.add(_wardleyArrow(context, start, end, config.linkStroke, 'wardley-link-arrow'));
+      elements.add(
+        _triangleArrow(
+          context,
+          tip: start,
+          tail: end,
+          length: 6,
+          halfWidth: 3,
+          color: config.linkStroke,
+          idPrefix: 'wardley',
+          cssClasses: const ['wardley-link-arrow'],
+        ),
+      );
     }
     if (link.label case final label?) {
       final midpoint = Point((source.x + target.x) / 2, (source.y + target.y) / 2);
@@ -2546,7 +2568,18 @@ _LayoutResult _layoutWardley(WardleyAst ast, _LayoutContext context) {
       ),
     );
     if (distance > 0) {
-      elements.add(_wardleyArrow(context, end, origin, config.evolutionStroke, 'wardley-trend-arrow'));
+      elements.add(
+        _triangleArrow(
+          context,
+          tip: end,
+          tail: origin,
+          length: 6,
+          halfWidth: 3,
+          color: config.evolutionStroke,
+          idPrefix: 'wardley',
+          cssClasses: const ['wardley-trend-arrow'],
+        ),
+      );
     }
   }
 
@@ -2781,19 +2814,32 @@ _LayoutResult _layoutWardley(WardleyAst ast, _LayoutContext context) {
   return _LayoutResult(width, height, elements);
 }
 
-ScenePolygon _wardleyArrow(_LayoutContext context, Point tip, Point tail, Color color, String cssClass) {
+ScenePolygon _triangleArrow(
+  _LayoutContext context, {
+  required Point tip,
+  required Point tail,
+  required double length,
+  required double halfWidth,
+  required Color color,
+  required String idPrefix,
+  required List<String> cssClasses,
+}) {
   final dx = tip.x - tail.x;
   final dy = tip.y - tail.y;
-  final length = math.sqrt(dx * dx + dy * dy);
-  final unitX = length == 0 ? 1.0 : dx / length;
-  final unitY = length == 0 ? 0.0 : dy / length;
-  final base = Point(tip.x - unitX * 6, tip.y - unitY * 6);
+  final distance = math.sqrt(dx * dx + dy * dy);
+  final unitX = distance == 0 ? 1.0 : dx / distance;
+  final unitY = distance == 0 ? 0.0 : dy / distance;
+  final base = Point(tip.x - unitX * length, tip.y - unitY * length);
   return ScenePolygon(
-    id: context.id('wardley-arrow'),
-    points: [tip, Point(base.x - unitY * 3, base.y + unitX * 3), Point(base.x + unitY * 3, base.y - unitX * 3)],
+    id: context.id('$idPrefix-arrow'),
+    points: [
+      tip,
+      Point(base.x - unitY * halfWidth, base.y + unitX * halfWidth),
+      Point(base.x + unitY * halfWidth, base.y - unitX * halfWidth),
+    ],
     fill: SolidFill(color),
     role: SemanticRole.edge,
-    cssClasses: [cssClass],
+    cssClasses: cssClasses,
   );
 }
 
@@ -2913,9 +2959,15 @@ List<SceneElement> _architectureGroupElements(
       cssClasses: const ['architecture-group', 'node-bkg'],
     ),
     if (group.icon case final icon?)
-      _architectureIcon(context, icon, Point(group.bounds.left + 1, group.bounds.top + 1), iconSize, const [
-        'architecture-group-icon',
-      ]),
+      _scaledIcon(
+        context,
+        icon,
+        Point(group.bounds.left + 1, group.bounds.top + 1),
+        iconSize,
+        idPrefix: 'architecture',
+        fill: SolidFill(context.options.theme.primaryText),
+        cssClasses: const ['architecture-group-icon'],
+      ),
     if (group.label case final label?)
       _text(
         context,
@@ -2987,17 +3039,18 @@ SceneElement _architectureNodeElement(
       cssClasses: const ['architecture-junction'],
     );
   }
-  final localBounds = Bounds(
-    left: -config.iconSize / 2,
-    top: -config.iconSize / 2,
-    width: config.iconSize,
-    height: config.iconSize,
-  );
+  final localBounds = Bounds.fromCenter(const Point(0, 0), Size(config.iconSize, config.iconSize));
   final children = <SceneElement>[
     if (node.icon case final icon?)
-      _architectureIcon(context, icon, Point(localBounds.left, localBounds.top), config.iconSize, const [
-        'architecture-service-icon',
-      ])
+      _scaledIcon(
+        context,
+        icon,
+        Point(localBounds.left, localBounds.top),
+        config.iconSize,
+        idPrefix: 'architecture',
+        fill: SolidFill(context.options.theme.primaryText),
+        cssClasses: const ['architecture-service-icon'],
+      )
     else
       SceneRect(
         id: context.id('architecture-node-background'),
@@ -3040,24 +3093,28 @@ SceneElement _architectureNodeElement(
   );
 }
 
-SceneGroup _architectureIcon(
+SceneGroup _scaledIcon(
   _LayoutContext context,
   String reference,
   Point position,
-  double size,
-  List<String> cssClasses,
-) {
+  double size, {
+  required String idPrefix,
+  SceneFill? fill,
+  SceneStroke? stroke,
+  List<String> cssClasses = const [],
+}) {
   final geometry = _iconGeometry(context, reference);
   final scaleX = geometry.bounds.width == 0 ? 1.0 : size / geometry.bounds.width;
   final scaleY = geometry.bounds.height == 0 ? 1.0 : size / geometry.bounds.height;
   return SceneGroup(
-    id: context.id('architecture-icon'),
+    id: context.id('$idPrefix-icon'),
     children: [
       SceneIcon(
-        id: context.id('architecture-icon-geometry'),
+        id: context.id('$idPrefix-icon-geometry'),
         position: Point(-geometry.bounds.left, -geometry.bounds.top),
         geometry: geometry,
-        fill: SolidFill(context.options.theme.primaryText),
+        fill: fill,
+        stroke: stroke,
         label: reference,
       ),
     ],
@@ -3074,19 +3131,21 @@ ScenePolygon _architectureArrow(
   ArchitectureDirection direction,
   ArchitectureRenderOptions config,
 ) {
-  final size = config.arrowSize ?? config.iconSize / 6;
-  final half = size / 2;
-  final points = switch (direction) {
-    ArchitectureDirection.left => [tip, Point(tip.x - size, tip.y - half), Point(tip.x - size, tip.y + half)],
-    ArchitectureDirection.right => [tip, Point(tip.x + size, tip.y - half), Point(tip.x + size, tip.y + half)],
-    ArchitectureDirection.top => [tip, Point(tip.x - half, tip.y - size), Point(tip.x + half, tip.y - size)],
-    ArchitectureDirection.bottom => [tip, Point(tip.x - half, tip.y + size), Point(tip.x + half, tip.y + size)],
+  final tail = switch (direction) {
+    ArchitectureDirection.left => tip.translated(-1, 0),
+    ArchitectureDirection.right => tip.translated(1, 0),
+    ArchitectureDirection.top => tip.translated(0, -1),
+    ArchitectureDirection.bottom => tip.translated(0, 1),
   };
-  return ScenePolygon(
-    id: context.id('architecture-arrow'),
-    points: points,
-    fill: SolidFill(context.options.theme.line),
-    role: SemanticRole.edge,
+  final size = config.iconSize / 6;
+  return _triangleArrow(
+    context,
+    tip: tip,
+    tail: tail,
+    length: size,
+    halfWidth: size / 2,
+    color: context.options.theme.line,
+    idPrefix: 'architecture',
     cssClasses: const ['architecture-arrow', 'arrow'],
   );
 }

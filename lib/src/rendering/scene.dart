@@ -18,6 +18,9 @@ final class Point with _SceneValue {
   const Point(this.x, this.y);
   final double x;
   final double y;
+
+  Point translated(double deltaX, double deltaY) => Point(x + deltaX, y + deltaY);
+
   @override
   List<Object?> get fields => [x, y];
 }
@@ -33,6 +36,8 @@ final class Size with _SceneValue {
 final class Bounds with _SceneValue {
   const Bounds({required this.left, required this.top, required this.width, required this.height});
   Bounds.fromSize(Size size) : this(left: 0, top: 0, width: size.width, height: size.height);
+  Bounds.fromCenter(Point center, Size size)
+    : this(left: center.x - size.width / 2, top: center.y - size.height / 2, width: size.width, height: size.height);
 
   final double left;
   final double top;
@@ -41,6 +46,9 @@ final class Bounds with _SceneValue {
   double get right => left + width;
   double get bottom => top + height;
   Point get center => Point(left + width / 2, top + height / 2);
+
+  Bounds translated(double deltaX, double deltaY) =>
+      Bounds(left: left + deltaX, top: top + deltaY, width: width, height: height);
 
   Bounds expand(double amount) =>
       Bounds(left: left - amount, top: top - amount, width: width + amount * 2, height: height + amount * 2);
