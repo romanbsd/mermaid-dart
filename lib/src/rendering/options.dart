@@ -94,6 +94,45 @@ final class EventModelingRenderOptions extends DiagramRenderOptions {
   final double textMaxWidth;
 }
 
+final class GitGraphRenderOptions extends DiagramRenderOptions {
+  const GitGraphRenderOptions({
+    this.titleTopMargin = 25,
+    this.diagramPadding = 8,
+    this.mainBranchName = 'main',
+    this.mainBranchOrder = 0,
+    this.showCommitLabel = true,
+    this.showBranches = true,
+    this.rotateCommitLabel = true,
+    this.parallelCommits = false,
+    this.commitRadius = 10,
+    this.branchSpacing = 50,
+    this.commitSpacing = 50,
+    this.branchColors = const [
+      Color(87, 103, 198),
+      Color(241, 156, 74),
+      Color(76, 175, 130),
+      Color(218, 91, 91),
+      Color(151, 104, 190),
+      Color(72, 169, 197),
+      Color(222, 190, 73),
+      Color(100, 100, 100),
+    ],
+  });
+
+  final double titleTopMargin;
+  final double diagramPadding;
+  final String mainBranchName;
+  final double mainBranchOrder;
+  final bool showCommitLabel;
+  final bool showBranches;
+  final bool rotateCommitLabel;
+  final bool parallelCommits;
+  final double commitRadius;
+  final double branchSpacing;
+  final double commitSpacing;
+  final List<Color> branchColors;
+}
+
 final class TreeViewRenderOptions extends DiagramRenderOptions {
   const TreeViewRenderOptions({this.rowIndent = 10, this.paddingX = 5, this.paddingY = 5, this.lineThickness = 1});
 
@@ -265,6 +304,7 @@ final class RenderOptions {
     this.padding = 20,
     this.cynefin = const CynefinRenderOptions(),
     this.eventModeling = const EventModelingRenderOptions(),
+    this.gitGraph = const GitGraphRenderOptions(),
     this.info = const InfoRenderOptions(),
     this.packet = const PacketRenderOptions(),
     this.pie = const PieRenderOptions(),
@@ -280,6 +320,7 @@ final class RenderOptions {
   final double padding;
   final CynefinRenderOptions cynefin;
   final EventModelingRenderOptions eventModeling;
+  final GitGraphRenderOptions gitGraph;
   final InfoRenderOptions info;
   final PacketRenderOptions packet;
   final PieRenderOptions pie;
@@ -298,6 +339,7 @@ final class RenderOptions {
     return switch (fallback) {
           CynefinRenderOptions() => cynefin,
           EventModelingRenderOptions() => eventModeling,
+          GitGraphRenderOptions() => gitGraph,
           InfoRenderOptions() => info,
           PacketRenderOptions() => packet,
           PieRenderOptions() => pie,

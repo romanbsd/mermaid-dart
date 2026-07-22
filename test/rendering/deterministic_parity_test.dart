@@ -396,6 +396,119 @@ void main() {
       expect(scene.bounds, const Bounds(left: 0, top: 0, width: 225, height: 110));
     });
 
+    test('git graph renders typed commit shapes, parents, tags, and ordered branches', () {
+      final ast = GitGraphAst(
+        title: 'Release history',
+        statements: const [
+          GitGraphCommitAst(id: 'ZERO', tags: ['v1'], type: GitGraphCommitType.highlight),
+          GitGraphBranchAst(name: 'feature', order: 2),
+          GitGraphCommitAst(id: 'A', type: GitGraphCommitType.reverse),
+          GitGraphCheckoutAst(branch: 'main'),
+          GitGraphCommitAst(id: 'MAIN'),
+          GitGraphMergeAst(branch: 'feature', id: 'M', tags: ['release']),
+          GitGraphCherryPickAst(id: 'A'),
+        ],
+      );
+      final scene = layoutDiagram(
+        ast,
+        textMeasurer: measurer,
+        options: const RenderOptions(padding: 0, gitGraph: GitGraphRenderOptions(rotateCommitLabel: false)),
+      );
+      final elements = _flatten(scene.elements).toList();
+
+      expect(
+        elements
+            .whereType<SceneText>()
+            .where((element) => element.cssClasses.contains('git-branch-label'))
+            .map((element) => element.text),
+        ['main', 'feature'],
+      );
+      expect(
+        elements.whereType<SceneLine>().where((element) => element.cssClasses.contains('git-branch-line')),
+        hasLength(2),
+      );
+      expect(
+        elements.whereType<ScenePath>().where((element) => element.cssClasses.contains('git-commit-edge')),
+        hasLength(6),
+      );
+      expect(
+        elements.whereType<SceneRect>().where((element) => element.cssClasses.contains('git-commit-highlight-outer')),
+        hasLength(1),
+      );
+      expect(
+        elements.whereType<ScenePath>().where((element) => element.cssClasses.contains('git-commit-reverse-mark')),
+        hasLength(1),
+      );
+      expect(
+        elements.whereType<SceneCircle>().where((element) => element.cssClasses.contains('git-commit-merge-inner')),
+        hasLength(1),
+      );
+      expect(
+        elements.whereType<SceneCircle>().where((element) => element.cssClasses.contains('git-commit-cherry-outer')),
+        hasLength(1),
+      );
+      expect(
+        elements.whereType<ScenePolygon>().where((element) => element.cssClasses.contains('git-tag-background')),
+        hasLength(3),
+      );
+      expect(
+        elements.whereType<SceneText>().singleWhere((element) => element.cssClasses.contains('git-title')).text,
+        'Release history',
+      );
+      expectSvgGolden('git_graph_history', renderSvg(scene));
+    });
+
+    test('git graph top-to-bottom and bottom-to-top reverse the history axis', () {
+      const statements = [GitGraphCommitAst(id: 'A'), GitGraphBranchAst(name: 'feature'), GitGraphCommitAst(id: 'B')];
+      List<Point> centers(GitGraphDirection direction) {
+        final scene = layoutDiagram(
+          GitGraphAst(direction: direction, statements: statements),
+          textMeasurer: measurer,
+          options: const RenderOptions(
+            padding: 0,
+            gitGraph: GitGraphRenderOptions(showBranches: false, showCommitLabel: false),
+          ),
+        );
+        return _flatten(scene.elements)
+            .whereType<SceneCircle>()
+            .where((element) => element.cssClasses.contains('git-commit-normal'))
+            .map((element) => element.center)
+            .toList();
+      }
+
+      final topToBottom = centers(GitGraphDirection.topToBottom);
+      final bottomToTop = centers(GitGraphDirection.bottomToTop);
+      expect(topToBottom[0].y, lessThan(topToBottom[1].y));
+      expect(bottomToTop[0].y, greaterThan(bottomToTop[1].y));
+      expect(topToBottom.map((point) => point.x), bottomToTop.map((point) => point.x));
+    });
+
+    test('git graph parallel mode aligns sibling commits on the history axis', () {
+      final scene = layoutDiagram(
+        const GitGraphAst(
+          statements: [
+            GitGraphCommitAst(id: 'ROOT'),
+            GitGraphBranchAst(name: 'feature'),
+            GitGraphCommitAst(id: 'FEATURE'),
+            GitGraphCheckoutAst(branch: 'main'),
+            GitGraphCommitAst(id: 'MAIN'),
+          ],
+        ),
+        textMeasurer: measurer,
+        options: const RenderOptions(
+          padding: 0,
+          gitGraph: GitGraphRenderOptions(showBranches: false, showCommitLabel: false, parallelCommits: true),
+        ),
+      );
+      final commits = _flatten(
+        scene.elements,
+      ).whereType<SceneCircle>().where((element) => element.cssClasses.contains('git-commit-normal')).toList();
+
+      expect(commits, hasLength(3));
+      expect(commits[1].center.x, commits[2].center.x);
+      expect(commits[1].center.y, isNot(commits[2].center.y));
+    });
+
     test('packet splits blocks at row boundaries and shows bit labels', () {
       final scene = layoutDiagram(
         const PacketAst(blocks: [PacketRangeBlockAst(start: 0, end: 40, label: 'payload')]),
