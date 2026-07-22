@@ -7,6 +7,15 @@ enum ArchitectureDirection {
   bottom;
 
   bool get isVertical => this == top || this == bottom;
+
+  int get axisSign => this == right || this == bottom ? 1 : -1;
+
+  ArchitectureDirection get opposite => switch (this) {
+    left => right,
+    right => left,
+    top => bottom,
+    bottom => top,
+  };
 }
 
 enum ArchitectureAlignmentDirection { row, column }

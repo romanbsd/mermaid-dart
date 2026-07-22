@@ -14,6 +14,8 @@ void main() {
         Bounds.fromCenter(const Point(10, 20), const Size(8, 6)),
         const Bounds(left: 6, top: 17, width: 8, height: 6),
       );
+      expect(ArchitectureDirection.left.opposite, ArchitectureDirection.right);
+      expect(ArchitectureDirection.top.opposite, ArchitectureDirection.bottom);
     });
 
     test('lays out positioned backend-neutral geometry deterministically', () {

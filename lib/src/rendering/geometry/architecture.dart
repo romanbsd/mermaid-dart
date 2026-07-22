@@ -280,30 +280,13 @@ List<ArchitectureEdgeLayout> _routeArchitectureEdges(
 }
 
 Point _edgeDelta(ArchitectureEdgeAst edge, double spacing) {
-  double x = 0;
-  double y = 0;
-  switch (edge.leftDirection) {
-    case ArchitectureDirection.left:
-      x = -spacing;
-    case ArchitectureDirection.right:
-      x = spacing;
-    case ArchitectureDirection.top:
-      y = -spacing;
-    case ArchitectureDirection.bottom:
-      y = spacing;
-  }
-  switch (edge.rightDirection) {
-    case ArchitectureDirection.left:
-      x = x == 0 ? spacing : x;
-    case ArchitectureDirection.right:
-      x = x == 0 ? -spacing : x;
-    case ArchitectureDirection.top:
-      y = y == 0 ? spacing : y;
-    case ArchitectureDirection.bottom:
-      y = y == 0 ? -spacing : y;
-  }
-  return Point(x, y);
+  final source = _directionDelta(edge.leftDirection, spacing);
+  final target = _directionDelta(edge.rightDirection.opposite, spacing);
+  return Point(source.x == 0 ? target.x : source.x, source.y == 0 ? target.y : source.y);
 }
+
+Point _directionDelta(ArchitectureDirection direction, double distance) =>
+    direction.isVertical ? Point(0, direction.axisSign * distance) : Point(direction.axisSign * distance, 0);
 
 Point _port(ArchitectureNodeLayout node, Bounds bounds, ArchitectureDirection direction, bool groupEndpoint) {
   if (node.kind == ArchitectureNodeKind.junction && !groupEndpoint) return node.center;
