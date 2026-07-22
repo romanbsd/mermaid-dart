@@ -12,6 +12,7 @@ const _architectureGroupStrokeDash = 8.0;
 // icon/label alignment correction from svgDraw.ts.
 const _architectureGroupLabelBaseOffset = 2.0;
 const _architectureGroupIconLabelCorrection = 3.0;
+const _architectureDiagonalEdgeLabelRotation = 45.0;
 
 _LayoutResult _layoutArchitecture(ArchitectureAst ast, _LayoutContext context) {
   final config = context.options.optionsFor(const ArchitectureRenderOptions());
@@ -104,27 +105,74 @@ List<SceneElement> _architectureEdgeElements(
     if (data.rightArrow) _architectureArrow(context, edge.end, data.rightDirection, config),
   ];
   if (data.title case final title?) {
+    elements.add(_architectureEdgeLabel(context, config, edge, title));
+  }
+  return elements;
+}
+
+SceneElement _architectureEdgeLabel(
+  _LayoutContext context,
+  ArchitectureRenderOptions config,
+  ArchitectureEdgeLayout edge,
+  String title,
+) {
+  final style = _architectureTextStyle(context, config);
+  const classes = ['architecture-edge-label', 'architecture-service-label'];
+  if (edge.data.leftDirection.isVertical == edge.data.rightDirection.isVertical) {
+    if (!edge.data.leftDirection.isVertical) {
+      return _text(
+        context,
+        title,
+        edge.bend.x,
+        edge.bend.y + config.fontSize,
+        anchor: TextAnchor.middle,
+        style: style,
+        cssClasses: classes,
+      );
+    }
     final label = _text(
       context,
       title,
-      edge.bend.x,
-      edge.bend.y,
+      0,
+      config.fontSize,
       anchor: TextAnchor.middle,
-      style: _architectureTextStyle(context, config),
-      cssClasses: const ['architecture-edge-label', 'architecture-service-label'],
+      style: style,
+      cssClasses: classes,
     );
-    elements.add(
-      data.leftDirection.isVertical && data.rightDirection.isVertical
-          ? SceneGroup(
-              id: context.id('architecture-edge-label-group'),
-              children: [label],
-              transforms: [Rotate(-90, center: edge.bend)],
-              role: SemanticRole.label,
-            )
-          : label,
+    return SceneGroup(
+      id: context.id('architecture-edge-label-group'),
+      children: [label],
+      transforms: [Translate(edge.bend.x, edge.bend.y), const Rotate(-90)],
+      role: SemanticRole.label,
     );
   }
-  return elements;
+
+  final size = context.measurer.measure(title, style);
+  final horizontalDirection = edge.data.leftDirection.isVertical ? edge.data.rightDirection : edge.data.leftDirection;
+  final verticalDirection = edge.data.leftDirection.isVertical ? edge.data.leftDirection : edge.data.rightDirection;
+  final horizontalOffset = -horizontalDirection.axisSign * size.width / 2;
+  final verticalOffset = -verticalDirection.axisSign * size.width / 2;
+  final rotation = -_architectureDiagonalEdgeLabelRotation * horizontalOffset.sign * verticalOffset.sign;
+  final label = _text(
+    context,
+    title,
+    0,
+    config.fontSize,
+    anchor: TextAnchor.middle,
+    baseline: TextBaseline.alphabetic,
+    style: style,
+    cssClasses: classes,
+  );
+  return SceneGroup(
+    id: context.id('architecture-edge-label-group'),
+    children: [label],
+    transforms: [
+      Translate(edge.bend.x, edge.bend.y - size.height / 2),
+      Translate(horizontalOffset, verticalOffset),
+      Rotate(rotation, center: Point(0, size.height / 2)),
+    ],
+    role: SemanticRole.label,
+  );
 }
 
 SceneElement _architectureNodeElement(

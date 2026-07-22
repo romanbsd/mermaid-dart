@@ -1499,7 +1499,7 @@ void main() {
       );
       expect(
         elements.whereType<SceneText>().singleWhere((element) => element.text == 'calls').position.y,
-        apiPosition.y,
+        apiPosition.y + const ArchitectureRenderOptions().fontSize,
       );
     });
 
@@ -1843,6 +1843,58 @@ void main() {
       final lowerElbow = (edges[2].commands[1] as LineTo).point;
       expect(upperElbow, Point(services['Storage']!.x, services['Server 1']!.y));
       expect(lowerElbow, Point(services['Storage']!.x, services['Server 2']!.y));
+    });
+
+    test('architecture renders dense directional meshes and Cytoscape-style edge labels', () {
+      final ast =
+          parse(
+                DiagramType.architecture,
+                'architecture-beta\n'
+                'service servC(server)[Center]\n'
+                'service servL(server)[Left]\n'
+                'service servR(server)[Right]\n'
+                'service servT(server)[Top]\n'
+                'service servB(server)[Bottom]\n'
+                'servC:L -[Label]-> R:servL\n'
+                'servC:R -[Label]-> L:servR\n'
+                'servC:T -[Label]-> B:servT\n'
+                'servC:B -[Label]-> T:servB\n'
+                'servL:T -[Label]-> L:servT\n'
+                'servL:B -[Label]-> L:servB\n'
+                'servR:T -[Label]-> R:servT\n'
+                'servR:B -[Label]-> R:servB\n',
+              )
+              as ArchitectureAst;
+      final scene = layoutDiagram(ast, textMeasurer: measurer, options: const RenderOptions(padding: 0));
+      final flattened = _flatten(scene.elements).toList();
+      final services = {
+        for (final service in flattened.whereType<SceneGroup>().where(
+          (element) => element.cssClasses.contains('architecture-service'),
+        ))
+          service.label!: service.transforms.single as Translate,
+      };
+      final arrows = flattened.whereType<ScenePolygon>().where(
+        (element) => element.cssClasses.contains('architecture-arrow'),
+      );
+      final transformedLabels = flattened
+          .whereType<SceneGroup>()
+          .where((element) => element.role == SemanticRole.label)
+          .toList();
+
+      expect(services['Center']!.x - services['Left']!.x, closeTo(177.17119140792983, 1e-9));
+      expect(services['Right']!.x - services['Center']!.x, closeTo(177.17119140792983, 1e-9));
+      expect(services['Center']!.y - services['Top']!.y, closeTo(177.17119140792983, 1e-9));
+      expect(services['Bottom']!.y - services['Center']!.y, closeTo(177.17119140792983, 1e-9));
+      expect(arrows, hasLength(8));
+      expect(transformedLabels.where((label) => label.transforms.length == 2), hasLength(2));
+      expect(transformedLabels.where((label) => label.transforms.length == 3), hasLength(4));
+      expect(
+        transformedLabels
+            .where((label) => label.transforms.length == 3)
+            .map((label) => (label.transforms.last as Rotate).degrees)
+            .toSet(),
+        {-45, 45},
+      );
     });
   });
 }

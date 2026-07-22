@@ -113,8 +113,11 @@ final class SvgSnapshot {
               ? textElements.length
               : comparableElements.where((element) => element.name.local == name).length,
       },
-      geometry: _geometrySignatures(document.rootElement),
-      paint: _paintSignatures(document.rootElement),
+      // Preserve source precision while flattening transforms. Canonicalizing
+      // first can round local coordinates and their translation separately,
+      // moving the final absolute point across a comparison boundary.
+      geometry: _geometrySignatures(sourceDocument.rootElement),
+      paint: _paintSignatures(sourceDocument.rootElement),
     );
   }
 

@@ -11,8 +11,8 @@ void main() {
     final manifest = ParityManifest.load(File('tool/mermaid_parity/fixtures.json'));
 
     expect(manifest.mermaidVersion, '11.16.0');
-    expect(manifest.fixtures.map((fixture) => fixture.id), hasLength(28));
-    expect(manifest.fixtures.map((fixture) => fixture.id).toSet(), hasLength(28));
+    expect(manifest.fixtures.map((fixture) => fixture.id), hasLength(30));
+    expect(manifest.fixtures.map((fixture) => fixture.id).toSet(), hasLength(30));
     expect(
       manifest.fixtures.map((fixture) => fixture.id),
       containsAll([
@@ -23,6 +23,8 @@ void main() {
         'architecture-align-grid',
         'architecture-group-edges',
         'architecture-split-directioning',
+        'architecture-directional-arrows',
+        'architecture-edge-labels',
         'event-modeling-unicode-multiline',
         'git-special-commits',
         'git-special-commits-tb',
@@ -412,6 +414,19 @@ void main() {
     final transparent = SvgSnapshot.fromSvg('<svg><rect width="10" height="10" fill="#333" fill-opacity="0"/></svg>');
 
     expect(SvgComparison.compare(none, transparent).samePaint, isTrue);
+  });
+
+  test('compares transformed polygons before canonical numeric rounding', () {
+    final absolute = SvgSnapshot.fromSvg(
+      '<svg><polygon points="23.5,247.098 10.1667,253.7646 10.1667,240.4313"/></svg>',
+    );
+    final translated = SvgSnapshot.fromSvg(
+      '<svg><g transform="translate(10.166666666666666 240.4313014365598)">'
+      '<polygon points="13.333333333333334,6.666666666666667 0,13.333333333333334 0,0"/>'
+      '</g></svg>',
+    );
+
+    expect(SvgComparison.compare(absolute, translated).sameGeometry, isTrue);
   });
 
   test('manifest rejects duplicate IDs', () {

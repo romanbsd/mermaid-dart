@@ -35,6 +35,17 @@ const _architectureMixedAxisBottomElbowSpacingRatio = 1.5849245641753044;
 const _architectureMixedAxisVerticalSpacingRatio = 2.507311653708842;
 const _architectureMixedAxisHorizontalFrameRatio = 0.26875;
 
+// Dense cross-axis meshes settle into a symmetric cardinal arrangement rather
+// than the sparse mixed-axis ranks above. The tiny frame residual is fCoSE's
+// deterministic centering remainder for Mermaid's five-service mesh.
+const _architectureDenseMixedAxisSpacingRatio = 2.2146398925991226;
+const _architectureDenseMixedAxisFrameResidualRatio = 0.002209708691208;
+
+// Cytoscape's edge-label layer shifts the otherwise identical architecture
+// mesh before export. Keep the browser-derived offset scale-relative.
+const _architectureEdgeLabelHorizontalFrameRatio = 0.128125;
+const _architectureEdgeLabelVerticalFrameRatio = 0.053125;
+
 // Proof-quality fCoSE slightly relaxes declared alignment gaps and the
 // orthogonal fan-in distance. The seeded residuals are icon-scaled so row and
 // column constraints remain symmetric for custom icon sizes.
@@ -73,6 +84,8 @@ const _architectureGroupBottomLabelAllowance = 18.0;
 const _architectureUngroupedLabelOverflowRatio = 1.51171875;
 
 enum ArchitectureNodeKind { service, junction }
+
+enum _ArchitectureRoutingProfile { standard, sparseMixedAxis, denseMixedAxis }
 
 final class ArchitectureNodeLayout {
   const ArchitectureNodeLayout({
@@ -161,25 +174,32 @@ ArchitectureLayout layoutArchitectureModel(ArchitectureAst ast, ArchitectureRend
   final hasColumnAlignment = ast.alignments.any(
     (alignment) => alignment.direction == ArchitectureAlignmentDirection.column,
   );
-  final hasMixedAxisRouting = _hasMixedAxisRouting(ast.edges);
+  final routingProfile = _architectureRoutingProfile(ast.groups, ast.services.length + ast.junctions.length, ast.edges);
+  final hasMixedAxisRouting = routingProfile != _ArchitectureRoutingProfile.standard;
+  final hasEdgeLabels = ast.edges.any((edge) => edge.title != null);
   final horizontalFrameRatio = ast.groups.isNotEmpty
       ? 0
-      : hasMixedAxisRouting
-      ? _architectureMixedAxisHorizontalFrameRatio
-      : hasColumnAlignment
-      ? _architectureAlignmentOrthogonalFrameRatio
-      : hasRowAlignment
-      ? _architectureAlignmentAxisFrameRatio
-      : 0;
+      : (hasMixedAxisRouting
+                ? _architectureMixedAxisHorizontalFrameRatio
+                : hasColumnAlignment
+                ? _architectureAlignmentOrthogonalFrameRatio
+                : hasRowAlignment
+                ? _architectureAlignmentAxisFrameRatio
+                : 0) +
+            (hasEdgeLabels ? _architectureEdgeLabelHorizontalFrameRatio : 0);
   final verticalFrameRatio = ast.groups.isNotEmpty
       ? 0
-      : hasMixedAxisRouting
-      ? _architectureAlignmentOrthogonalFrameRatio
-      : hasRowAlignment
-      ? _architectureAlignmentOrthogonalFrameRatio
-      : hasColumnAlignment
-      ? _architectureAlignmentAxisFrameRatio
-      : 0;
+      : (hasMixedAxisRouting
+                ? _architectureAlignmentOrthogonalFrameRatio +
+                      (routingProfile == _ArchitectureRoutingProfile.denseMixedAxis
+                          ? _architectureDenseMixedAxisFrameResidualRatio
+                          : 0)
+                : hasRowAlignment
+                ? _architectureAlignmentOrthogonalFrameRatio
+                : hasColumnAlignment
+                ? _architectureAlignmentAxisFrameRatio
+                : 0) +
+            (hasEdgeLabels ? _architectureEdgeLabelVerticalFrameRatio : 0);
   final targetContentCenterX = options.iconSize / 2 + options.iconSize * horizontalFrameRatio;
   final offsetX = targetContentCenterX - positioningBounds.center.x;
   final labelExtent = options.fontSize + _architectureServiceLabelLineGap;
@@ -231,7 +251,7 @@ Map<String, Point> _positionArchitectureNodes(
   final groupParents = {for (final group in groups) group.id: group.parent};
   final nodeIds = {for (final node in nodes) node.id};
   final adjacency = <String, List<({ArchitectureEdgeAst edge, bool forward})>>{};
-  final hasMixedAxisRouting = groups.isEmpty && _hasMixedAxisRouting(edges);
+  final routingProfile = _architectureRoutingProfile(groups, nodes.length, edges);
   for (final edge in edges) {
     if (!nodeIds.contains(edge.leftId) || !nodeIds.contains(edge.rightId)) continue;
     (adjacency[edge.leftId] ??= []).add((edge: edge, forward: true));
@@ -271,7 +291,8 @@ Map<String, Point> _positionArchitectureNodes(
         final unadjustedDelta = _edgeDelta(
           edge,
           compoundSpacing,
-          mixedAxisIconSize: hasMixedAxisRouting ? options.iconSize : null,
+          routingProfile: routingProfile,
+          iconSize: options.iconSize,
         );
         final junctionAdjustment = sameParent && includesJunction
             ? options.iconSize *
@@ -282,7 +303,8 @@ Map<String, Point> _positionArchitectureNodes(
         final delta = _edgeDelta(
           edge,
           compoundSpacing + junctionAdjustment,
-          mixedAxisIconSize: hasMixedAxisRouting ? options.iconSize : null,
+          routingProfile: routingProfile,
+          iconSize: options.iconSize,
         );
         centers[nextId] = current.translated(
           relation.forward ? delta.x : -delta.x,
@@ -526,18 +548,26 @@ List<ArchitectureEdgeLayout> _routeArchitectureEdges(
   return result;
 }
 
-Point _edgeDelta(ArchitectureEdgeAst edge, double spacing, {double? mixedAxisIconSize}) {
+Point _edgeDelta(
+  ArchitectureEdgeAst edge,
+  double spacing, {
+  required _ArchitectureRoutingProfile routingProfile,
+  required double iconSize,
+}) {
   double axisSpacing(ArchitectureDirection direction) {
-    if (mixedAxisIconSize == null) return spacing;
-    if (!direction.isVertical) return mixedAxisIconSize * _architectureMixedAxisHorizontalSpacingRatio;
+    if (routingProfile == _ArchitectureRoutingProfile.standard) return spacing;
+    if (routingProfile == _ArchitectureRoutingProfile.denseMixedAxis) {
+      return iconSize * _architectureDenseMixedAxisSpacingRatio;
+    }
+    if (!direction.isVertical) return iconSize * _architectureMixedAxisHorizontalSpacingRatio;
     if (edge.leftDirection.isVertical == edge.rightDirection.isVertical) {
-      return mixedAxisIconSize * _architectureMixedAxisVerticalSpacingRatio;
+      return iconSize * _architectureMixedAxisVerticalSpacingRatio;
     }
     final verticalPort = edge.leftDirection.isVertical ? edge.leftDirection : edge.rightDirection;
     final ratio = verticalPort == ArchitectureDirection.top
         ? _architectureMixedAxisTopElbowSpacingRatio
         : _architectureMixedAxisBottomElbowSpacingRatio;
-    return mixedAxisIconSize * ratio;
+    return iconSize * ratio;
   }
 
   final source = _directionDelta(edge.leftDirection, axisSpacing(edge.leftDirection));
@@ -546,8 +576,18 @@ Point _edgeDelta(ArchitectureEdgeAst edge, double spacing, {double? mixedAxisIco
   return Point(source.x == 0 ? target.x : source.x, source.y == 0 ? target.y : source.y);
 }
 
-bool _hasMixedAxisRouting(List<ArchitectureEdgeAst> edges) =>
-    edges.any((edge) => edge.leftDirection.isVertical != edge.rightDirection.isVertical);
+_ArchitectureRoutingProfile _architectureRoutingProfile(
+  List<ArchitectureGroupAst> groups,
+  int nodeCount,
+  List<ArchitectureEdgeAst> edges,
+) {
+  if (groups.isNotEmpty || !edges.any((edge) => edge.leftDirection.isVertical != edge.rightDirection.isVertical)) {
+    return _ArchitectureRoutingProfile.standard;
+  }
+  return edges.length > nodeCount
+      ? _ArchitectureRoutingProfile.denseMixedAxis
+      : _ArchitectureRoutingProfile.sparseMixedAxis;
+}
 
 Point _directionDelta(ArchitectureDirection direction, double distance) =>
     direction.isVertical ? Point(0, direction.axisSign * distance) : Point(direction.axisSign * distance, 0);

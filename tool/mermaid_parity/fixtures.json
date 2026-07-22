@@ -42,6 +42,19 @@
       "source": "architecture-beta\nservice db(database)[Database]\nservice s3(disk)[Storage]\nservice serv1(server)[Server 1]\nservice serv2(server)[Server 2]\nservice disk(disk)[Disk]\ndb:L -- R:s3\nserv1:L -- T:s3\nserv2:L -- B:s3\nserv1:T -- B:disk\n"
     },
     {
+      "id": "architecture-directional-arrows",
+      "type": "architecture",
+      "source": "architecture-beta\nservice servC(server)[Server 1]\nservice servL(server)[Server 2]\nservice servR(server)[Server 3]\nservice servT(server)[Server 4]\nservice servB(server)[Server 5]\nservC:L --> R:servL\nservC:R --> L:servR\nservC:T --> B:servT\nservC:B --> T:servB\nservL:T --> L:servT\nservL:B --> L:servB\nservR:T --> R:servT\nservR:B --> R:servB\n"
+    },
+    {
+      "id": "architecture-edge-labels",
+      "type": "architecture",
+      "source": "architecture-beta\nservice servC(server)[Server 1]\nservice servL(server)[Server 2]\nservice servR(server)[Server 3]\nservice servT(server)[Server 4]\nservice servB(server)[Server 5]\nservC:L -[Label]- R:servL\nservC:R -[Label]- L:servR\nservC:T -[Label]- B:servT\nservC:B -[Label]- T:servB\nservL:T -[Label]- L:servT\nservL:B -[Label]- L:servB\nservR:T -[Label]- R:servT\nservR:B -[Label]- R:servB\n",
+      "textMeasurements": {
+        "Label": { "width": 40.921875, "height": 19 }
+      }
+    },
+    {
       "id": "cynefin-domains",
       "type": "cynefin",
       "source": "cynefin-beta\ncomplex \"Probe\"\ncomplicated \"Analyze\"\nclear \"Sense\"\nchaotic \"Act\"\nconfusion \"Collect\"\n",
