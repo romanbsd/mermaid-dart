@@ -66,6 +66,34 @@ final class InfoRenderOptions extends DiagramRenderOptions {
   final String version;
 }
 
+final class EventModelingRenderOptions extends DiagramRenderOptions {
+  const EventModelingRenderOptions({
+    this.swimlaneMinHeight = 70,
+    this.swimlanePadding = 15,
+    this.swimlaneGap = 10,
+    this.boxPadding = 10,
+    this.boxOverlap = 90,
+    this.boxMinWidth = 80,
+    this.boxMaxWidth = 450,
+    this.boxMinHeight = 80,
+    this.boxMaxHeight = 750,
+    this.contentStartX = 250,
+    this.textMaxWidth = 430,
+  });
+
+  final double swimlaneMinHeight;
+  final double swimlanePadding;
+  final double swimlaneGap;
+  final double boxPadding;
+  final double boxOverlap;
+  final double boxMinWidth;
+  final double boxMaxWidth;
+  final double boxMinHeight;
+  final double boxMaxHeight;
+  final double contentStartX;
+  final double textMaxWidth;
+}
+
 final class TreeViewRenderOptions extends DiagramRenderOptions {
   const TreeViewRenderOptions({this.rowIndent = 10, this.paddingX = 5, this.paddingY = 5, this.lineThickness = 1});
 
@@ -196,6 +224,7 @@ final class RenderOptions {
     this.theme = const MermaidTheme(),
     this.padding = 20,
     this.cynefin = const CynefinRenderOptions(),
+    this.eventModeling = const EventModelingRenderOptions(),
     this.info = const InfoRenderOptions(),
     this.packet = const PacketRenderOptions(),
     this.pie = const PieRenderOptions(),
@@ -209,6 +238,7 @@ final class RenderOptions {
   final MermaidTheme theme;
   final double padding;
   final CynefinRenderOptions cynefin;
+  final EventModelingRenderOptions eventModeling;
   final InfoRenderOptions info;
   final PacketRenderOptions packet;
   final PieRenderOptions pie;
@@ -225,6 +255,7 @@ final class RenderOptions {
     if (override != null) return override as T;
     return switch (fallback) {
           CynefinRenderOptions() => cynefin,
+          EventModelingRenderOptions() => eventModeling,
           InfoRenderOptions() => info,
           PacketRenderOptions() => packet,
           PieRenderOptions() => pie,

@@ -290,6 +290,112 @@ void main() {
       );
     });
 
+    test('event modeling uses Mermaid swimlanes, frame colors, and relations', () {
+      final scene = layoutDiagram(
+        const EventModelingAst(
+          frames: [
+            EventModelTimeFrameAst(
+              name: 'screen',
+              entityType: EventModelEntityType.ui,
+              entityIdentifier: 'Sales.Checkout',
+            ),
+            EventModelTimeFrameAst(
+              name: 'submit',
+              entityType: EventModelEntityType.command,
+              entityIdentifier: 'SubmitOrder',
+              sourceFrames: ['screen'],
+            ),
+            EventModelTimeFrameAst(
+              name: 'placed',
+              entityType: EventModelEntityType.event,
+              entityIdentifier: 'OrderPlaced',
+            ),
+          ],
+        ),
+        textMeasurer: measurer,
+        options: const RenderOptions(padding: 0),
+      );
+      final elements = _flatten(scene.elements).toList();
+      final lanes = elements
+          .whereType<SceneRect>()
+          .where((element) => element.cssClasses.contains('em-swimlane-background'))
+          .toList();
+      final boxes = elements
+          .whereType<SceneRect>()
+          .where((element) => element.cssClasses.contains('em-box-rect'))
+          .toList();
+      final relations = elements
+          .whereType<ScenePath>()
+          .where((element) => element.cssClasses.contains('em-relation'))
+          .toList();
+
+      expect(lanes, hasLength(3));
+      expect(lanes.map((lane) => lane.bounds.top), [0, 140, 280]);
+      expect(
+        elements
+            .whereType<SceneText>()
+            .where((element) => element.cssClasses.contains('em-swimlane-label'))
+            .map((element) => element.text),
+        ['UI/A: Sales', 'Command/Read Model', 'Events'],
+      );
+      expect(boxes.map((box) => box.bounds), [
+        const Bounds(left: 250, top: 15, width: 120, height: 100),
+        const Bounds(left: 300, top: 155, width: 150, height: 100),
+        const Bounds(left: 380, top: 295, width: 150, height: 100),
+      ]);
+      expect(boxes.map((box) => box.fill), const [
+        SolidFill(Color(255, 255, 255)),
+        SolidFill(Color(188, 214, 254)),
+        SolidFill(Color(255, 183, 120)),
+      ]);
+      expect(
+        elements
+            .whereType<SceneText>()
+            .where((element) => element.cssClasses.contains('em-box-label'))
+            .map((element) => element.text),
+        ['Checkout', 'SubmitOrder', 'OrderPlaced'],
+      );
+      expect(relations, hasLength(2));
+      expect(relations[0].commands, const [MoveTo(Point(330, 115)), LineTo(Point(350, 155))]);
+      expect(relations[1].commands, const [MoveTo(Point(400, 255)), LineTo(Point(430, 295))]);
+      expect(
+        elements.whereType<ScenePolygon>().where((element) => element.cssClasses.contains('em-arrowhead')),
+        hasLength(2),
+      );
+      expect(scene.bounds, const Bounds(left: 0, top: 0, width: 555, height: 410));
+      expectSvgGolden('event_modeling_swimlanes', renderSvg(scene));
+    });
+
+    test('event modeling typed options constrain measured frame geometry', () {
+      final scene = layoutDiagram(
+        const EventModelingAst(
+          frames: [
+            EventModelTimeFrameAst(
+              name: 'one',
+              entityType: EventModelEntityType.event,
+              entityIdentifier: 'VeryLongEventName',
+            ),
+          ],
+        ),
+        textMeasurer: measurer,
+        options: const RenderOptions(
+          padding: 0,
+          eventModeling: EventModelingRenderOptions(
+            contentStartX: 100,
+            boxMinWidth: 60,
+            boxMaxWidth: 100,
+            boxPadding: 5,
+            swimlanePadding: 10,
+          ),
+        ),
+      );
+      final elements = _flatten(scene.elements).toList();
+      final box = elements.whereType<SceneRect>().singleWhere((element) => element.cssClasses.contains('em-box-rect'));
+
+      expect(box.bounds, const Bounds(left: 100, top: 10, width: 110, height: 90));
+      expect(scene.bounds, const Bounds(left: 0, top: 0, width: 225, height: 110));
+    });
+
     test('packet splits blocks at row boundaries and shows bit labels', () {
       final scene = layoutDiagram(
         const PacketAst(blocks: [PacketRangeBlockAst(start: 0, end: 40, label: 'payload')]),
