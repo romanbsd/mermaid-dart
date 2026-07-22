@@ -45,7 +45,11 @@ const _architectureLinearChainMinimumNodes = 3;
 // Mermaid's chain export is normalized around Cytoscape's browser frame after
 // labels are excluded from node dimensions. Keep that frame icon-relative.
 const _architectureLinearChainHorizontalFrameRatio = 0.259375;
-const _architectureLinearChainVerticalFrameRatio = -0.09375;
+
+// Ungrouped service icons are vertically normalized without label dimensions,
+// leaving this shared Cytoscape browser-frame residual for both a standalone
+// service and a pure service chain.
+const _architectureUngroupedServiceVerticalFrameRatio = -0.09375;
 
 // Service-to-service edges explicitly attached to sibling group boundaries
 // settle closer than junction-mediated compound edges. Seeded fCoSE leaves a
@@ -218,7 +222,12 @@ final class ArchitectureLayout {
   final Bounds bounds;
 }
 
-ArchitectureLayout layoutArchitectureModel(ArchitectureAst ast, ArchitectureRenderOptions options) {
+ArchitectureLayout layoutArchitectureModel(
+  ArchitectureAst ast,
+  ArchitectureRenderOptions options, {
+  TextMeasurer textMeasurer = const DeterministicTextMeasurer(),
+  String fontFamily = 'Arial, sans-serif',
+}) {
   final nodes = _architectureNodes(ast);
   if (nodes.isEmpty) {
     return const ArchitectureLayout(
@@ -231,6 +240,11 @@ ArchitectureLayout layoutArchitectureModel(ArchitectureAst ast, ArchitectureRend
   final hasDeepCompoundHierarchy = _hasDeepArchitectureCompoundHierarchy(nodes, ast.groups);
   final hasJunctionPair = _hasArchitectureJunctionPairTopology(nodes, ast.groups, ast.edges);
   final hasLinearChain = _hasArchitectureLinearChainTopology(nodes, ast.groups, ast.edges);
+  final hasStandaloneIconService =
+      ast.groups.isEmpty &&
+      nodes.length == 1 &&
+      nodes.single.kind == ArchitectureNodeKind.service &&
+      nodes.single.icon != null;
   final centers = _positionArchitectureNodes(nodes, ast.groups, ast.edges, ast.alignments, options);
   var laidOutNodes = _layoutArchitectureNodes(nodes, centers, options.iconSize);
   var laidOutGroups = _layoutArchitectureGroups(
@@ -243,6 +257,8 @@ ArchitectureLayout layoutArchitectureModel(ArchitectureAst ast, ArchitectureRend
     laidOutNodes,
     laidOutGroups,
     options,
+    textMeasurer: textMeasurer,
+    fontFamily: fontFamily,
     includeUngroupedLabels: false,
   );
   final hasRowAlignment = ast.alignments.any((alignment) => alignment.direction == ArchitectureAlignmentDirection.row);
@@ -278,7 +294,7 @@ ArchitectureLayout layoutArchitectureModel(ArchitectureAst ast, ArchitectureRend
                 : 0) +
             (hasEdgeLabels ? _architectureEdgeLabelVerticalFrameRatio : 0) +
             (hasJunctionPair ? _architectureJunctionPairVerticalFrameRatio : 0) +
-            (hasLinearChain ? _architectureLinearChainVerticalFrameRatio : 0);
+            (hasLinearChain || hasStandaloneIconService ? _architectureUngroupedServiceVerticalFrameRatio : 0);
   final targetContentCenterX =
       options.iconSize / 2 +
       options.iconSize *
@@ -295,7 +311,13 @@ ArchitectureLayout layoutArchitectureModel(ArchitectureAst ast, ArchitectureRend
   final offsetY = targetContentCenterY - positioningBounds.center.y;
   laidOutNodes = [for (final node in laidOutNodes) node.translated(offsetX, offsetY)];
   laidOutGroups = [for (final group in laidOutGroups) group.translated(offsetX, offsetY)];
-  final contentBounds = _architectureContentBounds(laidOutNodes, laidOutGroups, options);
+  final contentBounds = _architectureContentBounds(
+    laidOutNodes,
+    laidOutGroups,
+    options,
+    textMeasurer: textMeasurer,
+    fontFamily: fontFamily,
+  );
 
   return ArchitectureLayout(
     nodes: laidOutNodes,
@@ -1071,6 +1093,8 @@ Bounds _architectureContentBounds(
   List<ArchitectureNodeLayout> nodes,
   List<ArchitectureGroupLayout> groups,
   ArchitectureRenderOptions options, {
+  required TextMeasurer textMeasurer,
+  required String fontFamily,
   bool includeUngroupedLabels = true,
 }) {
   var bounds = groups
@@ -1079,16 +1103,29 @@ Bounds _architectureContentBounds(
       .fold<Bounds?>(null, (result, item) => result == null ? item : result.union(item));
   for (final node in nodes.where((node) => node.parent == null)) {
     final nodeBounds = includeUngroupedLabels && node.kind == ArchitectureNodeKind.service && node.label != null
-        ? Bounds(
-            left: node.bounds.left,
-            top: node.bounds.top,
-            width: node.bounds.width,
-            height: node.bounds.height + options.fontSize * _architectureUngroupedLabelOverflowRatio,
-          )
+        ? _architectureUngroupedServiceBounds(node, options, textMeasurer, fontFamily)
         : node.bounds;
     bounds = bounds == null ? nodeBounds : bounds.union(nodeBounds);
   }
   return bounds ?? nodes.first.bounds;
+}
+
+Bounds _architectureUngroupedServiceBounds(
+  ArchitectureNodeLayout node,
+  ArchitectureRenderOptions options,
+  TextMeasurer textMeasurer,
+  String fontFamily,
+) {
+  final labelWidth = textMeasurer
+      .measure(node.label!, SceneTextStyle(fontFamily: fontFamily, fontSize: options.fontSize))
+      .width;
+  final width = math.max(node.bounds.width, labelWidth);
+  return Bounds(
+    left: node.center.x - width / 2,
+    top: node.bounds.top,
+    width: width,
+    height: node.bounds.height + options.fontSize * _architectureUngroupedLabelOverflowRatio,
+  );
 }
 
 List<ArchitectureEdgeLayout> _routeArchitectureEdges(

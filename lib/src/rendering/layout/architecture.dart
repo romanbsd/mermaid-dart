@@ -16,7 +16,12 @@ const _architectureDiagonalEdgeLabelRotation = 45.0;
 
 _LayoutResult _layoutArchitecture(ArchitectureAst ast, _LayoutContext context) {
   final config = context.options.optionsFor(const ArchitectureRenderOptions());
-  final layout = layoutArchitectureModel(ast, config);
+  final layout = layoutArchitectureModel(
+    ast,
+    config,
+    textMeasurer: context.measurer,
+    fontFamily: context.options.theme.fontFamily,
+  );
   final elements = <SceneElement>[
     for (final group in layout.groups) ..._architectureGroupElements(context, config, group),
     for (final edge in layout.edges) ..._architectureEdgeElements(context, config, edge),

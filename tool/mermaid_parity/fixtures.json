@@ -7,6 +7,14 @@
       "source": "architecture-beta\ngroup cloud(cloud)[Cloud]\nservice api(server)[API] in cloud\nservice db(database)[Database] in cloud\napi:R --> L:db\n"
     },
     {
+      "id": "architecture-fallback-icon",
+      "type": "architecture",
+      "source": "architecture-beta\nservice unknown(iconnamedoesntexist)[Unknown Icon]\n",
+      "textMeasurements": {
+        "Unknown Icon": { "width": 99.703125, "height": 19 }
+      }
+    },
+    {
       "id": "architecture-nested-routing",
       "type": "architecture",
       "source": "architecture-beta\ngroup api[API]\ngroup public[Public API] in api\ngroup private[Private API] in api\nservice serv1(server)[Server] in public\nservice serv2(server)[Server] in private\nservice db(database)[Database] in private\nservice gateway(internet)[Gateway] in api\nserv1:B -- T:serv2\nserv2:L -- R:db\nserv1:L -- R:gateway\n"

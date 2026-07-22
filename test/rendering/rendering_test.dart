@@ -163,6 +163,39 @@ rule <- "a" b? ;
       );
     });
 
+    test('architecture icons use application geometry with a labeled placeholder fallback', () {
+      final ast =
+          parse(
+                DiagramType.architecture,
+                'architecture-beta\n'
+                'service unknown(iconnamedoesntexist)[Unknown Icon]\n',
+              )
+              as ArchitectureAst;
+      final fallbackScene = layoutDiagram(ast);
+      final fallbackElements = _flatten(fallbackScene.elements).toList();
+      final fallback = fallbackElements.whereType<SceneIcon>().single;
+      final resolved = _flatten(
+        layoutDiagram(ast, iconResolver: const _TestIconResolver()).elements,
+      ).whereType<SceneIcon>().single;
+
+      expect(fallback.label, 'iconnamedoesntexist');
+      expect(fallback.geometry, const PlaceholderIconResolver().resolve('iconnamedoesntexist'));
+      expect(fallbackScene.bounds.width, closeTo(115.2, 1e-9));
+      expect(
+        (fallbackElements
+                    .whereType<SceneGroup>()
+                    .singleWhere((element) => element.cssClasses.contains('architecture-service'))
+                    .transforms
+                    .single
+                as Translate)
+            .y,
+        58,
+      );
+      expect(resolved.label, 'iconnamedoesntexist');
+      expect(resolved.geometry, _TestIconResolver.geometry);
+      expect(resolved.role, SemanticRole.icon);
+    });
+
     test('treemap layout preserves nested section geometry', () {
       final scene = layoutDiagram(
         const TreemapAst(
@@ -180,6 +213,20 @@ rule <- "a" b? ;
       expect(rectangles.every((element) => element.bounds.width >= 0 && element.bounds.height >= 0), isTrue);
     });
   });
+}
+
+final class _TestIconResolver implements IconResolver {
+  const _TestIconResolver();
+
+  static const geometry = IconGeometry(
+    bounds: Bounds(left: 0, top: 0, width: 12, height: 6),
+    paths: [
+      [MoveTo(Point(0, 3)), LineTo(Point(12, 3))],
+    ],
+  );
+
+  @override
+  IconGeometry? resolve(String reference) => reference == 'iconnamedoesntexist' ? geometry : null;
 }
 
 Iterable<SceneElement> _flatten(Iterable<SceneElement> elements) sync* {
