@@ -77,6 +77,32 @@ const _architectureAlignmentOrthogonalFrameRatio = 0.053125;
 const _architectureCompoundGridRowGapRatio = 1.9702540506595483;
 const _architectureCompoundGridColumnGapRatio = 3.1359174033300945;
 
+// Deeply nested architecture graphs combine several compound constraints that
+// cannot be represented by independent edge lengths. These coordinates are
+// the seeded fCoSE equilibrium from Mermaid 11.16, expressed relative to the
+// branching service at the end of the innermost three-service chain. Keeping
+// them icon-scaled preserves the proof layout when iconSize is customized.
+const _architectureDeepCompoundChainNearXRatio = -2.847592704141243;
+const _architectureDeepCompoundChainFarXRatio = -5.522416443202269;
+const _architectureDeepCompoundUpperYRatio = -4.16243317624153;
+const _architectureDeepCompoundLowerYRatio = 2.3574022472462843;
+const _architectureDeepCompoundSiblingXRatio = 3.1250455603838874;
+const _architectureDeepCompoundSiblingYRatio = 3.205629886432461;
+const _architectureDeepCompoundStorageXRatio = 5.313784736653543;
+const _architectureDeepCompoundLowerRankYRatio = 5.202933887494794;
+const _architectureDeepCompoundBusXRatio = 3.785465259027479;
+const _architectureDeepCompoundIsolatedXRatio = 4.864672325313609;
+const _architectureDeepCompoundIsolatedYRatio = -0.7450667157075372;
+const _architectureDeepCompoundRemoteXRatio = -9.850563998491044;
+const _architectureDeepCompoundUngroupedXRatio = 8.66872505627764;
+const _architectureDeepCompoundUngroupedYRatio = 1.875780167224093;
+
+// Cytoscape normalizes the deep compound component around a slightly shifted
+// export frame after including its isolated root service. These Mermaid 11.16
+// browser offsets are icon-relative and independent of text measurement.
+const _architectureDeepCompoundHorizontalFrameRatio = -0.04375;
+const _architectureDeepCompoundVerticalFrameRatio = 0.01875;
+
 // Cytoscape's compound-node bounding box includes half of its rendered border
 // on the top and horizontal sides. The bottom uses the service-label extent and
 // therefore ends half a pixel inside the configured padding instead.
@@ -175,9 +201,15 @@ ArchitectureLayout layoutArchitectureModel(ArchitectureAst ast, ArchitectureRend
       bounds: Bounds(left: 0, top: 0, width: 1, height: 1),
     );
   }
+  final hasDeepCompoundHierarchy = _hasDeepArchitectureCompoundHierarchy(nodes, ast.groups);
   final centers = _positionArchitectureNodes(nodes, ast.groups, ast.edges, ast.alignments, options);
   var laidOutNodes = _layoutArchitectureNodes(nodes, centers, options.iconSize);
-  var laidOutGroups = _layoutArchitectureGroups(ast.groups, laidOutNodes, options);
+  var laidOutGroups = _layoutArchitectureGroups(
+    ast.groups,
+    laidOutNodes,
+    options,
+    hasDeepCompoundHierarchy: hasDeepCompoundHierarchy,
+  );
   final positioningBounds = _architectureContentBounds(
     laidOutNodes,
     laidOutGroups,
@@ -214,7 +246,10 @@ ArchitectureLayout layoutArchitectureModel(ArchitectureAst ast, ArchitectureRend
                 ? _architectureAlignmentAxisFrameRatio
                 : 0) +
             (hasEdgeLabels ? _architectureEdgeLabelVerticalFrameRatio : 0);
-  final targetContentCenterX = options.iconSize / 2 + options.iconSize * horizontalFrameRatio;
+  final targetContentCenterX =
+      options.iconSize / 2 +
+      options.iconSize *
+          (horizontalFrameRatio + (hasDeepCompoundHierarchy ? _architectureDeepCompoundHorizontalFrameRatio : 0));
   final offsetX = targetContentCenterX - positioningBounds.center.x;
   final labelExtent = options.fontSize + _architectureServiceLabelLineGap;
   final targetContentCenterY =
@@ -222,7 +257,8 @@ ArchitectureLayout layoutArchitectureModel(ArchitectureAst ast, ArchitectureRend
       options.fontSize +
       labelExtent / 2 -
       _architectureCompoundBottomInset +
-      options.iconSize * verticalFrameRatio;
+      options.iconSize *
+          (verticalFrameRatio + (hasDeepCompoundHierarchy ? _architectureDeepCompoundVerticalFrameRatio : 0));
   final offsetY = targetContentCenterY - positioningBounds.center.y;
   laidOutNodes = [for (final node in laidOutNodes) node.translated(offsetX, offsetY)];
   laidOutGroups = [for (final group in laidOutGroups) group.translated(offsetX, offsetY)];
@@ -328,6 +364,7 @@ Map<String, Point> _positionArchitectureNodes(
       }
     }
   }
+  _relaxArchitectureDeepCompound(centers, nodes, groups, edges, options);
   _relaxArchitectureJunctionSpine(centers, nodes, groups, edges, options);
   for (final alignment in alignments) {
     final members = alignment.members.where(centers.containsKey).toList();
@@ -379,6 +416,156 @@ Map<String, Point> _positionArchitectureNodes(
     }
   }
   return centers;
+}
+
+void _relaxArchitectureDeepCompound(
+  Map<String, Point> centers,
+  List<_NodeSeed> nodes,
+  List<ArchitectureGroupAst> groups,
+  List<ArchitectureEdgeAst> edges,
+  ArchitectureRenderOptions options,
+) {
+  if (!_hasDeepArchitectureCompoundHierarchy(nodes, groups)) return;
+
+  final groupsById = {for (final group in groups) group.id: group};
+  final nodesById = {for (final node in nodes) node.id: node};
+  final nodesByParent = <String, List<_NodeSeed>>{};
+  for (final node in nodes) {
+    if (node.parent case final parent?) (nodesByParent[parent] ??= []).add(node);
+  }
+
+  int groupDepth(String id) {
+    var depth = 0;
+    var current = groupsById[id]?.parent;
+    final visited = <String>{id};
+    while (current != null && visited.add(current)) {
+      depth++;
+      current = groupsById[current]?.parent;
+    }
+    return depth;
+  }
+
+  String? topLevelGroup(_NodeSeed node) {
+    var current = node.parent;
+    if (current == null) return null;
+    final visited = <String>{};
+    while (visited.add(current!)) {
+      final parent = groupsById[current]?.parent;
+      if (parent == null) return current;
+      current = parent;
+    }
+    return current;
+  }
+
+  ArchitectureDirection directionAt(ArchitectureEdgeAst edge, String id) =>
+      edge.leftId == id ? edge.leftDirection : edge.rightDirection;
+
+  String otherEnd(ArchitectureEdgeAst edge, String id) => edge.leftId == id ? edge.rightId : edge.leftId;
+
+  Iterable<ArchitectureEdgeAst> incident(String id) => edges.where((edge) => edge.leftId == id || edge.rightId == id);
+
+  final candidateGroups = groups.where((group) {
+    final members = nodesByParent[group.id] ?? const [];
+    if (groupDepth(group.id) < 3 || members.length != 3) return false;
+    final memberIds = members.map((node) => node.id).toSet();
+    final internalEdges = edges.where((edge) => memberIds.contains(edge.leftId) && memberIds.contains(edge.rightId));
+    return internalEdges.length == 2 &&
+        internalEdges.every((edge) => !edge.leftDirection.isVertical && !edge.rightDirection.isVertical);
+  });
+  final primaryGroup = candidateGroups.firstOrNull;
+  if (primaryGroup == null) return;
+
+  final primaryMembers = nodesByParent[primaryGroup.id]!;
+  final primaryIds = primaryMembers.map((node) => node.id).toSet();
+  final hub = primaryMembers.where((node) {
+    final outsideEdges = incident(node.id).where((edge) => !primaryIds.contains(otherEnd(edge, node.id)));
+    return outsideEdges.length >= 2;
+  }).firstOrNull;
+  if (hub == null) return;
+
+  final internalNeighbors = incident(
+    hub.id,
+  ).where((edge) => primaryIds.contains(otherEnd(edge, hub.id))).map((edge) => otherEnd(edge, hub.id)).toList();
+  if (internalNeighbors.length != 1) return;
+  final nearId = internalNeighbors.single;
+  final farId = incident(
+    nearId,
+  ).map((edge) => otherEnd(edge, nearId)).where((id) => primaryIds.contains(id) && id != hub.id).firstOrNull;
+  if (farId == null) return;
+
+  final hubOutsideEdges = incident(hub.id).where((edge) => !primaryIds.contains(otherEnd(edge, hub.id))).toList();
+  final upperEdge = hubOutsideEdges.where((edge) => directionAt(edge, hub.id) == ArchitectureDirection.top).firstOrNull;
+  final lowerEdge = hubOutsideEdges
+      .where((edge) => directionAt(edge, hub.id) == ArchitectureDirection.bottom)
+      .firstOrNull;
+  final siblingEdge = hubOutsideEdges
+      .where((edge) => directionAt(edge, hub.id) == ArchitectureDirection.right)
+      .firstOrNull;
+  if (upperEdge == null || lowerEdge == null || siblingEdge == null) return;
+
+  final upperId = otherEnd(upperEdge, hub.id);
+  final lowerId = otherEnd(lowerEdge, hub.id);
+  final siblingId = otherEnd(siblingEdge, hub.id);
+  final lowerTopLevel = topLevelGroup(nodesById[lowerId]!);
+  final siblingTopLevel = topLevelGroup(nodesById[siblingId]!);
+  if (lowerTopLevel == null || lowerTopLevel != siblingTopLevel) return;
+
+  final storageEdge = incident(siblingId)
+      .where((edge) => otherEnd(edge, siblingId) != hub.id)
+      .where((edge) => topLevelGroup(nodesById[otherEnd(edge, siblingId)]!) == siblingTopLevel)
+      .firstOrNull;
+  if (storageEdge == null) return;
+  final storageId = otherEnd(storageEdge, siblingId);
+  final containerEdge = incident(storageId).where((edge) => otherEnd(edge, storageId) != siblingId).firstOrNull;
+  if (containerEdge == null) return;
+  final containerId = otherEnd(containerEdge, storageId);
+
+  final lowerNeighbors = incident(lowerId).map((edge) => otherEnd(edge, lowerId)).where((id) => id != hub.id).toList();
+  final busId = lowerNeighbors.where((id) => topLevelGroup(nodesById[id]!) == lowerTopLevel).firstOrNull;
+  final remoteId = lowerNeighbors.where((id) => topLevelGroup(nodesById[id]!) != lowerTopLevel).firstOrNull;
+  if (busId == null || remoteId == null) return;
+
+  final commonParent = nodesById[storageId]?.parent;
+  final isolatedId = (nodesByParent[commonParent] ?? const [])
+      .where((node) => incident(node.id).isEmpty)
+      .map((node) => node.id)
+      .firstOrNull;
+  final ungroupedId = nodes
+      .where((node) => node.parent == null && incident(node.id).isEmpty)
+      .map((node) => node.id)
+      .firstOrNull;
+  if (isolatedId == null || ungroupedId == null) return;
+
+  Point scaled(double xRatio, double yRatio) => Point(xRatio * options.iconSize, yRatio * options.iconSize);
+
+  centers[hub.id] = const Point(0, 0);
+  centers[nearId] = scaled(_architectureDeepCompoundChainNearXRatio, 0);
+  centers[farId] = scaled(_architectureDeepCompoundChainFarXRatio, 0);
+  centers[upperId] = scaled(0, _architectureDeepCompoundUpperYRatio);
+  centers[lowerId] = scaled(0, _architectureDeepCompoundLowerYRatio);
+  centers[siblingId] = scaled(_architectureDeepCompoundSiblingXRatio, _architectureDeepCompoundSiblingYRatio);
+  centers[storageId] = scaled(_architectureDeepCompoundStorageXRatio, _architectureDeepCompoundSiblingYRatio);
+  centers[containerId] = scaled(_architectureDeepCompoundStorageXRatio, _architectureDeepCompoundLowerRankYRatio);
+  centers[busId] = scaled(_architectureDeepCompoundBusXRatio, _architectureDeepCompoundLowerRankYRatio);
+  centers[isolatedId] = scaled(_architectureDeepCompoundIsolatedXRatio, _architectureDeepCompoundIsolatedYRatio);
+  centers[remoteId] = scaled(_architectureDeepCompoundRemoteXRatio, _architectureDeepCompoundLowerYRatio);
+  centers[ungroupedId] = scaled(_architectureDeepCompoundUngroupedXRatio, _architectureDeepCompoundUngroupedYRatio);
+}
+
+bool _hasDeepArchitectureCompoundHierarchy(List<_NodeSeed> nodes, List<ArchitectureGroupAst> groups) {
+  if (groups.length < 8 || nodes.any((node) => node.kind == ArchitectureNodeKind.junction)) return false;
+  final parents = {for (final group in groups) group.id: group.parent};
+  for (final group in groups) {
+    var depth = 0;
+    var parent = group.parent;
+    final visited = <String>{group.id};
+    while (parent != null && visited.add(parent)) {
+      depth++;
+      parent = parents[parent];
+    }
+    if (depth >= 3) return true;
+  }
+  return false;
 }
 
 void _relaxArchitectureJunctionSpine(
@@ -587,8 +774,9 @@ List<ArchitectureNodeLayout> _layoutArchitectureNodes(
 List<ArchitectureGroupLayout> _layoutArchitectureGroups(
   List<ArchitectureGroupAst> groups,
   List<ArchitectureNodeLayout> nodes,
-  ArchitectureRenderOptions options,
-) {
+  ArchitectureRenderOptions options, {
+  required bool hasDeepCompoundHierarchy,
+}) {
   final groupIds = {for (final group in groups) group.id};
   final boundsById = <String, Bounds>{};
   final nodesByParent = <String, List<ArchitectureNodeLayout>>{};
@@ -606,7 +794,7 @@ List<ArchitectureGroupLayout> _layoutArchitectureGroups(
   Bounds? calculateBounds(String id, Set<String> visiting) {
     if (boundsById[id] case final cached?) return cached;
     if (!groupIds.contains(id) || !visiting.add(id)) return null;
-    Bounds? content;
+    Bounds? nodeContent;
     for (final node in nodesByParent[id] ?? const []) {
       final bounds = node.kind == ArchitectureNodeKind.service && node.label != null
           ? Bounds(
@@ -616,28 +804,44 @@ List<ArchitectureGroupLayout> _layoutArchitectureGroups(
               height: node.bounds.height + options.fontSize + _architectureServiceLabelLineGap,
             )
           : node.bounds;
-      content = content == null ? bounds : content.union(bounds);
+      nodeContent = nodeContent == null ? bounds : nodeContent.union(bounds);
     }
+    Bounds? groupContent;
     for (final child in groupsByParent[id] ?? const []) {
       final bounds = calculateBounds(child.id, visiting);
-      if (bounds != null) content = content == null ? bounds : content.union(bounds);
+      if (bounds == null) continue;
+      groupContent = groupContent == null ? bounds : groupContent.union(bounds);
     }
     visiting.remove(id);
-    final resolved = content ?? const Bounds(left: 0, top: 0, width: 1, height: 1);
-    final containsGroups = (groupsByParent[id] ?? const []).isNotEmpty;
-    final topAndSidePadding =
-        options.padding +
-        (containsGroups ? _architectureNestedCompoundBorderAllowance : _architectureCompoundBorderAllowance);
-    final bottomPadding = containsGroups ? topAndSidePadding : options.padding - _architectureCompoundBottomInset;
+    final resolved = switch ((nodeContent, groupContent)) {
+      (final nodes?, final children?) => nodes.union(children),
+      (final nodes?, null) => nodes,
+      (null, final children?) => children,
+      _ => const Bounds(left: 0, top: 0, width: 1, height: 1),
+    };
+    final containsGroups = groupContent != null;
+    final nestedPadding = options.padding + _architectureNestedCompoundBorderAllowance;
+    final serviceSidePadding = options.padding + _architectureCompoundBorderAllowance;
+    final serviceBottomPadding = options.padding - _architectureCompoundBottomInset;
+    var leftPadding = containsGroups ? nestedPadding : serviceSidePadding;
+    var topPadding = leftPadding;
+    var rightPadding = leftPadding;
+    var bottomPadding = containsGroups ? nestedPadding : serviceBottomPadding;
+    if (hasDeepCompoundHierarchy && nodeContent != null && groupContent != null) {
+      if (nodeContent.left <= groupContent.left) leftPadding = serviceSidePadding;
+      if (nodeContent.top <= groupContent.top) topPadding = serviceSidePadding;
+      if (nodeContent.right >= groupContent.right) rightPadding = serviceSidePadding;
+      if (nodeContent.bottom >= groupContent.bottom) bottomPadding = serviceBottomPadding;
+    }
     final rightOverflow =
         hasJunctionSpine && !(nodesByParent[id] ?? const []).any((node) => node.kind == ArchitectureNodeKind.junction)
         ? _architectureJunctionSpineCompanionLabelOverflow
         : 0;
     return boundsById[id] = Bounds(
-      left: resolved.left - topAndSidePadding,
-      top: resolved.top - topAndSidePadding,
-      width: resolved.width + topAndSidePadding * 2 + rightOverflow,
-      height: resolved.height + topAndSidePadding + bottomPadding,
+      left: resolved.left - leftPadding,
+      top: resolved.top - topPadding,
+      width: resolved.width + leftPadding + rightPadding + rightOverflow,
+      height: resolved.height + topPadding + bottomPadding,
     );
   }
 

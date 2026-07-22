@@ -1690,6 +1690,69 @@ void main() {
       expect(services[0].x - services[3].x, closeTo(222.65023530391295, 1e-9));
     });
 
+    test('architecture packs deeply nested compound components like Mermaid fCoSE', () {
+      final ast =
+          parse(
+                DiagramType.architecture,
+                'architecture-beta\n'
+                'group sub1(cloud)[Subscription A]\n'
+                'group vnet1(cloud)[VNet A] in sub1\n'
+                'service vm1(server)[VM] in vnet1\n'
+                'group sub2(cloud)[Subscription B]\n'
+                'group shared(cloud)[Shared] in sub2\n'
+                'service reg(database)[Registry] in shared\n'
+                'group env(cloud)[Environment] in sub2\n'
+                'group vnet(cloud)[VNet] in env\n'
+                'group snet1(cloud)[App Subnet] in vnet\n'
+                'service nsg(server)[NSG] in snet1\n'
+                'service asp(server)[App Plan] in snet1\n'
+                'service web(server)[Web App] in snet1\n'
+                'group snet2(cloud)[PE Subnet] in vnet\n'
+                'service pe1(server)[PE Blob] in snet2\n'
+                'service pe2(server)[PE Bus] in snet2\n'
+                'service storage(disk)[Storage] in env\n'
+                'service container(disk)[Container] in env\n'
+                'service bus(server)[Service Bus] in env\n'
+                'service dns(server)[DNS Zone] in env\n'
+                'service client(internet)[Client]\n'
+                'reg:B --> T:web\n'
+                'nsg:R --> L:asp\n'
+                'asp:R --> L:web\n'
+                'web:R --> L:pe1\n'
+                'pe1:R --> L:storage\n'
+                'storage:B --> T:container\n'
+                'web:B --> T:pe2\n'
+                'pe2:R --> L:bus\n'
+                'vm1:R --> L:pe2\n',
+              )
+              as ArchitectureAst;
+      final scene = layoutDiagram(ast, textMeasurer: measurer, options: const RenderOptions(padding: 0));
+      final flattened = _flatten(scene.elements).toList();
+      final services = {
+        for (final service in flattened.whereType<SceneGroup>().where(
+          (element) => element.cssClasses.contains('architecture-service'),
+        ))
+          service.label!: service.transforms.single as Translate,
+      };
+      final groups = {
+        for (final group in flattened.whereType<SceneRect>().where(
+          (element) => element.cssClasses.contains('architecture-group'),
+        ))
+          group.label!: group.bounds,
+      };
+
+      final web = services['Web App']!;
+      expect(web.x - services['NSG']!.x, closeTo(441.7933154561815, 1e-9));
+      expect(web.x - services['App Plan']!.x, closeTo(227.80741633129946, 1e-9));
+      expect(web.y - services['Registry']!.y, closeTo(332.99465409932237, 1e-9));
+      expect(services['PE Bus']!.y - web.y, closeTo(188.59217977970275, 1e-9));
+      expect(services['PE Blob']!.x - web.x, closeTo(250.00364483071098, 1e-9));
+      expect(services['PE Blob']!.y - web.y, closeTo(256.4503909145969, 1e-9));
+      expect(services['VM']!.x - web.x, closeTo(-788.0451198792834, 1e-9));
+      expect(groups['App Subnet']!.width, closeTo(606.7933154561815, 1e-9));
+      expect(groups['Subscription B']!.height, closeTo(1014.2293650989059, 1e-9));
+    });
+
     test('architecture row alignments center a fan-in using Mermaid proof spacing', () {
       final ast =
           parse(
