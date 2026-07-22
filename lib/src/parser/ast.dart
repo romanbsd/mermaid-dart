@@ -93,3 +93,92 @@ final class PacketBlockAst {
   @override
   String toString() => 'PacketBlockAst(start: $start, end: $end, bits: $bits, label: $label)';
 }
+
+/// Syntax tree for a `radar` diagram.
+final class RadarAst extends DiagramAst {
+  const RadarAst({
+    this.axes = const [],
+    this.curves = const [],
+    this.options = const [],
+    this.title,
+    this.accessibilityTitle,
+    this.accessibilityDescription,
+  });
+
+  final List<RadarAxisAst> axes;
+  final List<RadarCurveAst> curves;
+  final List<RadarOptionAst> options;
+  final String? title;
+  final String? accessibilityTitle;
+  final String? accessibilityDescription;
+}
+
+final class RadarAxisAst {
+  const RadarAxisAst({required this.name, this.label});
+
+  final String name;
+  final String? label;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) || other is RadarAxisAst && name == other.name && label == other.label;
+
+  @override
+  int get hashCode => Object.hash(name, label);
+}
+
+final class RadarCurveAst {
+  const RadarCurveAst({required this.name, this.label, required this.entries});
+
+  final String name;
+  final String? label;
+  final List<RadarEntryAst> entries;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is RadarCurveAst && name == other.name && label == other.label && _listEquals(entries, other.entries);
+
+  @override
+  int get hashCode => Object.hash(name, label, Object.hashAll(entries));
+}
+
+final class RadarEntryAst {
+  const RadarEntryAst({this.axis, required this.value});
+
+  final String? axis;
+  final num value;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) || other is RadarEntryAst && axis == other.axis && value == other.value;
+
+  @override
+  int get hashCode => Object.hash(axis, value);
+}
+
+final class RadarOptionAst {
+  const RadarOptionAst({required this.name, required this.value});
+
+  final RadarOptionName name;
+  final Object value;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) || other is RadarOptionAst && name == other.name && value == other.value;
+
+  @override
+  int get hashCode => Object.hash(name, value);
+}
+
+enum RadarOptionName { showLegend, ticks, max, min, graticule }
+
+enum RadarGraticule { circle, polygon }
+
+bool _listEquals<T>(List<T> left, List<T> right) {
+  if (left.length != right.length) return false;
+  for (var index = 0; index < left.length; index++) {
+    if (left[index] != right[index]) return false;
+  }
+  return true;
+}
