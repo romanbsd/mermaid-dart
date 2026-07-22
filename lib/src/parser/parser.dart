@@ -14,6 +14,7 @@ import 'railroad_parser.dart';
 import 'railroad_peg_parser.dart';
 import 'tree_view_parser.dart';
 import 'treemap_parser.dart';
+import 'wardley_parser.dart';
 
 typedef _DiagramParser = DiagramAst Function(String source);
 
@@ -32,6 +33,7 @@ const Map<String, _DiagramParser> _parsers = {
   'railroadPeg': parseRailroadPeg,
   'treeView': parseTreeView,
   'treemap': parseTreemap,
+  'wardley': parseWardley,
 };
 
 /// Parses [source] using the Mermaid grammar identified by [diagramType].

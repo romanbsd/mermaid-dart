@@ -3,6 +3,207 @@ sealed class DiagramAst {
   const DiagramAst();
 }
 
+enum WardleyStrategy { build, buy, outsource, market }
+
+enum WardleyLinkFlow { forward, backward, bidirectional }
+
+enum WardleyLinkStyle { solid, dashed }
+
+final class WardleyAst extends DiagramAst {
+  const WardleyAst({
+    this.size,
+    this.evolutionStages = const [],
+    this.anchors = const [],
+    this.components = const [],
+    this.links = const [],
+    this.evolves = const [],
+    this.pipelines = const [],
+    this.notes = const [],
+    this.annotationsBox,
+    this.annotations = const [],
+    this.markers = const [],
+    this.title,
+    this.accessibilityTitle,
+    this.accessibilityDescription,
+  });
+
+  final WardleySizeAst? size;
+  final List<WardleyEvolutionStageAst> evolutionStages;
+  final List<WardleyAnchorAst> anchors;
+  final List<WardleyComponentAst> components;
+  final List<WardleyLinkAst> links;
+  final List<WardleyEvolveAst> evolves;
+  final List<WardleyPipelineAst> pipelines;
+  final List<WardleyNoteAst> notes;
+  final WardleyPositionAst? annotationsBox;
+  final List<WardleyAnnotationAst> annotations;
+  final List<WardleyMarkerAst> markers;
+  final String? title;
+  final String? accessibilityTitle;
+  final String? accessibilityDescription;
+}
+
+mixin _WardleyValueEquality {
+  List<Object?> get equalityFields;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other.runtimeType == runtimeType &&
+          other is _WardleyValueEquality &&
+          _listEquals(equalityFields, other.equalityFields);
+
+  @override
+  int get hashCode => Object.hash(runtimeType, Object.hashAll(equalityFields));
+}
+
+final class WardleySizeAst with _WardleyValueEquality {
+  const WardleySizeAst({required this.width, required this.height});
+  final int width;
+  final int height;
+
+  @override
+  List<Object?> get equalityFields => [width, height];
+}
+
+final class WardleyPositionAst with _WardleyValueEquality {
+  const WardleyPositionAst({required this.x, required this.y});
+  final num x;
+  final num y;
+
+  @override
+  List<Object?> get equalityFields => [x, y];
+}
+
+final class WardleyLabelAst with _WardleyValueEquality {
+  const WardleyLabelAst({required this.offsetX, required this.offsetY});
+  final int offsetX;
+  final int offsetY;
+
+  @override
+  List<Object?> get equalityFields => [offsetX, offsetY];
+}
+
+final class WardleyEvolutionStageAst with _WardleyValueEquality {
+  const WardleyEvolutionStageAst({required this.name, this.secondName, this.boundary});
+  final String name;
+  final String? secondName;
+  final num? boundary;
+
+  @override
+  List<Object?> get equalityFields => [name, secondName, boundary];
+}
+
+final class WardleyAnchorAst with _WardleyValueEquality {
+  const WardleyAnchorAst({required this.name, required this.position});
+  final String name;
+  final WardleyPositionAst position;
+
+  @override
+  List<Object?> get equalityFields => [name, position];
+}
+
+final class WardleyComponentAst with _WardleyValueEquality {
+  const WardleyComponentAst({
+    required this.name,
+    required this.position,
+    this.label,
+    this.inertia = false,
+    this.strategy,
+  });
+
+  final String name;
+  final WardleyPositionAst position;
+  final WardleyLabelAst? label;
+  final bool inertia;
+  final WardleyStrategy? strategy;
+
+  @override
+  List<Object?> get equalityFields => [name, position, label, inertia, strategy];
+}
+
+final class WardleyLinkAst with _WardleyValueEquality {
+  const WardleyLinkAst({required this.from, required this.to, required this.style, this.flow, this.label});
+
+  final String from;
+  final String to;
+  final WardleyLinkStyle style;
+  final WardleyLinkFlow? flow;
+  final String? label;
+
+  @override
+  List<Object?> get equalityFields => [from, to, style, flow, label];
+}
+
+final class WardleyEvolveAst with _WardleyValueEquality {
+  const WardleyEvolveAst({required this.component, required this.target});
+  final String component;
+  final num target;
+
+  @override
+  List<Object?> get equalityFields => [component, target];
+}
+
+final class WardleyPipelineAst {
+  const WardleyPipelineAst({required this.parent, this.components = const []});
+  final String parent;
+  final List<WardleyPipelineComponentAst> components;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is WardleyPipelineAst && parent == other.parent && _listEquals(components, other.components);
+
+  @override
+  int get hashCode => Object.hash(parent, Object.hashAll(components));
+}
+
+final class WardleyPipelineComponentAst with _WardleyValueEquality {
+  const WardleyPipelineComponentAst({required this.name, required this.evolution, this.label});
+  final String name;
+  final num evolution;
+  final WardleyLabelAst? label;
+
+  @override
+  List<Object?> get equalityFields => [name, evolution, label];
+}
+
+final class WardleyNoteAst with _WardleyValueEquality {
+  const WardleyNoteAst({required this.text, required this.position});
+  final String text;
+  final WardleyPositionAst position;
+
+  @override
+  List<Object?> get equalityFields => [text, position];
+}
+
+final class WardleyAnnotationAst with _WardleyValueEquality {
+  const WardleyAnnotationAst({required this.number, required this.position, required this.text});
+  final int number;
+  final WardleyPositionAst position;
+  final String text;
+
+  @override
+  List<Object?> get equalityFields => [number, position, text];
+}
+
+sealed class WardleyMarkerAst with _WardleyValueEquality {
+  const WardleyMarkerAst({required this.name, required this.position});
+  final String name;
+  final WardleyPositionAst position;
+
+  @override
+  List<Object?> get equalityFields => [name, position];
+}
+
+final class WardleyAcceleratorAst extends WardleyMarkerAst {
+  const WardleyAcceleratorAst({required super.name, required super.position});
+}
+
+final class WardleyDeacceleratorAst extends WardleyMarkerAst {
+  const WardleyDeacceleratorAst({required super.name, required super.position});
+}
+
 /// Syntax tree for a `treemap` diagram.
 final class TreemapAst extends DiagramAst {
   const TreemapAst({this.rows = const [], this.title, this.accessibilityTitle, this.accessibilityDescription});
