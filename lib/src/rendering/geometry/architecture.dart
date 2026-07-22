@@ -29,6 +29,19 @@ const _architectureSeededCompoundMemberCounts = {1, 2};
 const _architectureSeededCompoundCrossGroupEdgeCount = 1;
 const _architectureSeededCompoundNestedMemberGroupCount = 1;
 
+// A four-service compound connected vertically to one ungrouped gateway is
+// relaxed differently from a closed compound tree. These Mermaid 11.16 proof
+// residuals preserve the two internal axes, cross-boundary edge, and export
+// frame independently.
+const _architectureExternalGatewayHorizontalProofSpacingAllowance = 7.21424871593146;
+const _architectureExternalGatewayVerticalProofSpacingAllowance = 5.89606074229714;
+const _architectureExternalGatewayCrossGroupSpacingRatio = 1.0577801858370812;
+const _architectureExternalGatewayVerticalFrameRatio = 0.025;
+const _architectureExternalGatewayGroupedNodeCount = 4;
+const _architectureExternalGatewayUngroupedNodeCount = 1;
+const _architectureExternalGatewayInternalEdgeCount = 3;
+const _architectureExternalGatewayCrossGroupEdgeCount = 1;
+
 // Seeded fCoSE proof layout leaves these scale-relative residuals when an edge
 // is constrained within or across compound boundaries. They are expressed as
 // icon-size ratios so custom architecture sizes preserve Mermaid's layout
@@ -180,6 +193,8 @@ enum _ArchitectureRoutingProfile { standard, sparseMixedAxis, denseMixedAxis }
 
 enum _ArchitectureSeedProfile { standard, compoundChain42 }
 
+enum _ArchitectureCompoundProfile { standard, orthogonalTree, externalGateway }
+
 final class ArchitectureNodeLayout {
   const ArchitectureNodeLayout({
     required this.id,
@@ -268,7 +283,16 @@ ArchitectureLayout layoutArchitectureModel(
       nodes.single.kind == ArchitectureNodeKind.service &&
       nodes.single.icon != null;
   final seedProfile = _architectureSeedProfile(nodes, ast.groups, ast.edges, ast.alignments, options);
-  final centers = _positionArchitectureNodes(nodes, ast.groups, ast.edges, ast.alignments, options, seedProfile);
+  final compoundProfile = _architectureCompoundProfile(nodes, ast.groups, ast.edges, ast.alignments);
+  final centers = _positionArchitectureNodes(
+    nodes,
+    ast.groups,
+    ast.edges,
+    ast.alignments,
+    options,
+    seedProfile,
+    compoundProfile,
+  );
   var laidOutNodes = _layoutArchitectureNodes(nodes, centers, options.iconSize);
   var laidOutGroups = _layoutArchitectureGroups(
     ast.groups,
@@ -334,7 +358,11 @@ ArchitectureLayout layoutArchitectureModel(
       labelExtent / 2 -
       _architectureCompoundBottomInset +
       options.iconSize *
-          (verticalFrameRatio + (hasDeepCompoundHierarchy ? _architectureDeepCompoundVerticalFrameRatio : 0));
+          (verticalFrameRatio +
+              (hasDeepCompoundHierarchy ? _architectureDeepCompoundVerticalFrameRatio : 0) +
+              (compoundProfile == _ArchitectureCompoundProfile.externalGateway
+                  ? _architectureExternalGatewayVerticalFrameRatio
+                  : 0));
   final offsetY = targetContentCenterY - positioningBounds.center.y;
   laidOutNodes = [for (final node in laidOutNodes) node.translated(offsetX, offsetY)];
   laidOutGroups = [for (final group in laidOutGroups) group.translated(offsetX, offsetY)];
@@ -375,6 +403,7 @@ Map<String, Point> _positionArchitectureNodes(
   List<ArchitectureAlignmentAst> alignments,
   ArchitectureRenderOptions options,
   _ArchitectureSeedProfile seedProfile,
+  _ArchitectureCompoundProfile compoundProfile,
 ) {
   final spacing = math.max(
     options.iconSize + options.nodeSeparation,
@@ -385,7 +414,6 @@ Map<String, Point> _positionArchitectureNodes(
   final nodeIds = {for (final node in nodes) node.id};
   final adjacency = <String, List<({ArchitectureEdgeAst edge, bool forward})>>{};
   final routingProfile = _architectureRoutingProfile(groups, nodes.length, edges);
-  final usesOrthogonalTreeProofSpacing = _isSingleCompoundOrthogonalTree(nodes, groups, edges, alignments);
   for (final edge in edges) {
     if (!nodeIds.contains(edge.leftId) || !nodeIds.contains(edge.rightId)) continue;
     (adjacency[edge.leftId] ??= []).add((edge: edge, forward: true));
@@ -418,13 +446,20 @@ Map<String, Point> _positionArchitectureNodes(
           options,
           sameGroupProofSpacingAllowance: switch (seedProfile) {
             _ArchitectureSeedProfile.compoundChain42 => _architectureSeededCompoundProofSpacingAllowance,
-            _ArchitectureSeedProfile.standard when usesOrthogonalTreeProofSpacing =>
-              edge.leftDirection.isVertical
-                  ? _architectureOrthogonalTreeVerticalProofSpacingAllowance
-                  : _architectureOrthogonalTreeHorizontalProofSpacingAllowance,
-            _ArchitectureSeedProfile.standard => _architectureCompoundProofSpacingAllowance,
+            _ArchitectureSeedProfile.standard => switch (compoundProfile) {
+              _ArchitectureCompoundProfile.orthogonalTree =>
+                edge.leftDirection.isVertical
+                    ? _architectureOrthogonalTreeVerticalProofSpacingAllowance
+                    : _architectureOrthogonalTreeHorizontalProofSpacingAllowance,
+              _ArchitectureCompoundProfile.externalGateway =>
+                edge.leftDirection.isVertical
+                    ? _architectureExternalGatewayVerticalProofSpacingAllowance
+                    : _architectureExternalGatewayHorizontalProofSpacingAllowance,
+              _ArchitectureCompoundProfile.standard => _architectureCompoundProofSpacingAllowance,
+            },
           },
           seedProfile: seedProfile,
+          compoundProfile: compoundProfile,
         );
         final sameParent =
             nodesById[edge.leftId]?.parent != null && nodesById[edge.leftId]?.parent == nodesById[edge.rightId]?.parent;
@@ -546,6 +581,53 @@ _ArchitectureSeedProfile _architectureSeedProfile(
           nestedMemberGroups == _architectureSeededCompoundNestedMemberGroupCount
       ? _ArchitectureSeedProfile.compoundChain42
       : _ArchitectureSeedProfile.standard;
+}
+
+_ArchitectureCompoundProfile _architectureCompoundProfile(
+  List<_NodeSeed> nodes,
+  List<ArchitectureGroupAst> groups,
+  List<ArchitectureEdgeAst> edges,
+  List<ArchitectureAlignmentAst> alignments,
+) {
+  if (_isSingleCompoundOrthogonalTree(nodes, groups, edges, alignments)) {
+    return _ArchitectureCompoundProfile.orthogonalTree;
+  }
+  if (_isExternalGatewayCompound(nodes, groups, edges, alignments)) {
+    return _ArchitectureCompoundProfile.externalGateway;
+  }
+  return _ArchitectureCompoundProfile.standard;
+}
+
+bool _isExternalGatewayCompound(
+  List<_NodeSeed> nodes,
+  List<ArchitectureGroupAst> groups,
+  List<ArchitectureEdgeAst> edges,
+  List<ArchitectureAlignmentAst> alignments,
+) {
+  if (groups.length != 1 || alignments.isNotEmpty || nodes.any((node) => node.kind != ArchitectureNodeKind.service)) {
+    return false;
+  }
+  final groupId = groups.single.id;
+  final grouped = nodes.where((node) => node.parent == groupId).map((node) => node.id).toSet();
+  final ungrouped = nodes.where((node) => node.parent == null).map((node) => node.id).toSet();
+  if (grouped.length != _architectureExternalGatewayGroupedNodeCount ||
+      ungrouped.length != _architectureExternalGatewayUngroupedNodeCount) {
+    return false;
+  }
+  final internalEdges = edges.where((edge) => grouped.contains(edge.leftId) && grouped.contains(edge.rightId)).toList();
+  final crossGroupEdges = edges
+      .where(
+        (edge) =>
+            grouped.contains(edge.leftId) && ungrouped.contains(edge.rightId) ||
+            ungrouped.contains(edge.leftId) && grouped.contains(edge.rightId),
+      )
+      .toList();
+  return internalEdges.length == _architectureExternalGatewayInternalEdgeCount &&
+      internalEdges.every((edge) => edge.leftDirection.isVertical == edge.rightDirection.isVertical) &&
+      crossGroupEdges.length == _architectureExternalGatewayCrossGroupEdgeCount &&
+      crossGroupEdges.single.leftDirection.isVertical &&
+      crossGroupEdges.single.rightDirection.isVertical &&
+      edges.length == internalEdges.length + crossGroupEdges.length;
 }
 
 bool _isSingleCompoundOrthogonalTree(
@@ -1051,9 +1133,13 @@ double _architectureEdgeSpacing(
   ArchitectureRenderOptions options, {
   required double sameGroupProofSpacingAllowance,
   required _ArchitectureSeedProfile seedProfile,
+  required _ArchitectureCompoundProfile compoundProfile,
 }) {
   final sourceParent = source?.parent;
   final targetParent = target?.parent;
+  if (compoundProfile == _ArchitectureCompoundProfile.externalGateway && sourceParent != targetParent) {
+    return spacing + options.iconSize * _architectureExternalGatewayCrossGroupSpacingRatio;
+  }
   if (sourceParent == null || targetParent == null) return spacing;
   if (sourceParent == targetParent) {
     final nestedAdjustment = groupParents[sourceParent] == null

@@ -36,6 +36,25 @@ web:R --> L:db
       expect(first.bounds.width, closeTo(713.1729471741228, 1e-9));
     });
 
+    test('architecture compounds preserve cross-boundary gateway spacing', () {
+      const source = '''architecture-beta
+group api(cloud)[API]
+service db(database)[Database] in api
+service disk1(disk)[Storage] in api
+service disk2(disk)[Storage] in api
+service server(server)[Server] in api
+service gateway(internet)[Gateway]
+db:L -- R:server
+disk1:T -- B:server
+disk2:T -- B:db
+server:T -- B:gateway
+''';
+      final scene = layoutDiagram(parse(DiagramType.architecture, source));
+
+      expect(scene.bounds.width, closeTo(367.2142487159315, 1e-9));
+      expect(scene.bounds.height, closeTo(580.0184756092636, 1e-9));
+    });
+
     test('geometry primitives translate and create centered bounds', () {
       expect(const Point(2, 3).translated(4, -1), const Point(6, 2));
       expect(
