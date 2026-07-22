@@ -20,7 +20,7 @@ void main() {
   const style = SceneTextStyle(weight: FontWeight.bold);
 
   group('layoutEventModel', () {
-    test('reuses namespaced lanes and advances boxes horizontally', () {
+    test('allocates namespaced frames to distinct lanes like Mermaid', () {
       final layout = layoutEventModel(
         const EventModelingAst(
           frames: [
@@ -33,12 +33,15 @@ void main() {
         style,
       );
 
-      expect(layout.lanes, hasLength(1));
-      expect(layout.lanes.single.label, 'UI/A: Sales');
-      expect(layout.boxes.map((box) => box.bounds.left), [250, 360]);
+      expect(layout.lanes, hasLength(2));
+      expect(layout.lanes.map((lane) => lane.label), ['UI/A: Sales', 'UI/A: Sales']);
+      expect(layout.lanes.map((lane) => lane.y), [0, 140]);
+      expect(layout.boxes.map((box) => box.bounds.left), [250, 280]);
       expect(layout.boxes.map((box) => box.bounds.width), [100, 100]);
-      expect(layout.relations, isEmpty);
-      expect(layout.maxRight, 470);
+      expect(layout.relations, hasLength(1));
+      expect(layout.relations.single.source, same(layout.boxes.first));
+      expect(layout.relations.single.target, same(layout.boxes.last));
+      expect(layout.maxRight, 390);
     });
 
     test('reset frames are positioned without creating relations', () {

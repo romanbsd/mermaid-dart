@@ -77,6 +77,22 @@ void main() {
     expect(comparison.exact, isFalse);
   });
 
+  test('normalizes centered foreignObject labels to positioned scene text', () {
+    final htmlText = SvgSnapshot.fromSvg(
+      '<svg><foreignObject x="10" y="20" width="100" height="40">'
+      '<div><b>Updated</b><br/><br/><code>a:&#160;b</code></div>'
+      '</foreignObject></svg>',
+    );
+    final svgText = SvgSnapshot.fromSvg(
+      '<svg><text x="60" y="40" font-size="16" text-anchor="middle" '
+      'dominant-baseline="central">Updated\n\na: b</text></svg>',
+    );
+
+    final comparison = SvgComparison.compare(svgText, htmlText);
+    expect(comparison.sameText, isTrue);
+    expect(comparison.sameGeometry, isTrue);
+  });
+
   test('ignores empty text and normalizes SVG text defaults', () {
     final explicit = SvgSnapshot.fromSvg(
       '<svg><text x="1" y="2" font-size="16" '
@@ -136,6 +152,27 @@ void main() {
     final comparison = SvgComparison.compare(dart, mermaid);
     expect(comparison.sameElementCounts, isTrue);
     expect(comparison.sameGeometry, isTrue);
+  });
+
+  test('ignores backend-specific event-modeling arrowhead representations', () {
+    final marker = SvgSnapshot.fromSvg(
+      '<svg><defs><marker><polygon points="0 0,10 3.5,0 7"/></marker></defs>'
+      '<path d="M1 2 L3 4"/></svg>',
+    );
+    final positioned = SvgSnapshot.fromSvg(
+      '<svg><path d="M1 2 L3 4"/><polygon class="em-arrowhead" points="3,4 1,2 2,1"/></svg>',
+    );
+
+    final comparison = SvgComparison.compare(positioned, marker);
+    expect(comparison.sameElementCounts, isTrue);
+    expect(comparison.sameGeometry, isTrue);
+  });
+
+  test('normalizes an omitted rectangle ry to its rx value', () {
+    final implicit = SvgSnapshot.fromSvg('<svg><rect x="1" y="2" width="3" height="4" rx="5"/></svg>');
+    final explicit = SvgSnapshot.fromSvg('<svg><rect x="1" y="2" width="3" height="4" rx="5" ry="5"/></svg>');
+
+    expect(SvgComparison.compare(explicit, implicit).sameGeometry, isTrue);
   });
 
   test('compares translated local geometry with absolute geometry', () {

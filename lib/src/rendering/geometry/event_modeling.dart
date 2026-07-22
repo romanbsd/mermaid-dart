@@ -95,10 +95,8 @@ EventModelLayout layoutEventModel(
     );
     final text = _frameText(frame, ast.dataEntities);
     final measured = measurer.measure(text, textStyle);
-    final containsData = text != _entityName(frame.entityIdentifier);
-    final measuredWidth = containsData ? measured.width / 3 : measured.width;
     final width =
-        (measuredWidth + options.boxPadding * 2).clamp(options.boxMinWidth, options.boxMaxWidth) +
+        (measured.width + options.boxPadding * 2).clamp(options.boxMinWidth, options.boxMaxWidth) +
         options.boxPadding * 2;
     final height =
         (measured.height + options.boxPadding * 2).clamp(options.boxMinHeight, options.boxMaxHeight) +
@@ -155,10 +153,6 @@ EventModelLayout layoutEventModel(
 
 ({int index, String label, String? namespace}) _laneIdentity(EventModelFrameAst frame, Map<int, EventModelLane> lanes) {
   final namespace = _entityNamespace(frame.entityIdentifier);
-  if (namespace != null) {
-    final existing = lanes.values.where((lane) => lane.namespace == namespace).firstOrNull;
-    if (existing != null) return (index: existing.index, label: existing.label, namespace: namespace);
-  }
   final (lower, upper, label, prefix) = switch (frame.entityType) {
     EventModelEntityType.ui || EventModelEntityType.processor => (0, 100, 'UI/Automation', 'UI/A: '),
     EventModelEntityType.readModel || EventModelEntityType.command => (100, 200, 'Command/Read Model', 'C/RM: '),

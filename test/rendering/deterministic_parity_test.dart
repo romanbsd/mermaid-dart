@@ -409,6 +409,51 @@ void main() {
       expectSvgGolden('event_modeling_swimlanes', renderSvg(scene));
     });
 
+    test('event modeling matches namespaced and reset-frame Mermaid geometry', () {
+      final ast =
+          parse(
+                DiagramType.eventModeling,
+                'eventmodeling\n'
+                'timeframe 01 command Cart.Update\n'
+                'tf 02 evt Cart.Updated ->> 01 `jsobj`{ a: b }\n'
+                'resetframe 03 readmodel Cart.Items ->> 02\n',
+              )
+              as EventModelingAst;
+      final scene = layoutDiagram(
+        ast,
+        textMeasurer: const _MappedTextMeasurer({
+          'Update': Size(116, 20),
+          'Updated\n\na: b': Size(204.33333333333334, 60),
+          'Items': Size(103, 20),
+        }),
+        options: const RenderOptions(padding: 0),
+      );
+      final elements = _flatten(scene.elements).toList();
+      final lanes = elements
+          .whereType<SceneRect>()
+          .where((element) => element.cssClasses.contains('em-swimlane-background'))
+          .toList();
+      final boxes = elements
+          .whereType<SceneRect>()
+          .where((element) => element.cssClasses.contains('em-box-rect'))
+          .toList();
+      final relation = elements.whereType<ScenePath>().singleWhere(
+        (element) => element.cssClasses.contains('em-relation'),
+      );
+
+      expect(lanes.map((lane) => lane.label), ['C/RM: Cart', 'C/RM: Cart', 'Stream: Cart']);
+      expect(lanes.map((lane) => lane.bounds.top), [0, 140, 280]);
+      expect(lanes.map((lane) => lane.bounds.width), everyElement(closeTo(678.3333333333334, 1e-9)));
+      expect(boxes.map((box) => box.bounds), [
+        const Bounds(left: 250, top: 15, width: 156, height: 100),
+        const Bounds(left: 336, top: 295, width: 244.33333333333334, height: 100),
+        const Bounds(left: 510.33333333333337, top: 155, width: 143, height: 100),
+      ]);
+      expect(relation.commands, const [MoveTo(Point(354, 115)), LineTo(Point(417.44444444444446, 295))]);
+      expect(scene.bounds, const Bounds(left: 0, top: 0, width: 678.3333333333334, height: 410));
+      expect(scene.viewport, const Bounds(left: -30, top: -30, width: 738.3333333333334, height: 470));
+    });
+
     test('event modeling typed options constrain measured frame geometry', () {
       final scene = layoutDiagram(
         const EventModelingAst(

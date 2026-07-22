@@ -101,7 +101,7 @@ final class SvgSnapshot {
     return SvgSnapshot._(
       canonicalSvg: canonicalSvg,
       viewBox: document.rootElement.getAttribute('viewBox'),
-      text: [for (final element in textElements) element.innerText.trim().replaceAll(RegExp(r'\s+'), ' ')]..sort(),
+      text: [for (final element in textElements) _normalizedVisibleText(element)]..sort(),
       elementCounts: {
         for (final name in elementNames)
           name: name == 'text'
@@ -198,27 +198,32 @@ String _geometrySignature(XmlElement element, String transform, String styleShee
     'line' => [x(attribute('x1', '0')), y(attribute('y1', '0')), x(attribute('x2', '0')), y(attribute('y2', '0'))],
     'path' => [_translatedPath(attribute('d'), translation)],
     'polygon' || 'polyline' => [_translatedPoints(attribute('points'), translation)],
-    'rect' || 'foreignObject' => [
+    'rect' => [
       x(attribute('x', '0')),
       y(attribute('y', '0')),
       attribute('width', '0'),
       attribute('height', '0'),
       attribute('rx', '0'),
-      attribute('ry', '0'),
+      attribute('ry', attribute('rx', '0')),
     ],
+    'foreignObject' => _foreignObjectGeometryValues(element, translation),
     'text' => _textGeometryValues(element, translation, styleSheets, attribute),
     _ => const <String>[],
   };
   final kind = name == 'foreignObject' ? 'text' : name;
-  final text = name == 'text' || name == 'foreignObject'
-      ? element.innerText.trim().replaceAll(RegExp(r'\s+'), ' ')
-      : '';
+  final text = name == 'text' || name == 'foreignObject' ? _normalizedVisibleText(element) : '';
   return [kind, if (translation == null) _normalizedTransform(transform) else '', ...values, text].join('|');
 }
 
 bool _isComparableGeometryElement(XmlElement element, XmlElement root) {
   for (XmlElement? ancestor = element; ancestor != null && ancestor != root; ancestor = ancestor.parentElement) {
-    if (ancestor.name.local == 'svg' || ancestor.getAttribute('data-role') == 'icon') return false;
+    final classes = (ancestor.getAttribute('class') ?? '').split(RegExp(r'\s+'));
+    if (ancestor.name.local == 'svg' ||
+        ancestor.name.local == 'defs' ||
+        ancestor.getAttribute('data-role') == 'icon' ||
+        classes.contains('em-arrowhead')) {
+      return false;
+    }
   }
   if (element.name.local == 'rect' &&
       (_numberAttribute(element, 'width') ?? 0) == 0 &&
@@ -229,6 +234,47 @@ bool _isComparableGeometryElement(XmlElement element, XmlElement root) {
 }
 
 double? _numberAttribute(XmlElement element, String name) => double.tryParse(element.getAttribute(name) ?? '');
+
+List<String> _foreignObjectGeometryValues(XmlElement element, _Translation? translation) {
+  final left = _numberAttribute(element, 'x') ?? 0;
+  final top = _numberAttribute(element, 'y') ?? 0;
+  final width = _numberAttribute(element, 'width') ?? 0;
+  final height = _numberAttribute(element, 'height') ?? 0;
+  return [
+    _formatNumber(left + width / 2 + (translation?.dx ?? 0)),
+    _formatNumber(top + height / 2 + (translation?.dy ?? 0)),
+    '16',
+    'middle',
+    'central',
+  ];
+}
+
+String _normalizedVisibleText(XmlElement element) {
+  final buffer = StringBuffer();
+
+  void collect(XmlNode node) {
+    switch (node) {
+      case XmlText(:final value):
+        buffer.write(value.replaceAll('\u00a0', ' '));
+      case XmlElement() when node.name.local == 'br':
+        buffer.write(' ');
+      case XmlElement(:final children) when node.name.local == 'tspan':
+        for (final child in children) {
+          collect(child);
+        }
+        buffer.write(' ');
+      case XmlElement(:final children):
+        for (final child in children) {
+          collect(child);
+        }
+      default:
+        break;
+    }
+  }
+
+  collect(element);
+  return buffer.toString().trim().replaceAll(RegExp(r'\s+'), ' ');
+}
 
 List<String> _textGeometryValues(
   XmlElement element,
