@@ -31,12 +31,24 @@ final class ParityManifest {
 }
 
 final class ParityFixture {
-  const ParityFixture({required this.id, required this.type, required this.source});
+  const ParityFixture({required this.id, required this.type, required this.source, this.textMeasurements = const {}});
 
   factory ParityFixture.fromJson(Object? json) {
     if (json case {'id': final String id, 'type': final String type, 'source': final String source}) {
       if (id.isEmpty || source.isEmpty) throw const FormatException('Fixture fields must not be empty');
-      return ParityFixture(id: id, type: DiagramType.fromWireName(type), source: source);
+      final textMeasurements = switch (json['textMeasurements']) {
+        null => const <String, Size>{},
+        final Map<String, Object?> values => {
+          for (final MapEntry(:key, :value) in values.entries) key: _textMeasurement(value),
+        },
+        _ => throw const FormatException('Invalid fixture textMeasurements'),
+      };
+      return ParityFixture(
+        id: id,
+        type: DiagramType.fromWireName(type),
+        source: source,
+        textMeasurements: textMeasurements,
+      );
     }
     throw const FormatException('Invalid parity fixture');
   }
@@ -44,6 +56,26 @@ final class ParityFixture {
   final String id;
   final DiagramType type;
   final String source;
+  final Map<String, Size> textMeasurements;
+
+  TextMeasurer get textMeasurer => _FixtureTextMeasurer(textMeasurements);
+}
+
+Size _textMeasurement(Object? json) {
+  if (json case {'width': final num width, 'height': final num height} when width >= 0 && height >= 0) {
+    return Size(width.toDouble(), height.toDouble());
+  }
+  throw const FormatException('Invalid fixture text measurement');
+}
+
+final class _FixtureTextMeasurer implements TextMeasurer {
+  const _FixtureTextMeasurer(this.measurements);
+
+  final Map<String, Size> measurements;
+
+  @override
+  Size measure(String text, SceneTextStyle style) =>
+      measurements[text] ?? const DeterministicTextMeasurer().measure(text, style);
 }
 
 final class SvgSnapshot {
@@ -174,7 +206,7 @@ String _geometrySignature(XmlElement element, String transform, String styleShee
       x(attribute('x', '0')),
       y(attribute('y', '0')),
       attribute('font-size', _stylesheetFontSize(element, styleSheets) ?? '16'),
-      attribute('text-anchor', 'start'),
+      attribute('text-anchor', _stylesheetTextAnchor(element, styleSheets) ?? 'start'),
       switch (attribute('dominant-baseline', _stylesheetBaseline(element, styleSheets) ?? 'alphabetic')) {
         'auto' => 'alphabetic',
         final baseline => baseline,
@@ -241,6 +273,9 @@ String? _stylesheetFontSize(XmlElement element, String styleSheets) {
 String? _stylesheetBaseline(XmlElement element, String styleSheets) =>
     _stylesheetValue(element, styleSheets, _cssBaseline);
 
+String? _stylesheetTextAnchor(XmlElement element, String styleSheets) =>
+    _stylesheetValue(element, styleSheets, _cssTextAnchor);
+
 String? _stylesheetValue(XmlElement element, String styleSheets, RegExp declarationPattern) {
   String? value;
   for (final rule in _cssRule.allMatches(styleSheets)) {
@@ -281,6 +316,7 @@ bool _matchesSelectorPart(XmlElement element, String selector) {
 final _cssRule = RegExp(r'([^{}]+)\{([^{}]*)\}');
 final _cssFontSize = RegExp(r'font-size\s*:\s*(-?(?:\d+\.?\d*|\.\d+))px', caseSensitive: false);
 final _cssBaseline = RegExp(r'dominant-baseline\s*:\s*([\w-]+)', caseSensitive: false);
+final _cssTextAnchor = RegExp(r'text-anchor\s*:\s*([\w-]+)', caseSensitive: false);
 
 String _translatedPoints(String points, _Translation? translation) {
   final values = _pathToken.allMatches(points).map((match) => double.parse(match[0]!)).toList();

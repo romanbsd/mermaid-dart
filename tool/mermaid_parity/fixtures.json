@@ -34,7 +34,11 @@
     {
       "id": "pie-usage",
       "type": "pie",
-      "source": "pie showData\n\"Used\": 2\n\"Free\": 1\n"
+      "source": "pie showData\n\"Used\": 2\n\"Free\": 1\n",
+      "textMeasurements": {
+        "Used [2]": { "width": 63.171875, "height": 20 },
+        "Free [1]": { "width": 63.171875, "height": 20 }
+      }
     },
     {
       "id": "radar-comparison",
@@ -44,7 +48,12 @@
     {
       "id": "railroad-sequence",
       "type": "railroad",
-      "source": "railroad-beta\nrule = sequence(terminal(\"a\"), optional(nonterminal(\"b\"))) ;\n"
+      "source": "railroad-beta\nrule = sequence(terminal(\"a\"), optional(nonterminal(\"b\"))) ;\n",
+      "textMeasurements": {
+        "a": { "width": 8.40625, "height": 19 },
+        "b": { "width": 8.921875, "height": 19 },
+        "rule =": { "width": 41.625, "height": 19 }
+      }
     },
     {
       "id": "tree-files",

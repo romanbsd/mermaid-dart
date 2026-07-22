@@ -837,11 +837,12 @@ _RailBox _railNode(RailroadNodeAst node, _LayoutContext context) => switch (node
   RailroadRepetitionAst(:final element, :final min, :final max) => _railRepetition(element, min, max, context),
 };
 
-SceneTextStyle _railTextStyle(_LayoutContext context) {
+SceneTextStyle _railTextStyle(_LayoutContext context, {FontWeight weight = FontWeight.normal}) {
   final config = context.options.optionsFor(const RailroadRenderOptions());
   return SceneTextStyle(
     fontFamily: config.fontFamily,
     fontSize: config.fontSize,
+    weight: weight,
     color: context.options.theme.primaryText,
   );
 }
@@ -879,12 +880,20 @@ _RailBox _railLeaf(String label, _LayoutContext context, bool terminal, {bool sp
           bounds: Bounds(left: 0, top: 0, width: width, height: height),
           radiusX: terminal ? 10 : 0,
           radiusY: terminal ? 10 : 0,
-          fill: SolidFill(terminal ? context.options.theme.primary : context.options.theme.secondary),
+          fill: SolidFill(terminal ? context.options.theme.secondary : context.options.theme.primary),
           stroke: _railStroke(context, dashed: special),
           role: SemanticRole.node,
           label: label,
         ),
-        _text(context, label, width / 2, height / 2, anchor: TextAnchor.middle, style: style),
+        _text(
+          context,
+          label,
+          width / 2,
+          height / 2,
+          anchor: TextAnchor.middle,
+          baseline: TextBaseline.middle,
+          style: style,
+        ),
       ],
     ),
   ]);
@@ -1051,6 +1060,7 @@ _LayoutResult _layoutRailroad(RailroadAst ast, _LayoutContext context) {
   final config = context.options.optionsFor(const RailroadRenderOptions());
   if (ast.rules.isEmpty) return const _LayoutResult(200, 100, []);
   final style = _railTextStyle(context);
+  final ruleStyle = _railTextStyle(context, weight: FontWeight.bold);
   final elements = <SceneElement>[];
   var y = config.padding;
   var width = 0.0;
@@ -1073,8 +1083,9 @@ _LayoutResult _layoutRailroad(RailroadAst ast, _LayoutContext context) {
         ruleName,
         0,
         baselineY,
+        baseline: TextBaseline.alphabetic,
         role: SemanticRole.title,
-        style: style,
+        style: ruleStyle,
         cssClasses: const ['railroad-rule-name'],
       ),
       if (config.showMarkers) ...[

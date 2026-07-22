@@ -13,6 +13,9 @@ void main() {
     expect(manifest.mermaidVersion, '11.16.0');
     expect(manifest.fixtures.map((fixture) => fixture.id), hasLength(12));
     expect(manifest.fixtures.map((fixture) => fixture.id).toSet(), hasLength(12));
+    final railroad = manifest.fixtures.singleWhere((fixture) => fixture.id == 'railroad-sequence');
+    expect(railroad.textMeasurements['a'], const Size(8.40625, 19));
+    expect(railroad.textMeasurements['rule ='], const Size(41.625, 19));
     expect(
       manifest.fixtures.map((fixture) => fixture.type.name).toSet(),
       containsAll({
@@ -147,9 +150,13 @@ void main() {
 
   test('resolves simple stylesheet font sizes for text geometry', () {
     final stylesheet = SvgSnapshot.fromSvg(
-      '<svg><style>.label { font-size: 17px; }</style><text class="label">A</text></svg>',
+      '<svg><style>.label { font-size: 17px; text-anchor: middle; '
+      'dominant-baseline: middle; }</style><text class="label">A</text></svg>',
     );
-    final attribute = SvgSnapshot.fromSvg('<svg><text class="label" font-size="17">A</text></svg>');
+    final attribute = SvgSnapshot.fromSvg(
+      '<svg><text class="label" font-size="17" text-anchor="middle" '
+      'dominant-baseline="middle">A</text></svg>',
+    );
 
     expect(SvgComparison.compare(stylesheet, attribute).sameGeometry, isTrue);
   });
@@ -171,6 +178,22 @@ void main() {
         ],
       }),
       throwsFormatException,
+    );
+  });
+
+  test('fixture text measurer uses exact entries and deterministic fallback', () {
+    const fixture = ParityFixture(
+      id: 'measured',
+      type: DiagramType.info,
+      source: 'info',
+      textMeasurements: {'exact': Size(12, 34)},
+    );
+    const style = SceneTextStyle(fontSize: 10);
+
+    expect(fixture.textMeasurer.measure('exact', style), const Size(12, 34));
+    expect(
+      fixture.textMeasurer.measure('fallback', style),
+      const DeterministicTextMeasurer().measure('fallback', style),
     );
   });
 }

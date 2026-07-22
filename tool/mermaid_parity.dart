@@ -97,7 +97,12 @@ Future<void> main(List<String> arguments) async {
     }
 
     try {
-      final dartSvg = renderDiagramSvg(fixture.type, fixture.source, options: const RenderOptions(padding: 0));
+      final dartSvg = renderDiagramSvg(
+        fixture.type,
+        fixture.source,
+        options: const RenderOptions(padding: 0),
+        textMeasurer: fixture.textMeasurer,
+      );
       File('${output.path}/${fixture.id}.dart.svg').writeAsStringSync(dartSvg);
       final dartSnapshot = SvgSnapshot.fromSvg(dartSvg);
       final mermaidSnapshot = SvgSnapshot.fromSvg(reference.readAsStringSync());

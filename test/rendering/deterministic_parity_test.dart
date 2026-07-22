@@ -94,18 +94,22 @@ void main() {
       final elements = _flatten(scene.elements).toList();
 
       expect(elements.whereType<SceneCircle>(), hasLength(2));
-      expect(
-        elements
-            .whereType<SceneText>()
-            .singleWhere((element) => element.cssClasses.contains('railroad-rule-name'))
-            .text,
-        'value =',
+      final ruleName = elements.whereType<SceneText>().singleWhere(
+        (element) => element.cssClasses.contains('railroad-rule-name'),
       );
+      final nodeLabels = elements.whereType<SceneText>().where((element) => element != ruleName);
+      expect(ruleName.text, 'value =');
+      expect(ruleName.style.fontSize, 16);
+      expect(ruleName.style.fontFamily, '"trebuchet ms", verdana, arial, sans-serif');
+      expect(ruleName.style.weight, FontWeight.bold);
+      expect(ruleName.baseline, TextBaseline.alphabetic);
+      expect(nodeLabels.map((label) => label.baseline), everyElement(TextBaseline.middle));
       expect(elements.whereType<ScenePath>().expand((path) => path.commands).whereType<ArcTo>(), isNotEmpty);
-      expect(
-        elements.whereType<SceneGroup>().where((element) => element.cssClasses.contains('railroad-terminal')),
-        hasLength(1),
+      final terminal = elements.whereType<SceneGroup>().singleWhere(
+        (element) => element.cssClasses.contains('railroad-terminal'),
       );
+      final terminalRect = terminal.children.whereType<SceneRect>().single;
+      expect(terminalRect.fill, SolidFill(const Color(255, 255, 222)));
       expectSvgGolden('railroad_choice', renderSvg(scene));
     });
 

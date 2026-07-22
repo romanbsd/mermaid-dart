@@ -5,5 +5,5 @@ import 'package:test/test.dart';
 
 void expectSvgGolden(String name, String svg) {
   final expected = File('test/rendering/goldens/$name.svg').readAsStringSync().trim();
-  expect(normalizeSvg(svg), expected);
+  expect(normalizeSvg(svg), normalizeSvg(expected));
 }
