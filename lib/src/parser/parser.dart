@@ -7,6 +7,7 @@ import 'info_parser.dart';
 import 'packet_parser.dart';
 import 'pie_parser.dart';
 import 'radar_parser.dart';
+import 'tree_view_parser.dart';
 
 typedef _DiagramParser = DiagramAst Function(String source);
 
@@ -18,6 +19,7 @@ const Map<String, _DiagramParser> _parsers = {
   'packet': parsePacket,
   'pie': parsePie,
   'radar': parseRadar,
+  'treeView': parseTreeView,
 };
 
 /// Parses [source] using the Mermaid grammar identified by [diagramType].

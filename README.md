@@ -6,8 +6,8 @@ diagram-by-diagram slices while preserving Mermaid's grammar and algorithms.
 ## Parser status
 
 The public `parse(diagramType, source)` API and the `info`, `pie`, `packet`,
-`radar`, `cynefin`, `gitGraph`, and `architecture` diagram grammars are
-implemented. The parser supports Mermaid titles, accessibility metadata,
+`radar`, `cynefin`, `gitGraph`, `architecture`, and `treeView` diagram grammars
+are implemented. The parser supports Mermaid titles, accessibility metadata,
 comments, directives, frontmatter, and source-located syntax errors.
 
 Pie diagrams support `showData`, quoted labels, integer and decimal values,
@@ -27,6 +27,9 @@ checkout and switch statements, merges, cherry-picks, tags, and ordering.
 
 Architecture diagrams support groups, services, junctions, labeled and
 bidirectional edges, group-boundary modifiers, and enum-backed alignment hints.
+
+Tree views support indentation, quoted and bare names, CSS classes, Iconify
+annotations, descriptions, and directory names.
 
 Other diagram types currently throw `UnsupportedDiagramTypeException` and will
 be added incrementally.

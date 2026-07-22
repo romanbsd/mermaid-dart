@@ -60,6 +60,21 @@ CommonMetadata readCommonMetadata(String source) => CommonMetadata(
   accessibilityDescription: _accessibilityDescriptionValue(source),
 );
 
+/// Replaces common metadata with spaces while preserving source offsets.
+String hideCommonMetadata(String source) {
+  var result = source;
+  for (final expression in [
+    RegExp(r'^[\t ]*title(?:[\t ][^\n\r]*)?', multiLine: true),
+    RegExp(r'^[\t ]*accTitle[\t ]*:[^\n\r]*', multiLine: true),
+    RegExp(r'^[\t ]*accDescr[\t ]*(?::[^\n\r]*|\{[^}]*\})', multiLine: true),
+  ]) {
+    result = result.replaceAllMapped(expression, (match) {
+      return match.group(0)!.replaceAll(RegExp(r'[^\r\n]'), ' ');
+    });
+  }
+  return result;
+}
+
 Never throwParseFailure(String source, Failure failure) {
   throwParseError(source, failure.message, failure.position);
 }

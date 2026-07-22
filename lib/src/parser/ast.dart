@@ -491,3 +491,35 @@ final class ArchitectureAlignmentAst {
   @override
   int get hashCode => Object.hash(direction, Object.hashAll(members));
 }
+
+final class TreeViewAst extends DiagramAst {
+  const TreeViewAst({this.nodes = const [], this.title, this.accessibilityTitle, this.accessibilityDescription});
+
+  final List<TreeViewNodeAst> nodes;
+  final String? title;
+  final String? accessibilityTitle;
+  final String? accessibilityDescription;
+}
+
+final class TreeViewNodeAst {
+  const TreeViewNodeAst({required this.name, this.indent, this.cssClass, this.icon, this.description});
+
+  final String name;
+  final int? indent;
+  final String? cssClass;
+  final String? icon;
+  final String? description;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is TreeViewNodeAst &&
+          name == other.name &&
+          indent == other.indent &&
+          cssClass == other.cssClass &&
+          icon == other.icon &&
+          description == other.description;
+
+  @override
+  int get hashCode => Object.hash(name, indent, cssClass, icon, description);
+}
