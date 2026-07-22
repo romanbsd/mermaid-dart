@@ -41,7 +41,8 @@ DiagramScene layoutDiagram(
     WardleyAst ast => _layoutWardley(ast, context),
   };
 
-  final titleHeight = diagram.title == null ? 0.0 : 38.0;
+  final rendererPositionsTitle = diagram is PacketAst || diagram is PieAst || diagram is RadarAst;
+  final titleHeight = diagram.title == null || rendererPositionsTitle ? 0.0 : 38.0;
   final List<SceneElement> translated = titleHeight == 0
       ? content.elements
       : [
@@ -105,6 +106,7 @@ SceneText _text(
   TextBaseline baseline = TextBaseline.middle,
   SemanticRole role = SemanticRole.label,
   SceneTextStyle? style,
+  List<String> cssClasses = const [],
 }) {
   final resolved = style ?? context.textStyle;
   final size = context.measurer.measure(value, resolved);
@@ -122,6 +124,7 @@ SceneText _text(
     anchor: anchor,
     baseline: baseline,
     role: role,
+    cssClasses: cssClasses,
   );
 }
 
@@ -152,130 +155,308 @@ _LayoutResult _layoutInfo(InfoAst ast, _LayoutContext context) {
 }
 
 _LayoutResult _layoutPacket(PacketAst ast, _LayoutContext context) {
-  const rowBits = 32;
-  const rowHeight = 64.0;
-  const width = 640.0;
+  final config = context.options.optionsFor(const PacketRenderOptions());
+  final width = config.bitWidth * config.bitsPerRow + 2;
   final elements = <SceneElement>[];
   var cursor = 0;
   for (final block in ast.blocks) {
-    final bits = switch (block) {
-      PacketSingleBitBlockAst() => 1,
-      PacketRangeBlockAst(:final start, :final end) => (end - start).abs() + 1,
-      PacketRelativeWidthBlockAst(:final bits) => bits,
+    final (start, end) = switch (block) {
+      PacketSingleBitBlockAst(:final bit) => (bit, bit),
+      PacketRangeBlockAst(:final start, :final end) => (start, end),
+      PacketRelativeWidthBlockAst(:final bits) => (cursor, cursor + bits - 1),
     };
-    final row = cursor ~/ rowBits;
-    final column = cursor % rowBits;
-    final actualBits = math.min(bits, rowBits - column);
-    final x = column / rowBits * width;
-    final y = row * rowHeight;
-    final blockWidth = actualBits / rowBits * width;
+    var segmentStart = start;
+    while (segmentStart <= end) {
+      final row = segmentStart ~/ config.bitsPerRow;
+      final rowEnd = (row + 1) * config.bitsPerRow - 1;
+      final segmentEnd = math.min(end, rowEnd);
+      final x = (segmentStart % config.bitsPerRow) * config.bitWidth + 1;
+      final y = row * (config.rowHeight + config.paddingY) + config.paddingY;
+      final blockWidth = (segmentEnd - segmentStart + 1) * config.bitWidth - config.paddingX;
+      elements.add(
+        SceneRect(
+          id: context.id('packet-block'),
+          bounds: Bounds(left: x, top: y, width: blockWidth, height: config.rowHeight),
+          fill: SolidFill(context.options.theme.primary),
+          stroke: _stroke(context, width: 1),
+          role: SemanticRole.node,
+          cssClasses: const ['packetBlock'],
+          label: block.label,
+        ),
+      );
+      elements.add(
+        _text(
+          context,
+          block.label,
+          x + blockWidth / 2,
+          y + config.rowHeight / 2,
+          anchor: TextAnchor.middle,
+          cssClasses: const ['packetLabel'],
+        ),
+      );
+      if (config.showBits) {
+        final single = segmentStart == segmentEnd;
+        elements.add(
+          _text(
+            context,
+            '$segmentStart',
+            x + (single ? blockWidth / 2 : 0),
+            y - 2,
+            anchor: single ? TextAnchor.middle : TextAnchor.start,
+            baseline: TextBaseline.alphabetic,
+            cssClasses: const ['packetByte', 'start'],
+          ),
+        );
+        if (!single) {
+          elements.add(
+            _text(
+              context,
+              '$segmentEnd',
+              x + blockWidth,
+              y - 2,
+              anchor: TextAnchor.end,
+              baseline: TextBaseline.alphabetic,
+              cssClasses: const ['packetByte', 'end'],
+            ),
+          );
+        }
+      }
+      segmentStart = segmentEnd + 1;
+    }
+    cursor = end + 1;
+  }
+  final rows = math.max(1, (cursor + config.bitsPerRow - 1) ~/ config.bitsPerRow);
+  final totalRowHeight = config.rowHeight + config.paddingY;
+  final height = totalRowHeight * (rows + 1) - (ast.title == null ? config.rowHeight : 0);
+  if (ast.title != null) {
     elements.add(
-      SceneRect(
-        id: context.id('packet-block'),
-        bounds: Bounds(left: x, top: y, width: blockWidth, height: rowHeight),
-        fill: SolidFill(_palette[row % _palette.length]),
-        stroke: _stroke(context, width: 1),
-        role: SemanticRole.node,
-        cssClasses: const ['packetBlock'],
-        label: block.label,
+      _text(
+        context,
+        ast.title!,
+        width / 2,
+        height - totalRowHeight / 2,
+        anchor: TextAnchor.middle,
+        cssClasses: const ['packetTitle'],
+        role: SemanticRole.title,
       ),
     );
-    elements.add(_text(context, block.label, x + blockWidth / 2, y + rowHeight / 2, anchor: TextAnchor.middle));
-    cursor += bits;
   }
-  final rows = math.max(1, (cursor + rowBits - 1) ~/ rowBits);
-  return _LayoutResult(width, rows * rowHeight, elements);
+  return _LayoutResult(width, height, elements);
 }
 
 _LayoutResult _layoutPie(PieAst ast, _LayoutContext context) {
   final config = context.options.optionsFor(const PieRenderOptions());
-  final radius = config.radius;
-  final center = Point(radius, radius);
+  final radius = config.radius ?? config.size / 2 - config.margin;
   final total = ast.sections.fold<double>(0, (sum, section) => sum + math.max(0, section.value.toDouble()));
+  final rendered = <({int index, PieSectionAst section})>[
+    for (var i = 0; i < ast.sections.length; i++)
+      if (total > 0 && math.max(0, ast.sections[i].value.toDouble()) / total * 100 >= 1)
+        (index: i, section: ast.sections[i]),
+  ];
+  final arcTotal = rendered.fold<double>(0, (sum, entry) => sum + entry.section.value.toDouble());
+  const legendRectSize = 18.0;
+  const legendSpacing = 4.0;
+  final legendLineHeight = legendRectSize + legendSpacing;
+  final legendLabels = [
+    for (final section in ast.sections) '${section.label}${ast.showData ? ' [${section.value}]' : ''}',
+  ];
+  final longestLegend = legendLabels
+      .map((label) => context.measurer.measure(label, context.textStyle).width)
+      .fold(0.0, math.max);
+  final legendWidth = legendRectSize + legendSpacing + longestLegend;
+  final totalLegendHeight = ast.sections.length * legendLineHeight;
+  var width = config.size + config.margin;
+  var height = config.size;
+  var center = Point(config.size / 2, config.size / 2);
+  var legendLeft = center.x + 12 * legendRectSize;
+  var legendTop = center.y - totalLegendHeight / 2;
+  switch (config.legendPosition) {
+    case PieLegendPosition.top:
+      height += totalLegendHeight;
+      legendLeft = center.x - longestLegend / 2 - legendRectSize - legendSpacing;
+      legendTop = config.margin;
+      center = Point(center.x, center.y + totalLegendHeight + legendLineHeight);
+    case PieLegendPosition.bottom:
+      height += totalLegendHeight;
+      legendLeft = center.x - longestLegend / 2 - legendRectSize - legendSpacing;
+      legendTop = center.y + radius + legendLineHeight;
+    case PieLegendPosition.left:
+      width += legendWidth;
+      legendLeft = legendRectSize;
+      legendTop = center.y - totalLegendHeight / 2;
+      center = Point(center.x + legendWidth + legendLineHeight, center.y);
+    case PieLegendPosition.right:
+      width += legendWidth;
+    case PieLegendPosition.center:
+      legendLeft = center.x - longestLegend / 2 - legendRectSize - legendSpacing;
+      legendTop = center.y - totalLegendHeight / 2;
+  }
   final elements = <SceneElement>[];
+  elements.add(
+    SceneCircle(
+      id: context.id('pie-outer-circle'),
+      center: center,
+      radius: radius + 1,
+      fill: const NoFill(),
+      stroke: _stroke(context, width: 2),
+      cssClasses: const ['pieOuterCircle'],
+    ),
+  );
   var angle = -math.pi / 2;
-  for (var i = 0; i < ast.sections.length; i++) {
-    final section = ast.sections[i];
-    final sweep = total == 0 ? 0.0 : math.max(0, section.value.toDouble()) / total * math.pi * 2;
+  final innerRadius = config.donutHole > 0 && config.donutHole <= .9 ? radius * config.donutHole : 0.0;
+  for (final entry in rendered) {
+    final section = entry.section;
+    final sweep = section.value.toDouble() / arcTotal * math.pi * 2;
     final end = angle + sweep;
-    final startPoint = Point(center.x + radius * math.cos(angle), center.y + radius * math.sin(angle));
-    final endPoint = Point(center.x + radius * math.cos(end), center.y + radius * math.sin(end));
-    final arcCommands = <PathCommand>[
-      MoveTo(center),
-      LineTo(startPoint),
-      if (sweep >= math.pi * 2 - 1e-9) ...[
-        ArcTo(
-          radiusX: radius,
-          radiusY: radius,
-          end: Point(center.x + radius * math.cos(angle + math.pi), center.y + radius * math.sin(angle + math.pi)),
-        ),
-        ArcTo(radiusX: radius, radiusY: radius, end: endPoint),
-      ] else
-        ArcTo(radiusX: radius, radiusY: radius, largeArc: sweep > math.pi, end: endPoint),
-      const ClosePath(),
-    ];
+    final classes = <String>['pieCircle'];
+    if (config.highlightSlice == 'hover') {
+      classes.add('highlightedOnHover');
+    } else if (config.highlightSlice == section.label) {
+      classes.add('highlighted');
+    }
     elements.add(
       ScenePath(
         id: context.id('pie-section'),
-        commands: arcCommands,
-        fill: SolidFill(_palette[i % _palette.length]),
+        commands: _pieArcCommands(center, radius, innerRadius, angle, end),
+        fill: SolidFill(_palette[entry.index % _palette.length]),
         stroke: const SceneStroke(color: Color(255, 255, 255), width: 2),
         role: SemanticRole.node,
-        cssClasses: const ['pieCircle'],
+        cssClasses: classes,
         label: section.label,
+      ),
+    );
+    final middle = angle + sweep / 2;
+    final labelRadius = radius * config.textPosition.clamp(0, 1);
+    elements.add(
+      _text(
+        context,
+        '${(section.value.toDouble() / total * 100).round()}%',
+        center.x + math.cos(middle) * labelRadius,
+        center.y + math.sin(middle) * labelRadius,
+        anchor: TextAnchor.middle,
+        cssClasses: const ['slice'],
       ),
     );
     angle = end;
   }
   if (config.showLegend) {
     for (var i = 0; i < ast.sections.length; i++) {
-      final section = ast.sections[i];
-      final value = ast.showData ? ' [${section.value}]' : '';
       elements.add(
         SceneRect(
           id: context.id('legend-swatch'),
-          bounds: Bounds(left: radius * 2 + 24, top: i * 28 + 4, width: 16, height: 16),
+          bounds: Bounds(
+            left: legendLeft,
+            top: legendTop + i * legendLineHeight,
+            width: legendRectSize,
+            height: legendRectSize,
+          ),
           fill: SolidFill(_palette[i % _palette.length]),
+          stroke: SceneStroke(color: _palette[i % _palette.length]),
           role: SemanticRole.legend,
+          cssClasses: const ['legend'],
         ),
       );
-      elements.add(_text(context, '${section.label}$value', radius * 2 + 48, i * 28 + 12, role: SemanticRole.legend));
+      elements.add(
+        _text(
+          context,
+          legendLabels[i],
+          legendLeft + legendRectSize + legendSpacing,
+          legendTop + i * legendLineHeight + legendRectSize - legendSpacing,
+          role: SemanticRole.legend,
+          baseline: TextBaseline.alphabetic,
+          cssClasses: const ['legendText'],
+        ),
+      );
     }
   }
-  final legendWidth = ast.sections
-      .map((s) => context.measurer.measure(s.label, context.textStyle).width)
-      .fold(0.0, math.max);
-  return _LayoutResult(
-    radius * 2 + (config.showLegend ? legendWidth + 72 : 0),
-    math.max(radius * 2, ast.sections.length * 28.0),
-    elements,
-  );
+  if (ast.title != null) {
+    elements.add(
+      _text(
+        context,
+        ast.title!,
+        config.size / 2,
+        25,
+        anchor: TextAnchor.middle,
+        role: SemanticRole.title,
+        cssClasses: const ['pieTitleText'],
+      ),
+    );
+  }
+  return _LayoutResult(width, height, elements);
+}
+
+List<PathCommand> _pieArcCommands(Point center, double outer, double inner, double start, double end) {
+  Point polar(double radius, double angle) =>
+      Point(center.x + radius * math.cos(angle), center.y + radius * math.sin(angle));
+  final sweep = end - start;
+  final full = sweep >= math.pi * 2 - 1e-9;
+  final commands = <PathCommand>[MoveTo(polar(outer, start))];
+  if (full) {
+    commands
+      ..add(ArcTo(radiusX: outer, radiusY: outer, end: polar(outer, start + math.pi)))
+      ..add(ArcTo(radiusX: outer, radiusY: outer, end: polar(outer, end)));
+  } else {
+    commands.add(ArcTo(radiusX: outer, radiusY: outer, largeArc: sweep > math.pi, end: polar(outer, end)));
+  }
+  if (inner == 0) {
+    commands.add(LineTo(center));
+  } else {
+    commands.add(LineTo(polar(inner, end)));
+    if (full) {
+      commands
+        ..add(ArcTo(radiusX: inner, radiusY: inner, clockwise: false, end: polar(inner, start + math.pi)))
+        ..add(ArcTo(radiusX: inner, radiusY: inner, clockwise: false, end: polar(inner, start)));
+    } else {
+      commands.add(
+        ArcTo(radiusX: inner, radiusY: inner, largeArc: sweep > math.pi, clockwise: false, end: polar(inner, start)),
+      );
+    }
+  }
+  commands.add(const ClosePath());
+  return commands;
 }
 
 _LayoutResult _layoutRadar(RadarAst ast, _LayoutContext context) {
   final config = context.options.optionsFor(const RadarRenderOptions());
-  final radius = config.radius;
-  final center = Point(radius + 70, radius + 50);
-  final count = math.max(3, ast.axes.length);
+  final radius = config.radius ?? math.min(config.width, config.height) / 2;
+  final center = Point(config.marginLeft + config.width / 2, config.marginTop + config.height / 2);
+  final count = ast.axes.length;
+  final ticks = (ast.options.whereType<RadarTicksOptionAst>().lastOrNull?.value.toInt() ?? 5).clamp(1, 1000);
+  final graticule = ast.options.whereType<RadarGraticuleOptionAst>().lastOrNull?.value ?? RadarGraticule.circle;
+  final showLegend = ast.options.whereType<RadarShowLegendOptionAst>().lastOrNull?.value ?? true;
   final elements = <SceneElement>[];
   Point polar(int index, double scale) {
     final angle = -math.pi / 2 + math.pi * 2 * index / count;
     return Point(center.x + math.cos(angle) * radius * scale, center.y + math.sin(angle) * radius * scale);
   }
 
-  for (var ring = 1; ring <= 5; ring++) {
-    elements.add(
-      ScenePolygon(
-        id: context.id('radar-graticule'),
-        points: [for (var i = 0; i < count; i++) polar(i, ring / 5)],
-        fill: const NoFill(),
-        stroke: _stroke(context, width: .7),
-        cssClasses: const ['radarGraticule'],
-      ),
-    );
+  if (count > 0) {
+    for (var ring = 1; ring <= ticks; ring++) {
+      final scale = ring / ticks;
+      elements.add(switch (graticule) {
+        RadarGraticule.circle => SceneCircle(
+          id: context.id('radar-graticule'),
+          center: center,
+          radius: radius * scale,
+          fill: const NoFill(),
+          stroke: _stroke(context, width: .7),
+          cssClasses: const ['radarGraticule'],
+        ),
+        RadarGraticule.polygon => ScenePolygon(
+          id: context.id('radar-graticule'),
+          points: [for (var i = 0; i < count; i++) polar(i, scale)],
+          fill: const NoFill(),
+          stroke: _stroke(context, width: .7),
+          cssClasses: const ['radarGraticule'],
+        ),
+      });
+    }
   }
   for (var i = 0; i < ast.axes.length; i++) {
-    final end = polar(i, 1);
+    final angle = -math.pi / 2 + math.pi * 2 * i / count;
+    final cosine = math.cos(angle);
+    final sine = math.sin(angle);
+    final end = polar(i, config.axisScaleFactor);
     elements.add(
       SceneLine(
         id: context.id('radar-axis'),
@@ -283,11 +464,23 @@ _LayoutResult _layoutRadar(RadarAst ast, _LayoutContext context) {
         end: end,
         stroke: _stroke(context, width: .7),
         role: SemanticRole.edge,
+        cssClasses: const ['radarAxisLine'],
       ),
     );
-    final labelPoint = polar(i, 1.18);
+    final labelPoint = Point(
+      center.x + radius * config.axisLabelFactor * cosine + 4 * cosine,
+      center.y + radius * config.axisLabelFactor * sine + 4 * sine,
+    );
     elements.add(
-      _text(context, ast.axes[i].label ?? ast.axes[i].name, labelPoint.x, labelPoint.y, anchor: TextAnchor.middle),
+      _text(
+        context,
+        ast.axes[i].label ?? ast.axes[i].name,
+        labelPoint.x,
+        labelPoint.y,
+        anchor: cosine > .01 ? TextAnchor.start : (cosine < -.01 ? TextAnchor.end : TextAnchor.middle),
+        baseline: sine > .01 ? TextBaseline.hanging : (sine < -.01 ? TextBaseline.alphabetic : TextBaseline.middle),
+        cssClasses: const ['radarAxisLabel'],
+      ),
     );
   }
   final values = [
@@ -300,6 +493,7 @@ _LayoutResult _layoutRadar(RadarAst ast, _LayoutContext context) {
       (values.isEmpty ? 1 : values.reduce(math.max));
   for (var curveIndex = 0; curveIndex < ast.curves.length; curveIndex++) {
     final curve = ast.curves[curveIndex];
+    if (curve.entries.length != count || count == 0) continue;
     final points = <Point>[];
     for (var i = 0; i < ast.axes.length; i++) {
       final axis = ast.axes[i];
@@ -311,25 +505,95 @@ _LayoutResult _layoutRadar(RadarAst ast, _LayoutContext context) {
           : ((entry.value.toDouble() - minValue) / (maxValue - minValue)).clamp(0, 1).toDouble();
       points.add(polar(i, normalized));
     }
-    elements.add(
-      ScenePolygon(
+    final color = _palette[curveIndex % _palette.length];
+    final fill = SolidFill(Color(color.red, color.green, color.blue, 80));
+    final stroke = SceneStroke(color: color, width: 2);
+    elements.add(switch (graticule) {
+      RadarGraticule.circle => ScenePath(
+        id: context.id('radar-curve'),
+        commands: _closedRoundCurve(points, config.curveTension),
+        fill: fill,
+        stroke: stroke,
+        role: SemanticRole.node,
+        cssClasses: ['radarCurve-$curveIndex'],
+        label: curve.label ?? curve.name,
+      ),
+      RadarGraticule.polygon => ScenePolygon(
         id: context.id('radar-curve'),
         points: points,
-        fill: SolidFill(
-          Color(
-            _palette[curveIndex % _palette.length].red,
-            _palette[curveIndex % _palette.length].green,
-            _palette[curveIndex % _palette.length].blue,
-            80,
-          ),
-        ),
-        stroke: SceneStroke(color: _palette[curveIndex % _palette.length], width: 2),
+        fill: fill,
+        stroke: stroke,
         role: SemanticRole.node,
+        cssClasses: ['radarCurve-$curveIndex'],
         label: curve.label ?? curve.name,
+      ),
+    });
+  }
+  if (showLegend) {
+    final legendX = center.x + ((config.width / 2 + config.marginRight) * 3) / 4;
+    final legendY = center.y - ((config.height / 2 + config.marginTop) * 3) / 4;
+    for (var i = 0; i < ast.curves.length; i++) {
+      final y = legendY + i * 20;
+      elements.add(
+        SceneRect(
+          id: context.id('radar-legend-box'),
+          bounds: Bounds(left: legendX, top: y, width: 12, height: 12),
+          fill: SolidFill(_palette[i % _palette.length]),
+          role: SemanticRole.legend,
+          cssClasses: ['radarLegendBox-$i'],
+        ),
+      );
+      elements.add(
+        _text(
+          context,
+          ast.curves[i].label ?? ast.curves[i].name,
+          legendX + 16,
+          y,
+          baseline: TextBaseline.alphabetic,
+          role: SemanticRole.legend,
+          cssClasses: const ['radarLegendText'],
+        ),
+      );
+    }
+  }
+  if (ast.title != null) {
+    elements.add(
+      _text(
+        context,
+        ast.title!,
+        center.x,
+        center.y - config.height / 2 - config.marginTop,
+        anchor: TextAnchor.middle,
+        role: SemanticRole.title,
+        cssClasses: const ['radarTitle'],
       ),
     );
   }
-  return _LayoutResult(center.x + radius + 70, center.y + radius + 50, elements);
+  return _LayoutResult(
+    config.width + config.marginLeft + config.marginRight,
+    config.height + config.marginTop + config.marginBottom,
+    elements,
+  );
+}
+
+List<PathCommand> _closedRoundCurve(List<Point> points, double tension) {
+  if (points.isEmpty) return const [];
+  final commands = <PathCommand>[MoveTo(points.first)];
+  for (var i = 0; i < points.length; i++) {
+    final p0 = points[(i - 1 + points.length) % points.length];
+    final p1 = points[i];
+    final p2 = points[(i + 1) % points.length];
+    final p3 = points[(i + 2) % points.length];
+    commands.add(
+      CubicTo(
+        Point(p1.x + (p2.x - p0.x) * tension, p1.y + (p2.y - p0.y) * tension),
+        Point(p2.x - (p3.x - p1.x) * tension, p2.y - (p3.y - p1.y) * tension),
+        p2,
+      ),
+    );
+  }
+  commands.add(const ClosePath());
+  return commands;
 }
 
 _LayoutResult _layoutTree(TreeViewAst ast, _LayoutContext context) {

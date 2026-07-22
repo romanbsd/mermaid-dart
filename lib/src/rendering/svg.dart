@@ -249,6 +249,12 @@ String _bounds(Bounds bounds) =>
 
 String _number(num value) {
   if (!value.isFinite) return '0';
-  final rounded = value.toStringAsFixed(4);
-  return rounded.replaceFirst(RegExp(r'\.0+$'), '').replaceFirst(RegExp(r'(\.\d*?)0+$'), r'$1').replaceFirst('-0', '0');
+  var rounded = value.toStringAsFixed(4);
+  if (rounded.contains('.')) {
+    while (rounded.endsWith('0')) {
+      rounded = rounded.substring(0, rounded.length - 1);
+    }
+    if (rounded.endsWith('.')) rounded = rounded.substring(0, rounded.length - 1);
+  }
+  return rounded == '-0' ? '0' : rounded;
 }

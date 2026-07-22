@@ -45,6 +45,17 @@ void main() {
       expect(root.getAttribute('viewBox'), '0 0 100 50');
       expect(root.findElements('title').single.innerText, 'A & B');
       expect(root.findAllElements('text').single.innerText, 'x < y');
+      expect(root.findAllElements('text').single.getAttribute('x'), '10');
+    });
+
+    test('serializes fractional geometry without replacement artifacts', () {
+      const scene = DiagramScene(
+        viewport: Bounds(left: 0, top: 0, width: 10.5, height: 5.25),
+        bounds: Bounds(left: 0, top: 0, width: 10.5, height: 5.25),
+      );
+      final svg = renderSvg(scene);
+      expect(svg, contains('viewBox="0 0 10.5 5.25"'));
+      expect(svg, isNot(contains(r'$1')));
     });
 
     test('parse-layout-render convenience covers every diagram type', () {

@@ -36,29 +36,106 @@ final class RailroadRenderOptions extends DiagramRenderOptions {
   final double horizontalGap;
 }
 
+final class PacketRenderOptions extends DiagramRenderOptions {
+  const PacketRenderOptions({
+    this.rowHeight = 32,
+    this.bitWidth = 32,
+    this.bitsPerRow = 32,
+    this.showBits = true,
+    this.paddingX = 5,
+    this.paddingY = 5,
+  });
+
+  final double rowHeight;
+  final double bitWidth;
+  final int bitsPerRow;
+  final bool showBits;
+  final double paddingX;
+  final double paddingY;
+}
+
+enum PieLegendPosition { top, bottom, left, right, center }
+
 final class PieRenderOptions extends DiagramRenderOptions {
-  const PieRenderOptions({this.radius = 150, this.showLegend = true});
-  final double radius;
+  const PieRenderOptions({
+    this.size = 450,
+    this.margin = 40,
+    this.radius,
+    this.textPosition = .75,
+    this.donutHole = 0,
+    this.legendPosition = PieLegendPosition.right,
+    this.highlightSlice,
+    this.showLegend = true,
+  });
+
+  final double size;
+  final double margin;
+  final double? radius;
+  final double textPosition;
+  final double donutHole;
+  final PieLegendPosition legendPosition;
+  final String? highlightSlice;
   final bool showLegend;
 }
 
 final class RadarRenderOptions extends DiagramRenderOptions {
-  const RadarRenderOptions({this.radius = 150});
-  final double radius;
+  const RadarRenderOptions({
+    this.width = 600,
+    this.height = 600,
+    this.marginTop = 50,
+    this.marginRight = 50,
+    this.marginBottom = 50,
+    this.marginLeft = 50,
+    this.radius,
+    this.axisScaleFactor = 1,
+    this.axisLabelFactor = 1.05,
+    this.curveTension = .17,
+  });
+
+  final double width;
+  final double height;
+  final double marginTop;
+  final double marginRight;
+  final double marginBottom;
+  final double marginLeft;
+  final double? radius;
+  final double axisScaleFactor;
+  final double axisLabelFactor;
+  final double curveTension;
 }
 
 final class RenderOptions {
   const RenderOptions({
     this.theme = const MermaidTheme(),
     this.padding = 20,
+    this.packet = const PacketRenderOptions(),
+    this.pie = const PieRenderOptions(),
+    this.radar = const RadarRenderOptions(),
+    this.railroad = const RailroadRenderOptions(),
     this.diagram = const <Type, DiagramRenderOptions>{},
   });
 
   final MermaidTheme theme;
   final double padding;
+  final PacketRenderOptions packet;
+  final PieRenderOptions pie;
+  final RadarRenderOptions radar;
+  final RailroadRenderOptions railroad;
+
+  /// Additional typed options for renderer families added after this API.
   final Map<Type, DiagramRenderOptions> diagram;
 
-  T optionsFor<T extends DiagramRenderOptions>(T fallback) => (diagram[fallback.runtimeType] as T?) ?? fallback;
+  T optionsFor<T extends DiagramRenderOptions>(T fallback) {
+    final override = diagram[fallback.runtimeType];
+    if (override != null) return override as T;
+    return switch (fallback) {
+          PacketRenderOptions() => packet,
+          PieRenderOptions() => pie,
+          RadarRenderOptions() => radar,
+          RailroadRenderOptions() => railroad,
+        }
+        as T;
+  }
 }
 
 final class SvgRenderOptions {
