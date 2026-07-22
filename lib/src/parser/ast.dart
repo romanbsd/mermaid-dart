@@ -3,6 +3,131 @@ sealed class DiagramAst {
   const DiagramAst();
 }
 
+/// Renderer-ready syntax tree shared by all railroad grammar frontends.
+final class RailroadAst extends DiagramAst {
+  const RailroadAst({this.rules = const [], this.title, this.accessibilityTitle, this.accessibilityDescription});
+
+  final List<RailroadRuleAst> rules;
+  final String? title;
+  final String? accessibilityTitle;
+  final String? accessibilityDescription;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is RailroadAst &&
+          _listEquals(rules, other.rules) &&
+          title == other.title &&
+          accessibilityTitle == other.accessibilityTitle &&
+          accessibilityDescription == other.accessibilityDescription;
+
+  @override
+  int get hashCode => Object.hash(Object.hashAll(rules), title, accessibilityTitle, accessibilityDescription);
+}
+
+final class RailroadRuleAst {
+  const RailroadRuleAst({required this.name, required this.definition});
+
+  final String name;
+  final RailroadNodeAst definition;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) || other is RailroadRuleAst && name == other.name && definition == other.definition;
+
+  @override
+  int get hashCode => Object.hash(name, definition);
+}
+
+/// A node understood by the single railroad rendering pipeline.
+sealed class RailroadNodeAst {
+  const RailroadNodeAst();
+}
+
+final class RailroadTerminalAst extends RailroadNodeAst {
+  const RailroadTerminalAst(this.value);
+  final String value;
+
+  @override
+  bool operator ==(Object other) => identical(this, other) || other is RailroadTerminalAst && value == other.value;
+
+  @override
+  int get hashCode => Object.hash(runtimeType, value);
+}
+
+final class RailroadNonTerminalAst extends RailroadNodeAst {
+  const RailroadNonTerminalAst(this.name);
+  final String name;
+
+  @override
+  bool operator ==(Object other) => identical(this, other) || other is RailroadNonTerminalAst && name == other.name;
+
+  @override
+  int get hashCode => Object.hash(runtimeType, name);
+}
+
+final class RailroadSequenceAst extends RailroadNodeAst {
+  const RailroadSequenceAst(this.elements);
+  final List<RailroadNodeAst> elements;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) || other is RailroadSequenceAst && _listEquals(elements, other.elements);
+
+  @override
+  int get hashCode => Object.hash(runtimeType, Object.hashAll(elements));
+}
+
+final class RailroadChoiceAst extends RailroadNodeAst {
+  const RailroadChoiceAst(this.alternatives);
+  final List<RailroadNodeAst> alternatives;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) || other is RailroadChoiceAst && _listEquals(alternatives, other.alternatives);
+
+  @override
+  int get hashCode => Object.hash(runtimeType, Object.hashAll(alternatives));
+}
+
+final class RailroadOptionalAst extends RailroadNodeAst {
+  const RailroadOptionalAst(this.element);
+  final RailroadNodeAst element;
+
+  @override
+  bool operator ==(Object other) => identical(this, other) || other is RailroadOptionalAst && element == other.element;
+
+  @override
+  int get hashCode => Object.hash(runtimeType, element);
+}
+
+final class RailroadRepetitionAst extends RailroadNodeAst {
+  const RailroadRepetitionAst(this.element, {required this.min, required this.max});
+
+  final RailroadNodeAst element;
+  final int min;
+  final num max;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is RailroadRepetitionAst && element == other.element && min == other.min && max == other.max;
+
+  @override
+  int get hashCode => Object.hash(runtimeType, element, min, max);
+}
+
+final class RailroadSpecialAst extends RailroadNodeAst {
+  const RailroadSpecialAst(this.text);
+  final String text;
+
+  @override
+  bool operator ==(Object other) => identical(this, other) || other is RailroadSpecialAst && text == other.text;
+
+  @override
+  int get hashCode => Object.hash(runtimeType, text);
+}
+
 /// Syntax tree for an `info` diagram.
 final class InfoAst extends DiagramAst {
   const InfoAst({this.title, this.accessibilityTitle, this.accessibilityDescription});

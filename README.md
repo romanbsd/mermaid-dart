@@ -6,8 +6,9 @@ diagram-by-diagram slices while preserving Mermaid's grammar and algorithms.
 ## Parser status
 
 The public `parse(diagramType, source)` API and the `info`, `pie`, `packet`,
-`radar`, `cynefin`, `gitGraph`, `architecture`, `treeView`, and `eventmodeling`
-diagram grammars are implemented. The parser supports Mermaid titles,
+`radar`, `cynefin`, `gitGraph`, `architecture`, `treeView`, `eventmodeling`,
+`railroad`, `railroadEbnf`, `railroadAbnf`, and `railroadPeg` diagram grammars
+are implemented. The parser supports Mermaid titles,
 accessibility metadata, comments, directives, frontmatter, and source-located
 syntax errors.
 
@@ -34,6 +35,11 @@ annotations, descriptions, and directory names.
 
 Event models support time and reset frames, enum-backed entity and payload
 types, frame/data references, inline and block payloads, notes, and GWT flows.
+
+The four railroad syntax frontends lower into one renderer-ready
+`RailroadAst`. Its shared sealed node hierarchy covers terminals,
+nonterminals, sequences, choices, optionals, repetitions, and special nodes,
+so rendering logic does not depend on the source grammar.
 
 Other diagram types currently throw `UnsupportedDiagramTypeException` and will
 be added incrementally.

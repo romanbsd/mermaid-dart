@@ -8,6 +8,10 @@ import 'info_parser.dart';
 import 'packet_parser.dart';
 import 'pie_parser.dart';
 import 'radar_parser.dart';
+import 'railroad_abnf_parser.dart';
+import 'railroad_ebnf_parser.dart';
+import 'railroad_parser.dart';
+import 'railroad_peg_parser.dart';
 import 'tree_view_parser.dart';
 
 typedef _DiagramParser = DiagramAst Function(String source);
@@ -21,6 +25,10 @@ const Map<String, _DiagramParser> _parsers = {
   'packet': parsePacket,
   'pie': parsePie,
   'radar': parseRadar,
+  'railroad': parseRailroad,
+  'railroadAbnf': parseRailroadAbnf,
+  'railroadEbnf': parseRailroadEbnf,
+  'railroadPeg': parseRailroadPeg,
   'treeView': parseTreeView,
 };
 
