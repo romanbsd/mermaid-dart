@@ -5,6 +5,7 @@ import 'package:collection/collection.dart';
 import '../parser/ast.dart';
 import '../parser/diagram_type.dart';
 import '../parser/parser.dart';
+import 'geometry/architecture.dart';
 import 'geometry/cynefin.dart';
 import 'geometry/event_modeling.dart';
 import 'geometry/git_graph.dart';
@@ -2877,67 +2878,243 @@ List<PathCommand> _wardleyMarkerCommands(Point origin, {required bool right}) {
 }
 
 _LayoutResult _layoutArchitecture(ArchitectureAst ast, _LayoutContext context) {
-  const cellWidth = 190.0;
-  const cellHeight = 120.0;
-  final items = <({String id, String label, String? icon})>[
-    for (final service in ast.services) (id: service.id, label: service.title ?? service.id, icon: service.icon),
-    for (final junction in ast.junctions) (id: junction.id, label: junction.id, icon: null),
-  ];
-  final columns = math.max(1, math.sqrt(math.max(1, items.length)).ceil());
-  final positions = <String, Point>{};
+  final config = context.options.optionsFor(const ArchitectureRenderOptions());
+  final layout = layoutArchitectureModel(ast, config);
   final elements = <SceneElement>[];
-  for (var i = 0; i < items.length; i++) {
-    final item = items[i];
-    final x = (i % columns) * cellWidth + cellWidth / 2;
-    final y = (i ~/ columns) * cellHeight + cellHeight / 2;
-    positions[item.id] = Point(x, y);
-  }
-  for (final edge in ast.edges) {
-    final left = positions[edge.leftId];
-    final right = positions[edge.rightId];
-    if (left != null && right != null) {
-      elements.add(
-        SceneLine(
-          id: context.id('architecture-edge'),
-          start: left,
-          end: right,
-          stroke: _stroke(context, width: 2),
-          role: SemanticRole.edge,
-          label: edge.title,
-        ),
-      );
-      if (edge.title != null) elements.add(_text(context, edge.title!, (left.x + right.x) / 2, (left.y + right.y) / 2));
-    }
-  }
-  for (final item in items) {
-    final center = positions[item.id]!;
-    final bounds = Bounds(left: center.x - 70, top: center.y - 35, width: 140, height: 70);
+
+  for (final group in layout.groups) {
     elements.add(
       SceneRect(
-        id: context.id('architecture-service'),
-        bounds: bounds,
-        radiusX: 8,
-        radiusY: 8,
-        fill: SolidFill(context.options.theme.primary),
+        id: context.id('architecture-group'),
+        bounds: group.bounds,
+        fill: SolidFill(context.options.theme.tertiary),
         stroke: _stroke(context),
-        role: SemanticRole.node,
-        label: item.label,
+        role: SemanticRole.group,
+        label: group.label,
+        cssClasses: const ['architecture-group', 'node-bkg'],
       ),
     );
-    if (item.icon != null) {
-      final geometry = _iconGeometry(context, item.icon!);
+    var labelX = group.bounds.left + 4;
+    if (group.icon != null) {
+      final iconSize = config.padding * .75;
       elements.add(
-        SceneIcon(
-          id: context.id('architecture-icon'),
-          position: Point(bounds.left + 10, center.y - 9),
-          geometry: geometry,
-          stroke: _stroke(context),
-          label: item.icon,
+        _architectureIcon(context, group.icon!, Point(group.bounds.left + 1, group.bounds.top + 1), iconSize, const [
+          'architecture-group-icon',
+        ]),
+      );
+      labelX += iconSize;
+    }
+    if (group.label != null) {
+      elements.add(
+        _text(
+          context,
+          group.label!,
+          labelX,
+          group.bounds.top + config.fontSize / 2 + 4,
+          baseline: TextBaseline.hanging,
+          style: SceneTextStyle(
+            fontFamily: context.options.theme.fontFamily,
+            fontSize: config.fontSize,
+            color: context.options.theme.primaryText,
+          ),
+          cssClasses: const ['architecture-group-label', 'architecture-service-label'],
         ),
       );
     }
-    elements.add(_text(context, item.label, center.x, center.y, anchor: TextAnchor.middle));
   }
-  final rows = math.max(1, (items.length + columns - 1) ~/ columns);
-  return _LayoutResult(columns * cellWidth, rows * cellHeight, elements);
+
+  for (final edge in layout.edges) {
+    elements.add(
+      ScenePath(
+        id: context.id('architecture-edge'),
+        commands: [MoveTo(edge.points[0]), LineTo(edge.points[1]), LineTo(edge.points[2])],
+        fill: const NoFill(),
+        stroke: _stroke(context, width: 2),
+        role: SemanticRole.edge,
+        label: edge.edge.title,
+        cssClasses: const ['architecture-edge', 'edge'],
+      ),
+    );
+    if (edge.edge.leftArrow) {
+      elements.add(_architectureArrow(context, edge.points.first, edge.edge.leftDirection, config));
+    }
+    if (edge.edge.rightArrow) {
+      elements.add(_architectureArrow(context, edge.points.last, edge.edge.rightDirection, config));
+    }
+    if (edge.edge.title != null) {
+      final midpoint = edge.points[1];
+      final label = _text(
+        context,
+        edge.edge.title!,
+        midpoint.x,
+        midpoint.y,
+        anchor: TextAnchor.middle,
+        style: SceneTextStyle(
+          fontFamily: context.options.theme.fontFamily,
+          fontSize: config.fontSize,
+          color: context.options.theme.primaryText,
+        ),
+        cssClasses: const ['architecture-edge-label', 'architecture-service-label'],
+      );
+      final vertical = switch ((edge.edge.leftDirection, edge.edge.rightDirection)) {
+        (
+          ArchitectureDirection.top || ArchitectureDirection.bottom,
+          ArchitectureDirection.top || ArchitectureDirection.bottom,
+        ) =>
+          true,
+        _ => false,
+      };
+      elements.add(
+        vertical
+            ? SceneGroup(
+                id: context.id('architecture-edge-label-group'),
+                children: [label],
+                transforms: [Rotate(-90, center: midpoint)],
+                role: SemanticRole.label,
+              )
+            : label,
+      );
+    }
+  }
+
+  for (final node in layout.nodes) {
+    if (node.kind == ArchitectureNodeKind.junction) {
+      elements.add(
+        SceneRect(
+          id: context.id('architecture-junction'),
+          bounds: node.bounds,
+          fill: const NoFill(),
+          role: SemanticRole.node,
+          label: node.id,
+          cssClasses: const ['architecture-junction'],
+        ),
+      );
+      continue;
+    }
+    final children = <SceneElement>[];
+    final localBounds = Bounds(
+      left: -config.iconSize / 2,
+      top: -config.iconSize / 2,
+      width: config.iconSize,
+      height: config.iconSize,
+    );
+    if (node.icon != null) {
+      children.add(
+        _architectureIcon(context, node.icon!, Point(localBounds.left, localBounds.top), config.iconSize, const [
+          'architecture-service-icon',
+        ]),
+      );
+    } else {
+      children.add(
+        SceneRect(
+          id: context.id('architecture-node-background'),
+          bounds: localBounds,
+          radiusX: 5,
+          radiusY: 5,
+          fill: SolidFill(context.options.theme.primary),
+          stroke: _stroke(context),
+          role: SemanticRole.background,
+          cssClasses: const ['architecture-node-background', 'node-bkg'],
+        ),
+      );
+    }
+    if (node.iconText != null) {
+      children.add(
+        _text(
+          context,
+          node.iconText!,
+          0,
+          0,
+          anchor: TextAnchor.middle,
+          style: SceneTextStyle(
+            fontFamily: context.options.theme.fontFamily,
+            fontSize: config.fontSize,
+            color: context.options.theme.primaryText,
+          ),
+          cssClasses: const ['architecture-icon-text', 'node-icon-text'],
+        ),
+      );
+    }
+    if (node.label != null) {
+      children.add(
+        _text(
+          context,
+          node.label!,
+          0,
+          config.iconSize / 2 + config.fontSize / 2 + 2,
+          anchor: TextAnchor.middle,
+          style: SceneTextStyle(
+            fontFamily: context.options.theme.fontFamily,
+            fontSize: config.fontSize,
+            color: context.options.theme.primaryText,
+          ),
+          cssClasses: const ['architecture-service-label'],
+        ),
+      );
+    }
+    elements.add(
+      SceneGroup(
+        id: context.id('architecture-service'),
+        children: children,
+        transforms: [Translate(node.center.x, node.center.y)],
+        role: SemanticRole.node,
+        label: node.label,
+        cssClasses: const ['architecture-service', 'node-service'],
+      ),
+    );
+  }
+  return _LayoutResult(layout.bounds.width, layout.bounds.height, [
+    SceneGroup(id: context.id('architecture'), children: elements, cssClasses: const ['architecture']),
+  ]);
+}
+
+SceneGroup _architectureIcon(
+  _LayoutContext context,
+  String reference,
+  Point position,
+  double size,
+  List<String> cssClasses,
+) {
+  final geometry = _iconGeometry(context, reference);
+  final scaleX = geometry.bounds.width == 0 ? 1.0 : size / geometry.bounds.width;
+  final scaleY = geometry.bounds.height == 0 ? 1.0 : size / geometry.bounds.height;
+  return SceneGroup(
+    id: context.id('architecture-icon'),
+    children: [
+      SceneIcon(
+        id: context.id('architecture-icon-geometry'),
+        position: Point(-geometry.bounds.left, -geometry.bounds.top),
+        geometry: geometry,
+        fill: SolidFill(context.options.theme.primaryText),
+        label: reference,
+      ),
+    ],
+    transforms: [Translate(position.x, position.y), Scale(scaleX, scaleY)],
+    role: SemanticRole.icon,
+    label: reference,
+    cssClasses: cssClasses,
+  );
+}
+
+ScenePolygon _architectureArrow(
+  _LayoutContext context,
+  Point tip,
+  ArchitectureDirection direction,
+  ArchitectureRenderOptions config,
+) {
+  final size = config.arrowSize ?? config.iconSize / 6;
+  final half = size / 2;
+  final points = switch (direction) {
+    ArchitectureDirection.left => [tip, Point(tip.x - size, tip.y - half), Point(tip.x - size, tip.y + half)],
+    ArchitectureDirection.right => [tip, Point(tip.x + size, tip.y - half), Point(tip.x + size, tip.y + half)],
+    ArchitectureDirection.top => [tip, Point(tip.x - half, tip.y - size), Point(tip.x + half, tip.y - size)],
+    ArchitectureDirection.bottom => [tip, Point(tip.x - half, tip.y + size), Point(tip.x + half, tip.y + size)],
+  };
+  return ScenePolygon(
+    id: context.id('architecture-arrow'),
+    points: points,
+    fill: SolidFill(context.options.theme.line),
+    role: SemanticRole.edge,
+    cssClasses: const ['architecture-arrow', 'arrow'],
+  );
 }

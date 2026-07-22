@@ -30,6 +30,24 @@ sealed class DiagramRenderOptions {
   const DiagramRenderOptions();
 }
 
+final class ArchitectureRenderOptions extends DiagramRenderOptions {
+  const ArchitectureRenderOptions({
+    this.padding = 40,
+    this.iconSize = 80,
+    this.fontSize = 16,
+    this.nodeSeparation = 75,
+    this.idealEdgeLengthMultiplier = 1.5,
+    this.arrowSize,
+  });
+
+  final double padding;
+  final double iconSize;
+  final double fontSize;
+  final double nodeSeparation;
+  final double idealEdgeLengthMultiplier;
+  final double? arrowSize;
+}
+
 final class CynefinRenderOptions extends DiagramRenderOptions {
   const CynefinRenderOptions({
     this.width = 800,
@@ -302,6 +320,7 @@ final class RenderOptions {
   const RenderOptions({
     this.theme = const MermaidTheme(),
     this.padding = 20,
+    this.architecture = const ArchitectureRenderOptions(),
     this.cynefin = const CynefinRenderOptions(),
     this.eventModeling = const EventModelingRenderOptions(),
     this.gitGraph = const GitGraphRenderOptions(),
@@ -318,6 +337,7 @@ final class RenderOptions {
 
   final MermaidTheme theme;
   final double padding;
+  final ArchitectureRenderOptions architecture;
   final CynefinRenderOptions cynefin;
   final EventModelingRenderOptions eventModeling;
   final GitGraphRenderOptions gitGraph;
@@ -337,6 +357,7 @@ final class RenderOptions {
     final override = diagram[fallback.runtimeType];
     if (override != null) return override as T;
     return switch (fallback) {
+          ArchitectureRenderOptions() => architecture,
           CynefinRenderOptions() => cynefin,
           EventModelingRenderOptions() => eventModeling,
           GitGraphRenderOptions() => gitGraph,

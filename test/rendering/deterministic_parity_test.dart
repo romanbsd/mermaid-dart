@@ -883,6 +883,117 @@ void main() {
       );
       expect(elements.whereType<ScenePath>().where((element) => element.cssClasses.contains('wardley-link')), isEmpty);
     });
+
+    test('architecture honors directional ports, alignments, and arrowheads', () {
+      final scene = layoutDiagram(
+        const ArchitectureAst(
+          services: [
+            ArchitectureServiceAst(id: 'api', icon: 'server', title: 'API'),
+            ArchitectureServiceAst(id: 'worker', iconText: 'W', title: 'Worker'),
+            ArchitectureServiceAst(id: 'db', title: 'Database'),
+          ],
+          edges: [
+            ArchitectureEdgeAst(
+              leftId: 'api',
+              leftDirection: ArchitectureDirection.right,
+              rightId: 'worker',
+              rightDirection: ArchitectureDirection.left,
+              rightArrow: true,
+              title: 'calls',
+            ),
+            ArchitectureEdgeAst(
+              leftId: 'worker',
+              leftDirection: ArchitectureDirection.bottom,
+              rightId: 'db',
+              rightDirection: ArchitectureDirection.top,
+            ),
+          ],
+          alignments: [
+            ArchitectureAlignmentAst(direction: ArchitectureAlignmentDirection.row, members: ['api', 'worker']),
+          ],
+        ),
+        textMeasurer: measurer,
+        options: const RenderOptions(padding: 0),
+      );
+      final elements = _flatten(scene.elements).toList();
+      final nodes = elements.whereType<SceneGroup>().where(
+        (element) => element.cssClasses.contains('architecture-service'),
+      );
+      final api = nodes.singleWhere((node) => node.label == 'API');
+      final worker = nodes.singleWhere((node) => node.label == 'Worker');
+      final apiPosition = (api.transforms.single as Translate);
+      final workerPosition = (worker.transforms.single as Translate);
+      final edge = elements.whereType<ScenePath>().firstWhere(
+        (element) => element.cssClasses.contains('architecture-edge'),
+      );
+
+      expect(apiPosition.y, workerPosition.y);
+      expect(apiPosition.x, lessThan(workerPosition.x));
+      expect(edge.commands, [
+        MoveTo(Point(apiPosition.x + 40, apiPosition.y)),
+        LineTo(Point((apiPosition.x + workerPosition.x) / 2, apiPosition.y)),
+        LineTo(Point(workerPosition.x - 40, workerPosition.y)),
+      ]);
+      expect(
+        elements.whereType<ScenePolygon>().where((element) => element.cssClasses.contains('architecture-arrow')),
+        hasLength(1),
+      );
+      expect(
+        elements.whereType<SceneText>().singleWhere((element) => element.text == 'calls').position.y,
+        apiPosition.y,
+      );
+    });
+
+    test('architecture encloses nested groups and routes group edges to their boundary', () {
+      final scene = layoutDiagram(
+        const ArchitectureAst(
+          groups: [
+            ArchitectureGroupAst(id: 'system', icon: 'cloud', title: 'System'),
+            ArchitectureGroupAst(id: 'data', title: 'Data', parent: 'system'),
+          ],
+          services: [
+            ArchitectureServiceAst(id: 'api', title: 'API', parent: 'system'),
+            ArchitectureServiceAst(id: 'db', title: 'DB', parent: 'data'),
+          ],
+          junctions: [ArchitectureJunctionAst(id: 'split', parent: 'system')],
+          edges: [
+            ArchitectureEdgeAst(
+              leftId: 'api',
+              leftDirection: ArchitectureDirection.right,
+              leftGroup: true,
+              rightId: 'db',
+              rightDirection: ArchitectureDirection.left,
+              rightGroup: true,
+            ),
+          ],
+        ),
+        textMeasurer: measurer,
+        options: const RenderOptions(padding: 0),
+      );
+      final elements = _flatten(scene.elements).toList();
+      final groups = elements.whereType<SceneRect>().where(
+        (element) => element.cssClasses.contains('architecture-group'),
+      );
+      final system = groups.singleWhere((group) => group.label == 'System');
+      final data = groups.singleWhere((group) => group.label == 'Data');
+      final edge = elements.whereType<ScenePath>().singleWhere(
+        (element) => element.cssClasses.contains('architecture-edge'),
+      );
+      final start = (edge.commands.first as MoveTo).point;
+      final end = (edge.commands.last as LineTo).point;
+
+      expect(system.bounds.left, lessThanOrEqualTo(data.bounds.left));
+      expect(system.bounds.right, greaterThanOrEqualTo(data.bounds.right));
+      expect(system.bounds.top, lessThan(data.bounds.top));
+      expect(system.bounds.bottom, greaterThanOrEqualTo(data.bounds.bottom));
+      expect(start.x, system.bounds.right);
+      expect(end.x, data.bounds.left);
+      expect(
+        elements.whereType<SceneRect>().where((element) => element.cssClasses.contains('architecture-junction')),
+        hasLength(1),
+      );
+      expectSvgGolden('architecture_nested', renderSvg(scene));
+    });
   });
 }
 
