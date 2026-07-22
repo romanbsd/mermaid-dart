@@ -3,6 +3,93 @@ sealed class DiagramAst {
   const DiagramAst();
 }
 
+/// Syntax tree for a `treemap` diagram.
+final class TreemapAst extends DiagramAst {
+  const TreemapAst({this.rows = const [], this.title, this.accessibilityTitle, this.accessibilityDescription});
+
+  final List<TreemapRowAst> rows;
+  final String? title;
+  final String? accessibilityTitle;
+  final String? accessibilityDescription;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is TreemapAst &&
+          _listEquals(rows, other.rows) &&
+          title == other.title &&
+          accessibilityTitle == other.accessibilityTitle &&
+          accessibilityDescription == other.accessibilityDescription;
+
+  @override
+  int get hashCode => Object.hash(Object.hashAll(rows), title, accessibilityTitle, accessibilityDescription);
+}
+
+sealed class TreemapRowAst {
+  const TreemapRowAst();
+}
+
+final class TreemapNodeRowAst extends TreemapRowAst {
+  const TreemapNodeRowAst({required this.indent, required this.item});
+
+  final int indent;
+  final TreemapItemAst item;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) || other is TreemapNodeRowAst && indent == other.indent && item == other.item;
+
+  @override
+  int get hashCode => Object.hash(indent, item);
+}
+
+final class TreemapClassDefAst extends TreemapRowAst {
+  const TreemapClassDefAst({required this.name, this.style});
+
+  final String name;
+  final String? style;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) || other is TreemapClassDefAst && name == other.name && style == other.style;
+
+  @override
+  int get hashCode => Object.hash(name, style);
+}
+
+sealed class TreemapItemAst {
+  const TreemapItemAst({required this.name, this.classSelector});
+
+  final String name;
+  final String? classSelector;
+}
+
+final class TreemapSectionAst extends TreemapItemAst {
+  const TreemapSectionAst({required super.name, super.classSelector});
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is TreemapSectionAst && name == other.name && classSelector == other.classSelector;
+
+  @override
+  int get hashCode => Object.hash(runtimeType, name, classSelector);
+}
+
+final class TreemapLeafAst extends TreemapItemAst {
+  const TreemapLeafAst({required super.name, required this.value, super.classSelector});
+
+  final num value;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is TreemapLeafAst && name == other.name && value == other.value && classSelector == other.classSelector;
+
+  @override
+  int get hashCode => Object.hash(runtimeType, name, value, classSelector);
+}
+
 /// Renderer-ready syntax tree shared by all railroad grammar frontends.
 final class RailroadAst extends DiagramAst {
   const RailroadAst({this.rules = const [], this.title, this.accessibilityTitle, this.accessibilityDescription});

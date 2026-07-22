@@ -8,7 +8,7 @@ diagram-by-diagram slices while preserving Mermaid's grammar and algorithms.
 The public `parse(diagramType, source)` API and the `info`, `pie`, `packet`,
 `radar`, `cynefin`, `gitGraph`, `architecture`, `treeView`, `eventmodeling`,
 `railroad`, `railroadEbnf`, `railroadAbnf`, and `railroadPeg` diagram grammars
-are implemented. The parser supports Mermaid titles,
+and the `treemap` diagram grammar are implemented. The parser supports Mermaid titles,
 accessibility metadata, comments, directives, frontmatter, and source-located
 syntax errors.
 
@@ -40,6 +40,10 @@ The four railroad syntax frontends lower into one renderer-ready
 `RailroadAst`. Its shared sealed node hierarchy covers terminals,
 nonterminals, sequences, choices, optionals, repetitions, and special nodes,
 so rendering logic does not depend on the source grammar.
+
+Treemaps support sections, numeric leaves, indentation-preserving hierarchy
+rows, inline class selectors, typed class definitions, and both stable and
+beta headers.
 
 Other diagram types currently throw `UnsupportedDiagramTypeException` and will
 be added incrementally.
