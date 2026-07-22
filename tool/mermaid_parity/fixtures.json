@@ -280,6 +280,36 @@
       }
     },
     {
+      "id": "railroad-ebnf-sequence",
+      "type": "railroadEbnf",
+      "source": "railroad-ebnf-beta\nrule = \"a\" b? ;\n",
+      "textMeasurements": {
+        "a": { "width": 8.40625, "height": 19 },
+        "b": { "width": 8.921875, "height": 19 },
+        "rule =": { "width": 41.625, "height": 19 }
+      }
+    },
+    {
+      "id": "railroad-abnf-sequence",
+      "type": "railroadAbnf",
+      "source": "railroad-abnf-beta\nrule = \"a\" [b] ;\n",
+      "textMeasurements": {
+        "a": { "width": 8.40625, "height": 19 },
+        "b": { "width": 8.921875, "height": 19 },
+        "rule =": { "width": 41.625, "height": 19 }
+      }
+    },
+    {
+      "id": "railroad-peg-sequence",
+      "type": "railroadPeg",
+      "source": "railroad-peg-beta\nrule <- \"a\" b? ;\n",
+      "textMeasurements": {
+        "a": { "width": 8.40625, "height": 19 },
+        "b": { "width": 8.921875, "height": 19 },
+        "rule =": { "width": 41.625, "height": 19 }
+      }
+    },
+    {
       "id": "tree-files",
       "type": "treeView",
       "source": "treeView-beta\nsrc/\n    index.js\n    app.dart\n",

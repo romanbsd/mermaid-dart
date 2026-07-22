@@ -11,8 +11,8 @@ void main() {
     final manifest = ParityManifest.load(File('tool/mermaid_parity/fixtures.json'));
 
     expect(manifest.mermaidVersion, '11.16.0');
-    expect(manifest.fixtures.map((fixture) => fixture.id), hasLength(44));
-    expect(manifest.fixtures.map((fixture) => fixture.id).toSet(), hasLength(44));
+    expect(manifest.fixtures.map((fixture) => fixture.id), hasLength(47));
+    expect(manifest.fixtures.map((fixture) => fixture.id).toSet(), hasLength(47));
     expect(
       manifest.fixtures.map((fixture) => fixture.id),
       containsAll([
@@ -45,6 +45,9 @@ void main() {
         'pie-bottom-legend',
         'pie-text-position',
         'packet-complex-no-bits',
+        'railroad-abnf-sequence',
+        'railroad-ebnf-sequence',
+        'railroad-peg-sequence',
         'wardley-strategies',
       ]),
     );
@@ -67,6 +70,9 @@ void main() {
         'pie',
         'radar',
         'railroad',
+        'railroadAbnf',
+        'railroadEbnf',
+        'railroadPeg',
         'treeView',
         'treemap',
         'wardley',
