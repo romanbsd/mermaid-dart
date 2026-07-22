@@ -5,32 +5,20 @@ final _className = RegExp(r'^[A-Za-z_][A-Za-z0-9_]*$');
 final _number = RegExp(r'^[0-9_.,]+');
 
 TreemapAst parseTreemap(String source) {
-  final metadata = readCommonMetadata(source);
-  var syntax = hideIgnoredSyntax(source);
-  final header = RegExp(r'^([\t \r\n]*)(treemap-beta|treemap)(?=\s|$)').firstMatch(syntax);
-  if (header == null) {
-    throwParseError(source, 'Expected treemap or treemap-beta', _firstContentOffset(syntax));
-  }
-  syntax = syntax.replaceRange(header.start, header.end, header.group(0)!.replaceAll(RegExp(r'[^\r\n]'), ' '));
-  syntax = hideCommonMetadata(syntax);
+  final prepared = prepareDiagramSource(source, headers: const ['treemap', 'treemap-beta']);
 
   final rows = <TreemapRowAst>[];
-  var offset = 0;
-  for (final match in RegExp(r'.*(?:\r\n|\n|\r|$)').allMatches(syntax)) {
-    final lexeme = match.group(0)!;
-    final line = lexeme.replaceFirst(RegExp(r'[\r\n]+$'), '');
-    if (line.trim().isNotEmpty) {
-      rows.add(_parseRow(source, line, offset));
+  for (final line in sourceLines(prepared.syntax)) {
+    if (line.text.trim().isNotEmpty) {
+      rows.add(_parseRow(source, line.text, line.offset));
     }
-    offset = match.end;
-    if (match.start == match.end) break;
   }
 
   return TreemapAst(
     rows: List.unmodifiable(rows),
-    title: metadata.title,
-    accessibilityTitle: metadata.accessibilityTitle,
-    accessibilityDescription: metadata.accessibilityDescription,
+    title: prepared.metadata.title,
+    accessibilityTitle: prepared.metadata.accessibilityTitle,
+    accessibilityDescription: prepared.metadata.accessibilityDescription,
   );
 }
 
@@ -106,5 +94,3 @@ num _parseNumber(String lexeme) {
   final value = double.parse(prefix);
   return value == value.truncateToDouble() ? value.toInt() : value;
 }
-
-int _firstContentOffset(String source) => RegExp(r'\S').firstMatch(source)?.start ?? 0;

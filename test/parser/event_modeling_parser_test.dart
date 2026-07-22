@@ -5,7 +5,7 @@ void main() {
   group('eventmodeling parser', () {
     test('parses frame aliases into enum-backed semantic types', () {
       final ast =
-          parse('eventmodeling', '''eventmodeling
+          parse(DiagramType.eventModeling, '''eventmodeling
 timeframe 01 command Cart.Update
 tf 02 evt Cart.Updated ->> 01 `jsobj`{ a: b }
 resetframe 003 readmodel Cart.Items ->> 02 [[CartData]]
@@ -52,7 +52,7 @@ tf 05 ui CartPage ->> 003
 
     test('parses model entities, data blocks, and notes', () {
       final ast =
-          parse('eventmodeling', '''eventmodeling
+          parse(DiagramType.eventModeling, '''eventmodeling
 entity Cart.Item
 data CartData `json` {
   { "quantity": 2 }
@@ -84,7 +84,7 @@ note 02 `md` {
 
     test('parses given-when-then scenarios', () {
       final ast =
-          parse('eventmodeling', '''eventmodeling
+          parse(DiagramType.eventModeling, '''eventmodeling
 gwt 03
 given evt CartUpdated
 when cmd RefreshCart
@@ -108,7 +108,7 @@ ui CartPage
 
     test('parses metadata and ignores every Mermaid comment form', () {
       final ast =
-          parse('eventmodeling', '''eventmodeling
+          parse(DiagramType.eventModeling, '''eventmodeling
 title Shopping flow
 accTitle: Accessible flow
 accDescr: Cart lifecycle
@@ -128,11 +128,11 @@ tf 01 event Started
 
     test('rejects invalid frame identifiers and data types', () {
       expect(
-        () => parse('eventmodeling', 'eventmodeling\ntf 1234 evt Started\n'),
+        () => parse(DiagramType.eventModeling, 'eventmodeling\ntf 1234 evt Started\n'),
         throwsA(isA<MermaidParseException>()),
       );
       expect(
-        () => parse('eventmodeling', 'eventmodeling\ntf 01 evt Started `yaml`{a: b}\n'),
+        () => parse(DiagramType.eventModeling, 'eventmodeling\ntf 01 evt Started `yaml`{a: b}\n'),
         throwsA(isA<MermaidParseException>()),
       );
     });

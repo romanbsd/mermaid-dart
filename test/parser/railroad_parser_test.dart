@@ -5,19 +5,19 @@ void main() {
   group('railroad parser frontends', () {
     test('lower equivalent syntax into one shared sealed AST', () {
       final diagrams = <RailroadAst>[
-        parse('railroad', '''railroad-beta
+        parse(DiagramType.railroad, '''railroad-beta
 rule = sequence(terminal("a"), optional(nonterminal("b"))) ;
 ''')
             as RailroadAst,
-        parse('railroadEbnf', '''railroad-ebnf-beta
+        parse(DiagramType.railroadEbnf, '''railroad-ebnf-beta
 rule = "a" b? ;
 ''')
             as RailroadAst,
-        parse('railroadAbnf', '''railroad-abnf-beta
+        parse(DiagramType.railroadAbnf, '''railroad-abnf-beta
 rule = "a" [b] ;
 ''')
             as RailroadAst,
-        parse('railroadPeg', '''railroad-peg-beta
+        parse(DiagramType.railroadPeg, '''railroad-peg-beta
 rule <- "a" b? ;
 ''')
             as RailroadAst,
@@ -40,7 +40,7 @@ rule <- "a" b? ;
 
     test('classic frontend parses every IR expression and metadata', () {
       final ast =
-          parse('railroad', '''railroad-beta
+          parse(DiagramType.railroad, '''railroad-beta
 title "Example Grammar"
 accTitle: Accessible railroad
 accDescr: Shared renderer input
@@ -69,7 +69,7 @@ rule = choice(
 
     test('EBNF frontend handles ISO forms, postfixes, exception, and comments', () {
       final ast =
-          parse('railroadEbnf', '''railroad-ebnf-beta
+          parse(DiagramType.railroadEbnf, '''railroad-ebnf-beta
 (* ISO comment *)
 rule = [ "a" ], { other }, ? special ?, "x" - "y" ;
 ''')
@@ -88,7 +88,7 @@ rule = [ "a" ], { other }, ? special ?, "x" - "y" ;
 
     test('ABNF frontend handles alternation, numeric values, and repeat ranges', () {
       final ast =
-          parse('railroadAbnf', '''railroad-abnf-beta
+          parse(DiagramType.railroadAbnf, '''railroad-abnf-beta
 rule = 2"a" / *3%x30 / 1*other / 4token ;
 ''')
               as RailroadAst;
@@ -106,7 +106,7 @@ rule = 2"a" / *3%x30 / 1*other / 4token ;
 
     test('PEG frontend handles ordered choice, suffixes, lookahead, and any', () {
       final ast =
-          parse('railroadPeg', '''railroad-peg-beta
+          parse(DiagramType.railroadPeg, '''railroad-peg-beta
 rule <- &"a" !other .+ / ("b" other)* ;
 ''')
               as RailroadAst;
@@ -130,7 +130,7 @@ rule <- &"a" !other .+ / ("b" other)* ;
 
     test('parses upstream real-world expression and URI examples', () {
       final ebnf =
-          parse('railroadEbnf', '''railroad-ebnf-beta
+          parse(DiagramType.railroadEbnf, '''railroad-ebnf-beta
 expression = term ( "+" term | "-" term )* ;
 term = factor ( "*" factor | "/" factor )* ;
 factor = number | "(" expression ")" ;
@@ -139,14 +139,14 @@ digit = "0" | "1" | "2" ;
 ''')
               as RailroadAst;
       final abnf =
-          parse('railroadAbnf', '''railroad-abnf-beta
+          parse(DiagramType.railroadAbnf, '''railroad-abnf-beta
 URI = scheme ":" hier-part ;
 scheme = ALPHA *( ALPHA / DIGIT / "+" / "-" / "." ) ;
 hier-part = "//" authority path-abempty ;
 ''')
               as RailroadAst;
       final peg =
-          parse('railroadPeg', '''railroad-peg-beta
+          parse(DiagramType.railroadPeg, '''railroad-peg-beta
 Expression <- Term (("+" / "-") Term)* ;
 Term <- Factor (("*" / "/") Factor)* ;
 Factor <- Number / "(" Expression ")" ;
@@ -161,11 +161,11 @@ Digit <- "0" / "1" / "2" ;
     });
 
     test('all frontends reject malformed or mismatched syntax', () {
-      for (final entry in <String, String>{
-        'railroad': 'railroad-beta\nrule = terminal("a")',
-        'railroadEbnf': 'railroad-ebnf-beta\nrule = "a"',
-        'railroadAbnf': 'railroad-abnf-beta\nrule = "a"',
-        'railroadPeg': 'railroad-peg-beta\nrule <- "a"',
+      for (final entry in <DiagramType, String>{
+        DiagramType.railroad: 'railroad-beta\nrule = terminal("a")',
+        DiagramType.railroadEbnf: 'railroad-ebnf-beta\nrule = "a"',
+        DiagramType.railroadAbnf: 'railroad-abnf-beta\nrule = "a"',
+        DiagramType.railroadPeg: 'railroad-peg-beta\nrule <- "a"',
       }.entries) {
         expect(() => parse(entry.key, entry.value), throwsA(isA<MermaidParseException>()));
       }

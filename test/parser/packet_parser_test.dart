@@ -5,13 +5,13 @@ void main() {
   group('packet parser', () {
     test('accepts packet and packet-beta headers', () {
       for (final source in ['packet', ' packet ', '\npacket-beta\n']) {
-        expect((parse('packet', source) as PacketAst).blocks, isEmpty);
+        expect((parse(DiagramType.packet, source) as PacketAst).blocks, isEmpty);
       }
     });
 
     test('parses ranges, individual bits, and relative-width blocks', () {
       final ast =
-          parse('packet', '''packet-beta
+          parse(DiagramType.packet, '''packet-beta
 0-7: "Source"
 8: "Flag"
 +16: "Payload"
@@ -27,7 +27,7 @@ void main() {
 
     test('parses common metadata and escaped labels', () {
       final ast =
-          parse('packet', r'''packet title Header layout
+          parse(DiagramType.packet, r'''packet title Header layout
 accTitle: Packet
 0-3: "A\"B"
 ''')
@@ -39,7 +39,7 @@ accTitle: Packet
     });
 
     test('rejects malformed ranges', () {
-      expect(() => parse('packet', 'packet\n7-: "Broken"'), throwsA(isA<MermaidParseException>()));
+      expect(() => parse(DiagramType.packet, 'packet\n7-: "Broken"'), throwsA(isA<MermaidParseException>()));
     });
   });
 }

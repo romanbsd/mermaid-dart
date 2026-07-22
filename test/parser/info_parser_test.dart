@@ -5,19 +5,19 @@ void main() {
   group('info parser', () {
     test('accepts Mermaid whitespace variants', () {
       for (final source in ['info', '\n    info', 'info\n    ', '\n    info\n    ']) {
-        expect(parse('info', source), const InfoAst());
+        expect(parse(DiagramType.info, source), const InfoAst());
       }
     });
 
     test('accepts optional showInfo', () {
       for (final source in ['info showInfo', 'info\nshowInfo', '\n info\n showInfo\n']) {
-        expect(parse('info', source), const InfoAst());
+        expect(parse(DiagramType.info, source), const InfoAst());
       }
     });
 
     test('parses common title and accessibility fields', () {
       expect(
-        parse('info', '''
+        parse(DiagramType.info, '''
 info showInfo
 title  Mermaid   parser
 accTitle: Parser status
@@ -37,11 +37,11 @@ accDescr {
     test('accepts indented metadata and metadata on the header line', () {
       expect(
         parse(
-          'info',
+          DiagramType.info,
           'info title First title\n'
-              '    title Final title\n'
-              '    accTitle: Accessible\n'
-              '    accDescr: Description',
+          '    title Final title\n'
+          '    accTitle: Accessible\n'
+          '    accDescr: Description',
         ),
         const InfoAst(title: 'Final title', accessibilityTitle: 'Accessible', accessibilityDescription: 'Description'),
       );
@@ -49,7 +49,7 @@ accDescr {
 
     test('ignores directives, frontmatter, and comments like Mermaid', () {
       expect(
-        parse('info', '''
+        parse(DiagramType.info, '''
 ---
 title: frontmatter is handled outside the grammar
 ---
@@ -64,7 +64,7 @@ title Visible title %% trailing comment
 
     test('reports syntax errors with a source location', () {
       expect(
-        () => parse('info', 'info\nunexpected'),
+        () => parse(DiagramType.info, 'info\nunexpected'),
         throwsA(
           isA<MermaidParseException>()
               .having((error) => error.line, 'line', 2)
@@ -75,14 +75,17 @@ title Visible title %% trailing comment
 
     test('does not accept Mermaid keywords as prefixes', () {
       for (final source in ['information', 'info showInformation', 'info titleBad']) {
-        expect(() => parse('info', source), throwsA(isA<MermaidParseException>()));
+        expect(() => parse(DiagramType.info, source), throwsA(isA<MermaidParseException>()));
       }
     });
   });
 
-  test('rejects unsupported diagram types', () {
+  test('converts diagram types only at string boundaries', () {
+    expect(DiagramType.fromWireName('eventmodeling'), DiagramType.eventModeling);
+    expect(DiagramType.gitGraph.wireName, 'gitGraph');
+    expect(DiagramType.tryFromWireName('flowchart'), isNull);
     expect(
-      () => parse('flowchart', 'flowchart LR'),
+      () => parseByName('flowchart', 'flowchart LR'),
       throwsA(isA<UnsupportedDiagramTypeException>().having((error) => error.diagramType, 'diagramType', 'flowchart')),
     );
   });

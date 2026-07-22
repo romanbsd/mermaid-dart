@@ -4,7 +4,7 @@ import 'railroad_parser_base.dart';
 final _identifier = RegExp(r'[A-Z_a-z][\w-]*');
 
 RailroadAst parseRailroadPeg(String source) {
-  final document = prepareRailroadDocument(source, 'railroad-peg-beta', comments: const {RailroadCommentKind.hashLine});
+  final document = prepareRailroadDocument(source, RailroadDialect.peg);
   final scanner = document.scanner;
   final rules = <RailroadRuleAst>[];
   while (!scanner.isAtEnd) {

@@ -32,6 +32,45 @@ final class CommonMetadata {
   final String? accessibilityDescription;
 }
 
+final class PreparedDiagramSource {
+  const PreparedDiagramSource({required this.syntax, required this.metadata});
+
+  /// Source with ignored syntax, the diagram header, and metadata masked.
+  /// Newlines and offsets are preserved for diagnostics.
+  final String syntax;
+  final CommonMetadata metadata;
+}
+
+final class SourceLine {
+  const SourceLine({required this.text, required this.offset});
+
+  final String text;
+  final int offset;
+}
+
+PreparedDiagramSource prepareDiagramSource(String source, {required List<String> headers}) {
+  assert(headers.isNotEmpty);
+  final metadata = readCommonMetadata(source);
+  var syntax = hideIgnoredSyntax(source);
+  final alternatives = [...headers]..sort((left, right) => right.length.compareTo(left.length));
+  final header = RegExp(
+    '^([\\t \\r\\n]*)(?:${alternatives.map(RegExp.escape).join('|')})(?=\\s|\$)',
+  ).firstMatch(syntax);
+  if (header == null) {
+    throwParseError(source, 'Expected ${headers.join(' or ')}', firstNonWhitespaceOffset(syntax));
+  }
+  syntax = syntax.replaceRange(header.start, header.end, _hideNonNewlines(header.group(0)!));
+  return PreparedDiagramSource(syntax: hideCommonMetadata(syntax), metadata: metadata);
+}
+
+List<SourceLine> sourceLines(String source) => [
+  for (final match in RegExp(r'.*(?:\r\n|\n|\r|$)').allMatches(source))
+    if (match.start != match.end)
+      SourceLine(text: match.group(0)!.replaceFirst(RegExp(r'[\r\n]+$'), ''), offset: match.start),
+];
+
+int firstNonWhitespaceOffset(String source) => RegExp(r'\S').firstMatch(source)?.start ?? 0;
+
 String hideIgnoredSyntax(String source) {
   var result = source;
   for (final expression in [
@@ -40,7 +79,7 @@ String hideIgnoredSyntax(String source) {
     RegExp(r'[\t ]*%%[^\n\r]*'),
   ]) {
     result = result.replaceAllMapped(expression, (match) {
-      return match.group(0)!.replaceAll(RegExp(r'[^\r\n]'), ' ');
+      return _hideNonNewlines(match.group(0)!);
     });
   }
   return result;
@@ -50,7 +89,7 @@ String hideHeader(String source, String keyword, {String? modifier}) {
   final modifierPattern = modifier == null ? '' : '(?:[\\t \\r\\n]+${RegExp.escape(modifier)})?';
   final expression = RegExp('^([\\t \\r\\n]*)${RegExp.escape(keyword)}$modifierPattern');
   return source.replaceFirstMapped(expression, (match) {
-    return match.group(0)!.replaceAll(RegExp(r'[^\r\n]'), ' ');
+    return _hideNonNewlines(match.group(0)!);
   });
 }
 
@@ -69,7 +108,7 @@ String hideCommonMetadata(String source) {
     RegExp(r'^[\t ]*accDescr[\t ]*(?::[^\n\r]*|\{[^}]*\})', multiLine: true),
   ]) {
     result = result.replaceAllMapped(expression, (match) {
-      return match.group(0)!.replaceAll(RegExp(r'[^\r\n]'), ' ');
+      return _hideNonNewlines(match.group(0)!);
     });
   }
   return result;
@@ -143,3 +182,5 @@ String decodeQuotedString(String lexeme) {
   }
   return value.toString();
 }
+
+String _hideNonNewlines(String value) => value.replaceAll(RegExp(r'[^\r\n]'), ' ');

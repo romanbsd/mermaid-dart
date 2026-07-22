@@ -4,16 +4,16 @@ import 'package:test/test.dart';
 void main() {
   group('gitGraph parser', () {
     test('accepts every header form and enum-backed direction', () {
-      expect((parse('gitGraph', 'gitGraph') as GitGraphAst).direction, isNull);
-      expect((parse('gitGraph', 'gitGraph:') as GitGraphAst).direction, isNull);
-      expect((parse('gitGraph', 'gitGraph LR:') as GitGraphAst).direction, GitGraphDirection.leftToRight);
-      expect((parse('gitGraph', 'gitGraph TB:') as GitGraphAst).direction, GitGraphDirection.topToBottom);
-      expect((parse('gitGraph', 'gitGraph BT:') as GitGraphAst).direction, GitGraphDirection.bottomToTop);
+      expect((parse(DiagramType.gitGraph, 'gitGraph') as GitGraphAst).direction, isNull);
+      expect((parse(DiagramType.gitGraph, 'gitGraph:') as GitGraphAst).direction, isNull);
+      expect((parse(DiagramType.gitGraph, 'gitGraph LR:') as GitGraphAst).direction, GitGraphDirection.leftToRight);
+      expect((parse(DiagramType.gitGraph, 'gitGraph TB:') as GitGraphAst).direction, GitGraphDirection.topToBottom);
+      expect((parse(DiagramType.gitGraph, 'gitGraph BT:') as GitGraphAst).direction, GitGraphDirection.bottomToTop);
     });
 
     test('parses commits and all commit properties', () {
       final ast =
-          parse('gitGraph', '''gitGraph
+          parse(DiagramType.gitGraph, '''gitGraph
 commit
 commit id:"1" msg:"Fix issue #123: Handle errors" tag:"v1.2" tag:'stable' type:HIGHLIGHT
 ''')
@@ -32,7 +32,7 @@ commit id:"1" msg:"Fix issue #123: Handle errors" tag:"v1.2" tag:'stable' type:H
 
     test('parses branch, checkout, and switch statements', () {
       final ast =
-          parse('gitGraph', '''gitGraph
+          parse(DiagramType.gitGraph, '''gitGraph
 branch 1.0.1 order:2
 branch "feature branch"
 checkout feature/test-branch
@@ -50,7 +50,7 @@ switch my-feature_branch
 
     test('parses merge and cherry-pick properties', () {
       final ast =
-          parse('gitGraph', '''gitGraph
+          parse(DiagramType.gitGraph, '''gitGraph
 merge feature id:"m1" tag:"release" type:REVERSE
 cherry-pick id:"123" tag:"urgent" parent:"100"
 ''')
@@ -64,7 +64,7 @@ cherry-pick id:"123" tag:"urgent" parent:"100"
 
     test('preserves common metadata and ignores comments', () {
       final ast =
-          parse('gitGraph', '''gitGraph TB:
+          parse(DiagramType.gitGraph, '''gitGraph TB:
 title Release history
 accTitle: Accessible history
 accDescr {
@@ -83,8 +83,14 @@ commit msg:"Initial release"
     });
 
     test('rejects malformed properties and invalid branch order', () {
-      expect(() => parse('gitGraph', 'gitGraph\ncommit unknown:"oops"\n'), throwsA(isA<MermaidParseException>()));
-      expect(() => parse('gitGraph', 'gitGraph\nbranch feature order:xyz\n'), throwsA(isA<MermaidParseException>()));
+      expect(
+        () => parse(DiagramType.gitGraph, 'gitGraph\ncommit unknown:"oops"\n'),
+        throwsA(isA<MermaidParseException>()),
+      );
+      expect(
+        () => parse(DiagramType.gitGraph, 'gitGraph\nbranch feature order:xyz\n'),
+        throwsA(isA<MermaidParseException>()),
+      );
     });
   });
 }

@@ -4,7 +4,7 @@ import 'railroad_parser_base.dart';
 final _identifier = RegExp(r'[A-Z_a-z][\w-]*');
 
 RailroadAst parseRailroad(String source) {
-  final document = prepareRailroadDocument(source, 'railroad-beta', comments: const {RailroadCommentKind.cStyleBlock});
+  final document = prepareRailroadDocument(source, RailroadDialect.classic);
   final scanner = document.scanner;
   final rules = <RailroadRuleAst>[];
   while (!scanner.isAtEnd) {

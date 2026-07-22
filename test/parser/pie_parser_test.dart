@@ -5,7 +5,7 @@ void main() {
   group('pie parser', () {
     test('accepts empty diagrams with optional showData', () {
       for (final source in ['pie', '  pie  ', '\npie\n', 'pie showData']) {
-        final ast = parse('pie', source) as PieAst;
+        final ast = parse(DiagramType.pie, source) as PieAst;
         expect(ast.showData, source.contains('showData'));
         expect(ast.sections, isEmpty);
       }
@@ -13,7 +13,7 @@ void main() {
 
     test('parses integer, decimal, and negative sections in source order', () {
       final ast =
-          parse('pie', '''
+          parse(DiagramType.pie, '''
 pie showData
   "GitHub" : 100
   "GitLab": 50.5
@@ -31,7 +31,7 @@ pie showData
 
     test('parses both string delimiters and escaped label characters', () {
       final ast =
-          parse('pie', r'''pie
+          parse(DiagramType.pie, r'''pie
 "A\"B": 1
 'single quoted': 2''')
               as PieAst;
@@ -44,7 +44,7 @@ pie showData
 
     test('parses common title and accessibility metadata', () {
       final ast =
-          parse('pie', '''
+          parse(DiagramType.pie, '''
 pie title Language share
   accTitle: Languages
   accDescr {
@@ -62,7 +62,7 @@ pie title Language share
 
     test('ignores Mermaid comments and directives', () {
       final ast =
-          parse('pie', '''
+          parse(DiagramType.pie, '''
 %%{init: {"theme": "dark"}}%%
 pie
 %% hidden
@@ -75,7 +75,7 @@ pie
 
     test('reports malformed section values at their source location', () {
       expect(
-        () => parse('pie', 'pie\n"Broken": many'),
+        () => parse(DiagramType.pie, 'pie\n"Broken": many'),
         throwsA(
           isA<MermaidParseException>()
               .having((error) => error.line, 'line', 2)

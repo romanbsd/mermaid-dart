@@ -5,7 +5,7 @@ diagram-by-diagram slices while preserving Mermaid's grammar and algorithms.
 
 ## Parser status
 
-The public `parse(diagramType, source)` API and the `info`, `pie`, `packet`,
+The public `parse(DiagramType, source)` API and the `info`, `pie`, `packet`,
 `radar`, `cynefin`, `gitGraph`, `architecture`, `treeView`, `eventmodeling`,
 `railroad`, `railroadEbnf`, `railroadAbnf`, `railroadPeg`, `treemap`, and
 `wardley` diagram grammars are implemented. The parser supports Mermaid titles,
@@ -50,8 +50,8 @@ percentage-normalized coordinates, custom evolution stages, anchors,
 components, pipelines, notes, annotations, accelerators, deaccelerators,
 evolution trends, and size directives.
 
-Other diagram types currently throw `UnsupportedDiagramTypeException` and will
-be added incrementally.
+Use `parseByName(type, source)` when a diagram type arrives from an external
+string-based API. Unsupported names throw `UnsupportedDiagramTypeException`.
 
 ## Usage
 
@@ -60,7 +60,7 @@ import 'package:mermaid_dart/mermaid_dart.dart';
 
 void main() {
   final ast = parse(
-    'info',
+    DiagramType.info,
     'info showInfo\ntitle Mermaid in Dart\naccDescr: Parser example',
   );
   print(ast);

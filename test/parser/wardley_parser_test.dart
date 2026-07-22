@@ -5,7 +5,7 @@ void main() {
   group('wardley parser', () {
     test('parses components, links, metadata, and enum-backed decorators', () {
       final ast =
-          parse('wardley', '''wardley-beta
+          parse(DiagramType.wardley, '''wardley-beta
 title Coordinate Handling
 accTitle: Accessible map
 component "Mobile App" [0.2, 0.4] label [-30, 20] (build) (inertia)
@@ -43,7 +43,7 @@ component real-time API [30.0, 50.0] (buy)
 
     test('parses size and evolution stages with boundaries and dual labels', () {
       final ast =
-          parse('wardley', '''wardley-beta
+          parse(DiagramType.wardley, '''wardley-beta
 size [1200, 900]
 evolution Genesis@0.3 / Concept -> Custom@0.6 / Emerging -> Product -> Commodity@1.0
 ''')
@@ -60,7 +60,7 @@ evolution Genesis@0.3 / Concept -> Custom@0.6 / Emerging -> Product -> Commodity
 
     test('parses pipelines with normalized evolution and label offsets', () {
       final ast =
-          parse('wardley', '''wardley-beta
+          parse(DiagramType.wardley, '''wardley-beta
 component Data Store [0.5, 0.5]
 pipeline Data Store {
   component real-time queue [0.3] label [-40, 20]
@@ -86,7 +86,7 @@ pipeline Data Store {
 
     test('parses remaining positioned statements and trends', () {
       final ast =
-          parse('wardley', '''wardley-beta
+          parse(DiagramType.wardley, '''wardley-beta
 anchor on-call engineer [0.9, 0.95]
 component Kettle [0.35, 0.43]
 evolve Kettle 0.62
@@ -115,7 +115,7 @@ deaccelerator "Legacy Data" [0.40, 0.35]
 
     test('normalizes link styles, flow arrows, and label precedence', () {
       final ast =
-          parse('wardley', '''wardley-beta
+          parse(DiagramType.wardley, '''wardley-beta
 A -.-> B; dashed
 B +'supply'<> C; ignored
 C +< D
@@ -139,7 +139,7 @@ D --> E
 
     test('preserves upstream no-space and hyphenated-name link behavior', () {
       final ast =
-          parse('wardley', '''wardley-beta
+          parse(DiagramType.wardley, '''wardley-beta
 component foo--bar [0.3, 0.4]
 component baz- [0.6, 0.6]
 foo--bar->baz-
@@ -153,7 +153,7 @@ foo--bar->baz-
 
     test('allows integer annotation coordinates but requires decimal entity coordinates', () {
       final ast =
-          parse('wardley', '''wardley-beta
+          parse(DiagramType.wardley, '''wardley-beta
 annotations [1, 0]
 annotation 1,[1, 0] "Integer coordinates"
 ''')
@@ -161,7 +161,10 @@ annotation 1,[1, 0] "Integer coordinates"
 
       expect(ast.annotationsBox, const WardleyPositionAst(x: 0, y: 100));
       expect(ast.annotations.single.position, const WardleyPositionAst(x: 0, y: 100));
-      expect(() => parse('wardley', 'wardley-beta\ncomponent A [1, 1]'), throwsA(isA<MermaidParseException>()));
+      expect(
+        () => parse(DiagramType.wardley, 'wardley-beta\ncomponent A [1, 1]'),
+        throwsA(isA<MermaidParseException>()),
+      );
     });
 
     test('rejects malformed statements and coordinates outside the supported range', () {
@@ -171,7 +174,7 @@ annotation 1,[1, 0] "Integer coordinates"
         'wardley-beta\npipeline Missing {\n}',
         'wardley-beta\ncomponent A [0.5, 0.5] (lease)',
       ]) {
-        expect(() => parse('wardley', source), throwsA(isA<MermaidParseException>()));
+        expect(() => parse(DiagramType.wardley, source), throwsA(isA<MermaidParseException>()));
       }
     });
   });

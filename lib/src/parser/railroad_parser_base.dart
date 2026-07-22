@@ -3,6 +3,19 @@ import 'common_syntax.dart';
 
 enum RailroadCommentKind { cStyleBlock, isoEbnf, hashLine }
 
+enum RailroadDialect {
+  classic('railroad-beta', comments: {RailroadCommentKind.cStyleBlock}),
+  ebnf('railroad-ebnf-beta', comments: {RailroadCommentKind.cStyleBlock, RailroadCommentKind.isoEbnf}),
+  abnf('railroad-abnf-beta', hideCommentLines: true),
+  peg('railroad-peg-beta', comments: {RailroadCommentKind.hashLine});
+
+  const RailroadDialect(this.header, {this.comments = const {}, this.hideCommentLines = false});
+
+  final String header;
+  final Set<RailroadCommentKind> comments;
+  final bool hideCommentLines;
+}
+
 final class RailroadDocumentContext {
   const RailroadDocumentContext({required this.scanner, required this.metadata});
 
@@ -10,36 +23,21 @@ final class RailroadDocumentContext {
   final CommonMetadata metadata;
 }
 
-RailroadDocumentContext prepareRailroadDocument(
-  String source,
-  String header, {
-  Set<RailroadCommentKind> comments = const {},
-  bool hideAbnfCommentLines = false,
-}) {
-  final metadata = readCommonMetadata(source);
-  var syntax = hideIgnoredSyntax(source);
-  final headerMatch = RegExp('^([\\t \\r\\n]*)${RegExp.escape(header)}(?=\\s|\$)').firstMatch(syntax);
-  if (headerMatch == null) {
-    throwParseError(source, 'Expected $header', _firstNonWhitespace(syntax));
-  }
-  syntax = syntax.replaceRange(
-    headerMatch.start,
-    headerMatch.end,
-    headerMatch.group(0)!.replaceAll(RegExp(r'[^\r\n]'), ' '),
-  );
-  syntax = hideCommonMetadata(syntax);
-  if (hideAbnfCommentLines) {
+RailroadDocumentContext prepareRailroadDocument(String source, RailroadDialect dialect) {
+  final prepared = prepareDiagramSource(source, headers: [dialect.header]);
+  var syntax = prepared.syntax;
+  if (dialect.hideCommentLines) {
     syntax = syntax.replaceAllMapped(
       RegExp(r'^[\t ]*;[^\n\r]*', multiLine: true),
       (match) => match.group(0)!.replaceAll(RegExp(r'[^\r\n]'), ' '),
     );
   }
   return RailroadDocumentContext(
-    scanner: RailroadScanner(source, syntax, comments: comments),
+    scanner: RailroadScanner(source, syntax, comments: dialect.comments),
     metadata: CommonMetadata(
-      title: _decodeTitle(metadata.title),
-      accessibilityTitle: metadata.accessibilityTitle,
-      accessibilityDescription: metadata.accessibilityDescription,
+      title: _decodeTitle(prepared.metadata.title),
+      accessibilityTitle: prepared.metadata.accessibilityTitle,
+      accessibilityDescription: prepared.metadata.accessibilityDescription,
     ),
   );
 }
@@ -64,11 +62,6 @@ String? _decodeTitle(String? title) {
     return decodeQuotedString(title);
   }
   return title;
-}
-
-int _firstNonWhitespace(String source) {
-  final match = RegExp(r'\S').firstMatch(source);
-  return match?.start ?? 0;
 }
 
 base class RailroadScanner {

@@ -5,7 +5,7 @@ void main() {
   group('architecture parser', () {
     test('accepts empty diagrams and common metadata', () {
       final ast =
-          parse('architecture', '''
+          parse(DiagramType.architecture, '''
   architecture-beta
   title Platform
   accTitle: Accessible platform
@@ -25,7 +25,7 @@ void main() {
 
     test('parses groups, services, and junctions', () {
       final ast =
-          parse('architecture', '''architecture-beta
+          parse(DiagramType.architecture, '''architecture-beta
 group cloud(logos:aws-cloud)["Cloud 'A'"]
 group api(server)[API] in cloud
 service db(database)["The \\"Main\\" Database"] in api
@@ -47,7 +47,7 @@ junction split in api
 
     test('parses directions, labels, arrows, and group boundaries', () {
       final ast =
-          parse('architecture', '''architecture-beta
+          parse(DiagramType.architecture, '''architecture-beta
 a:L -- R:b
 a{group}:T <-- B:b{group}
 a:R -[calls]-> L:b
@@ -83,7 +83,7 @@ a:R -[calls]-> L:b
 
     test('parses enum-backed row and column alignments', () {
       final ast =
-          parse('architecture', '''architecture-beta
+          parse(DiagramType.architecture, '''architecture-beta
 align row a b c
 align column a d
 ''')
@@ -96,10 +96,13 @@ align column a d
     });
 
     test('rejects incomplete alignments and reserved identifiers', () {
-      expect(() => parse('architecture', 'architecture-beta\nalign row only\n'), throwsA(isA<MermaidParseException>()));
+      expect(
+        () => parse(DiagramType.architecture, 'architecture-beta\nalign row only\n'),
+        throwsA(isA<MermaidParseException>()),
+      );
       for (final identifier in ['align', 'row', 'column']) {
         expect(
-          () => parse('architecture', 'architecture-beta\nservice $identifier(server)[Invalid]\n'),
+          () => parse(DiagramType.architecture, 'architecture-beta\nservice $identifier(server)[Invalid]\n'),
           throwsA(isA<MermaidParseException>()),
         );
       }

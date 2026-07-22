@@ -6,16 +6,9 @@ final _decimalPattern = RegExp(r'^[0-9]+\.[0-9]+$');
 final _bareNamePattern = RegExp(r'^[A-Za-z](?:[A-Za-z0-9_()&-]|[ \t]+[A-Za-z(])*$');
 
 WardleyAst parseWardley(String source) {
-  final metadata = readCommonMetadata(source);
-  var syntax = hideIgnoredSyntax(source);
-  final header = RegExp(r'^([\t \r\n]*)wardley-beta(?=\s|$)').firstMatch(syntax);
-  if (header == null) {
-    throwParseError(source, 'Expected wardley-beta', _firstContentOffset(syntax));
-  }
-  syntax = syntax.replaceRange(header.start, header.end, header.group(0)!.replaceAll(RegExp(r'[^\r\n]'), ' '));
-  syntax = hideCommonMetadata(syntax);
+  final prepared = prepareDiagramSource(source, headers: const ['wardley-beta']);
 
-  final lines = _sourceLines(syntax);
+  final lines = sourceLines(prepared.syntax);
   final result = _WardleyCollector();
   for (var index = 0; index < lines.length; index++) {
     final line = lines[index];
@@ -50,9 +43,9 @@ WardleyAst parseWardley(String source) {
     annotationsBox: result.annotationsBox,
     annotations: List.unmodifiable(result.annotations),
     markers: List.unmodifiable(result.markers),
-    title: metadata.title,
-    accessibilityTitle: metadata.accessibilityTitle,
-    accessibilityDescription: metadata.accessibilityDescription,
+    title: prepared.metadata.title,
+    accessibilityTitle: prepared.metadata.accessibilityTitle,
+    accessibilityDescription: prepared.metadata.accessibilityDescription,
   );
 }
 
@@ -220,7 +213,7 @@ WardleyAnnotationAst _parseAnnotation(String source, String value, int offset) {
   return (name: parsed.name, position: _position(source, parsed.values[0], parsed.values[1], offset, context));
 }
 
-({WardleyPipelineAst pipeline, int lastLine}) _parsePipeline(String source, List<_SourceLine> lines, int firstLine) {
+({WardleyPipelineAst pipeline, int lastLine}) _parsePipeline(String source, List<SourceLine> lines, int firstLine) {
   final header = lines[firstLine];
   final match = RegExp(r'^pipeline[ \t]+(.+?)[ \t]*\{$').firstMatch(header.text.trim());
   if (match == null) throwParseError(source, 'Invalid pipeline declaration', header.offset);
@@ -497,23 +490,6 @@ int _lastOutsideQuotes(String value, String needle) {
     start = result + needle.length;
   }
   return result;
-}
-
-List<_SourceLine> _sourceLines(String source) {
-  final lines = <_SourceLine>[];
-  for (final match in RegExp(r'.*(?:\r\n|\n|\r|$)').allMatches(source)) {
-    if (match.start == match.end) break;
-    lines.add(_SourceLine(match.group(0)!.replaceFirst(RegExp(r'[\r\n]+$'), ''), match.start));
-  }
-  return lines;
-}
-
-int _firstContentOffset(String source) => RegExp(r'\S').firstMatch(source)?.start ?? 0;
-
-final class _SourceLine {
-  const _SourceLine(this.text, this.offset);
-  final String text;
-  final int offset;
 }
 
 enum _LinkOperatorKind { port, arrow, dashedArrow, flowArrow }

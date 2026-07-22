@@ -6,7 +6,7 @@ final _repeat = RegExp(r'(?:[0-9]*\*[0-9]*|[0-9]+)');
 final _numVal = RegExp(r'%[xXdDbB][0-9A-Fa-f]+(?:[-.][0-9A-Fa-f]+)*');
 
 RailroadAst parseRailroadAbnf(String source) {
-  final document = prepareRailroadDocument(source, 'railroad-abnf-beta', hideAbnfCommentLines: true);
+  final document = prepareRailroadDocument(source, RailroadDialect.abnf);
   final scanner = document.scanner;
   final rules = <RailroadRuleAst>[];
   while (!scanner.isAtEnd) {

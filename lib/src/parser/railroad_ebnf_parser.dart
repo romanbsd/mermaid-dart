@@ -4,11 +4,7 @@ import 'railroad_parser_base.dart';
 final _identifier = RegExp(r'[A-Z_a-z][\w-]*');
 
 RailroadAst parseRailroadEbnf(String source) {
-  final document = prepareRailroadDocument(
-    source,
-    'railroad-ebnf-beta',
-    comments: const {RailroadCommentKind.cStyleBlock, RailroadCommentKind.isoEbnf},
-  );
+  final document = prepareRailroadDocument(source, RailroadDialect.ebnf);
   final scanner = document.scanner;
   final rules = <RailroadRuleAst>[];
   while (!scanner.isAtEnd) {

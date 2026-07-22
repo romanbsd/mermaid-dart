@@ -5,12 +5,12 @@ void main() {
   group('radar parser', () {
     test('accepts all header variants', () {
       for (final source in ['radar-beta', ' radar-beta: ', '\nradar-beta :\n']) {
-        expect((parse('radar', source) as RadarAst).axes, isEmpty);
+        expect((parse(DiagramType.radar, source) as RadarAst).axes, isEmpty);
       }
     });
 
     test('parses axes and optional labels', () {
-      final ast = parse('radar', 'radar-beta\naxis speed["Speed"], quality, cost["Cost"]') as RadarAst;
+      final ast = parse(DiagramType.radar, 'radar-beta\naxis speed["Speed"], quality, cost["Cost"]') as RadarAst;
 
       expect(ast.axes, [
         const RadarAxisAst(name: 'speed', label: 'Speed'),
@@ -21,7 +21,7 @@ void main() {
 
     test('parses positional and detailed curve entries', () {
       final ast =
-          parse('radar', '''radar-beta
+          parse(DiagramType.radar, '''radar-beta
 axis speed, quality
 curve current["Current"] { 3, 4 }, target { speed: 5, quality 6 }
 ''')
@@ -45,7 +45,7 @@ curve current["Current"] { 3, 4 }, target { speed: 5, quality 6 }
 
     test('parses all option value types and common metadata', () {
       final ast =
-          parse('radar', '''radar-beta:
+          parse(DiagramType.radar, '''radar-beta:
 title Comparison
 accTitle: Radar chart
 showLegend true, ticks 5, min 0, max 10.5, graticule polygon
@@ -64,7 +64,10 @@ showLegend true, ticks 5, min 0, max 10.5, graticule polygon
     });
 
     test('rejects mixed positional and detailed entries', () {
-      expect(() => parse('radar', 'radar-beta\naxis a\ncurve c { 1, a: 2 }'), throwsA(isA<MermaidParseException>()));
+      expect(
+        () => parse(DiagramType.radar, 'radar-beta\naxis a\ncurve c { 1, a: 2 }'),
+        throwsA(isA<MermaidParseException>()),
+      );
     });
   });
 }

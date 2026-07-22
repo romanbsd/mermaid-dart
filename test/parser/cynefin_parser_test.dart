@@ -5,7 +5,7 @@ void main() {
   group('cynefin parser', () {
     test('accepts bare and colon-terminated headers', () {
       for (final source in ['cynefin-beta', ' cynefin-beta: ', '\ncynefin-beta\n']) {
-        final ast = parse('cynefin', source) as CynefinAst;
+        final ast = parse(DiagramType.cynefin, source) as CynefinAst;
         expect(ast.domains, isEmpty);
         expect(ast.transitions, isEmpty);
       }
@@ -13,7 +13,7 @@ void main() {
 
     test('parses every domain and its items', () {
       final ast =
-          parse('cynefin', '''cynefin-beta
+          parse(DiagramType.cynefin, '''cynefin-beta
 complex
   "Probe"
   "Emergent practice"
@@ -54,7 +54,7 @@ confusion "Collect context"
 
     test('parses labeled and unlabeled transitions', () {
       final ast =
-          parse('cynefin', '''cynefin-beta:
+          parse(DiagramType.cynefin, '''cynefin-beta:
 complex --> complicated: "Constrain"
 chaotic --> clear
 ''')
@@ -68,7 +68,7 @@ chaotic --> clear
 
     test('parses common metadata and ignores comments', () {
       final ast =
-          parse('cynefin', '''cynefin-beta
+          parse(DiagramType.cynefin, '''cynefin-beta
 title Decision context
 accTitle: Cynefin framework
 %% hidden
@@ -82,7 +82,7 @@ complex "Explore"
     });
 
     test('rejects unknown domains', () {
-      expect(() => parse('cynefin', 'cynefin-beta\nsimple "Invalid"'), throwsA(isA<MermaidParseException>()));
+      expect(() => parse(DiagramType.cynefin, 'cynefin-beta\nsimple "Invalid"'), throwsA(isA<MermaidParseException>()));
     });
   });
 }

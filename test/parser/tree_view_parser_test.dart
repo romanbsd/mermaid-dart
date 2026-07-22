@@ -4,11 +4,11 @@ import 'package:test/test.dart';
 void main() {
   group('treeView parser', () {
     test('accepts empty diagrams and parses common metadata', () {
-      final empty = parse('treeView', 'treeView-beta') as TreeViewAst;
+      final empty = parse(DiagramType.treeView, 'treeView-beta') as TreeViewAst;
       expect(empty.nodes, isEmpty);
 
       final ast =
-          parse('treeView', '''treeView-beta
+          parse(DiagramType.treeView, '''treeView-beta
 title Project files
 accTitle: Accessible files
 accDescr: Source tree
@@ -24,7 +24,7 @@ accDescr: Source tree
 
     test('preserves indentation and quoted or bare names', () {
       final ast =
-          parse('treeView', '''treeView-beta
+          parse(DiagramType.treeView, '''treeView-beta
 src/
     index.js
     "Multi  Word File.ts"
@@ -42,7 +42,7 @@ src/
 
     test('parses open-ended annotations in any order', () {
       final ast =
-          parse('treeView', '''treeView-beta
+          parse(DiagramType.treeView, '''treeView-beta
 app.ts icon(logos:react) :::my-class ## entry point
 data.bin ## binary data
 empty icon()
@@ -57,7 +57,7 @@ empty icon()
     });
 
     test('keeps spaces in bare names but excludes annotation spacing', () {
-      final ast = parse('treeView', 'treeView-beta\nMy Documents/   :::highlight\nindex.js  ') as TreeViewAst;
+      final ast = parse(DiagramType.treeView, 'treeView-beta\nMy Documents/   :::highlight\nindex.js  ') as TreeViewAst;
 
       expect(ast.nodes, [
         const TreeViewNodeAst(name: 'My Documents/', cssClass: 'highlight'),
@@ -66,13 +66,16 @@ empty icon()
     });
 
     test('rejects malformed quoted nodes and annotations', () {
-      expect(() => parse('treeView', 'treeView-beta\n"unterminated\n'), throwsA(isA<MermaidParseException>()));
       expect(
-        () => parse('treeView', 'treeView-beta\n"file" icon(bad:name:extra)\n'),
+        () => parse(DiagramType.treeView, 'treeView-beta\n"unterminated\n'),
+        throwsA(isA<MermaidParseException>()),
+      );
+      expect(
+        () => parse(DiagramType.treeView, 'treeView-beta\n"file" icon(bad:name:extra)\n'),
         throwsA(isA<MermaidParseException>()),
       );
       for (final name in [':::class', 'icon(folder)', '## description']) {
-        expect(() => parse('treeView', 'treeView-beta\n$name\n'), throwsA(isA<MermaidParseException>()));
+        expect(() => parse(DiagramType.treeView, 'treeView-beta\n$name\n'), throwsA(isA<MermaidParseException>()));
       }
     });
   });
