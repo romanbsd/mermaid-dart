@@ -187,6 +187,109 @@ void main() {
       expect(label.style.color, const Color(255, 255, 255));
     });
 
+    test('cynefin renders seeded boundaries, badges, and curved transitions', () {
+      final ast = CynefinAst(
+        title: 'Decision context',
+        domains: const [
+          CynefinDomainAst(
+            domain: CynefinDomain.complex,
+            items: [CynefinItemAst(label: 'Probe')],
+          ),
+          CynefinDomainAst(
+            domain: CynefinDomain.confusion,
+            items: [
+              CynefinItemAst(label: 'One'),
+              CynefinItemAst(label: 'Two'),
+              CynefinItemAst(label: 'Three'),
+              CynefinItemAst(label: 'Four'),
+              CynefinItemAst(label: 'Five'),
+            ],
+          ),
+        ],
+        transitions: const [
+          CynefinTransitionAst(from: CynefinDomain.complex, to: CynefinDomain.complicated, label: 'Pattern found'),
+        ],
+      );
+      final scene = layoutDiagram(
+        ast,
+        textMeasurer: measurer,
+        options: const RenderOptions(padding: 0, cynefin: CynefinRenderOptions(seed: 42)),
+      );
+      final elements = _flatten(scene.elements).toList();
+      final boundaries = elements.whereType<ScenePath>().where(
+        (element) => element.cssClasses.contains('cynefinBoundary'),
+      );
+      final arrow = elements.whereType<ScenePath>().singleWhere(
+        (element) => element.cssClasses.contains('cynefinArrowLine'),
+      );
+      final title = elements.whereType<SceneText>().singleWhere(
+        (element) => element.cssClasses.contains('cynefinTitle'),
+      );
+
+      expect(scene.bounds, const Bounds(left: 0, top: 0, width: 880, height: 680));
+      expect(boundaries, hasLength(2));
+      expect(boundaries.every((path) => path.commands.whereType<CubicTo>().length == 7), isTrue);
+      expect(
+        elements.whereType<ScenePath>().singleWhere((element) => element.cssClasses.contains('cynefinCliff')).commands,
+        hasLength(3),
+      );
+      expect(
+        elements
+            .whereType<ScenePath>()
+            .singleWhere((element) => element.cssClasses.contains('cynefinConfusion'))
+            .commands,
+        hasLength(4),
+      );
+      expect(arrow.commands.whereType<QuadraticTo>(), hasLength(1));
+      expect(
+        elements.whereType<ScenePolygon>().where((element) => element.cssClasses.contains('cynefinArrowHead')),
+        hasLength(1),
+      );
+      expect(
+        elements.whereType<SceneRect>().where((element) => element.cssClasses.contains('cynefinItem')),
+        hasLength(4),
+      );
+      expect(
+        elements.whereType<SceneRect>().where((element) => element.cssClasses.contains('cynefinItemOverflow')),
+        hasLength(1),
+      );
+      expect(title.position, const Point(440, 20));
+      expectSvgGolden('cynefin_seeded', renderSvg(scene));
+    });
+
+    test('cynefin typed options support straight compact layouts', () {
+      final scene = layoutDiagram(
+        const CynefinAst(),
+        textMeasurer: measurer,
+        options: const RenderOptions(
+          padding: 0,
+          cynefin: CynefinRenderOptions(
+            width: 400,
+            height: 300,
+            padding: 10,
+            boundaryAmplitude: 0,
+            showDomainDescriptions: false,
+          ),
+        ),
+      );
+      final elements = _flatten(scene.elements).toList();
+
+      expect(scene.bounds, const Bounds(left: 0, top: 0, width: 420, height: 320));
+      expect(
+        elements
+            .whereType<ScenePath>()
+            .where((element) => element.cssClasses.contains('cynefinBoundary'))
+            .expand((path) => path.commands)
+            .whereType<CubicTo>()
+            .every((command) => command.control1.x == command.control2.x || command.control1.y == command.control2.y),
+        isTrue,
+      );
+      expect(
+        elements.whereType<SceneText>().where((element) => element.cssClasses.contains('cynefinSubtitle')),
+        isEmpty,
+      );
+    });
+
     test('packet splits blocks at row boundaries and shows bit labels', () {
       final scene = layoutDiagram(
         const PacketAst(blocks: [PacketRangeBlockAst(start: 0, end: 40, label: 'payload')]),
