@@ -20,6 +20,21 @@ const _architectureTopLevelSiblingGroupSpacingRatio = 1.8162155093693997;
 const _architectureHorizontalJunctionSpacingRatio = 0.00563391197044325;
 const _architectureVerticalJunctionSpacingRatio = 0.001489728721259098;
 
+// Service-to-service edges explicitly attached to sibling group boundaries
+// settle closer than junction-mediated compound edges. Seeded fCoSE leaves a
+// small leading/trailing asymmetry according to the source port direction.
+const _architectureLeadingGroupEdgeSpacingRatio = 1.09970950151044;
+const _architectureTrailingGroupEdgeSpacingRatio = 1.0795028502252908;
+
+// In a component containing cross-axis edges, fCoSE aligns the shared rank
+// while relaxing horizontal, vertical, and elbow constraints independently.
+// Mermaid 11.16's seeded proof layout produces these icon-relative distances.
+const _architectureMixedAxisHorizontalSpacingRatio = 2.335483156229662;
+const _architectureMixedAxisTopElbowSpacingRatio = 1.5828032777182664;
+const _architectureMixedAxisBottomElbowSpacingRatio = 1.5849245641753044;
+const _architectureMixedAxisVerticalSpacingRatio = 2.507311653708842;
+const _architectureMixedAxisHorizontalFrameRatio = 0.26875;
+
 // Proof-quality fCoSE slightly relaxes declared alignment gaps and the
 // orthogonal fan-in distance. The seeded residuals are icon-scaled so row and
 // column constraints remain symmetric for custom icon sizes.
@@ -146,8 +161,11 @@ ArchitectureLayout layoutArchitectureModel(ArchitectureAst ast, ArchitectureRend
   final hasColumnAlignment = ast.alignments.any(
     (alignment) => alignment.direction == ArchitectureAlignmentDirection.column,
   );
+  final hasMixedAxisRouting = _hasMixedAxisRouting(ast.edges);
   final horizontalFrameRatio = ast.groups.isNotEmpty
       ? 0
+      : hasMixedAxisRouting
+      ? _architectureMixedAxisHorizontalFrameRatio
       : hasColumnAlignment
       ? _architectureAlignmentOrthogonalFrameRatio
       : hasRowAlignment
@@ -155,6 +173,8 @@ ArchitectureLayout layoutArchitectureModel(ArchitectureAst ast, ArchitectureRend
       : 0;
   final verticalFrameRatio = ast.groups.isNotEmpty
       ? 0
+      : hasMixedAxisRouting
+      ? _architectureAlignmentOrthogonalFrameRatio
       : hasRowAlignment
       ? _architectureAlignmentOrthogonalFrameRatio
       : hasColumnAlignment
@@ -211,6 +231,7 @@ Map<String, Point> _positionArchitectureNodes(
   final groupParents = {for (final group in groups) group.id: group.parent};
   final nodeIds = {for (final node in nodes) node.id};
   final adjacency = <String, List<({ArchitectureEdgeAst edge, bool forward})>>{};
+  final hasMixedAxisRouting = groups.isEmpty && _hasMixedAxisRouting(edges);
   for (final edge in edges) {
     if (!nodeIds.contains(edge.leftId) || !nodeIds.contains(edge.rightId)) continue;
     (adjacency[edge.leftId] ??= []).add((edge: edge, forward: true));
@@ -236,8 +257,9 @@ Map<String, Point> _positionArchitectureNodes(
         if (centers.containsKey(nextId)) continue;
         final compoundSpacing = _architectureEdgeSpacing(
           spacing,
-          nodesById[edge.leftId]?.parent,
-          nodesById[edge.rightId]?.parent,
+          edge,
+          nodesById[edge.leftId],
+          nodesById[edge.rightId],
           groupParents,
           options,
         );
@@ -246,14 +268,22 @@ Map<String, Point> _positionArchitectureNodes(
         final includesJunction =
             nodesById[edge.leftId]?.kind == ArchitectureNodeKind.junction ||
             nodesById[edge.rightId]?.kind == ArchitectureNodeKind.junction;
-        final unadjustedDelta = _edgeDelta(edge, compoundSpacing);
+        final unadjustedDelta = _edgeDelta(
+          edge,
+          compoundSpacing,
+          mixedAxisIconSize: hasMixedAxisRouting ? options.iconSize : null,
+        );
         final junctionAdjustment = sameParent && includesJunction
             ? options.iconSize *
                   (unadjustedDelta.x == 0
                       ? _architectureVerticalJunctionSpacingRatio
                       : _architectureHorizontalJunctionSpacingRatio)
             : 0;
-        final delta = _edgeDelta(edge, compoundSpacing + junctionAdjustment);
+        final delta = _edgeDelta(
+          edge,
+          compoundSpacing + junctionAdjustment,
+          mixedAxisIconSize: hasMixedAxisRouting ? options.iconSize : null,
+        );
         centers[nextId] = current.translated(
           relation.forward ? delta.x : -delta.x,
           relation.forward ? delta.y : -delta.y,
@@ -324,11 +354,14 @@ double _architectureAlignmentGap(int index, int segmentCount, double iconSize) {
 
 double _architectureEdgeSpacing(
   double spacing,
-  String? sourceParent,
-  String? targetParent,
+  ArchitectureEdgeAst edge,
+  _NodeSeed? source,
+  _NodeSeed? target,
   Map<String, String?> groupParents,
   ArchitectureRenderOptions options,
 ) {
+  final sourceParent = source?.parent;
+  final targetParent = target?.parent;
   if (sourceParent == null || targetParent == null) return spacing;
   if (sourceParent == targetParent) {
     final nestedAdjustment = groupParents[sourceParent] == null
@@ -343,6 +376,17 @@ double _architectureEdgeSpacing(
     return spacing + options.iconSize * _architectureNestedSiblingGroupSpacingRatio;
   }
   if (groupParents[sourceParent] == null && groupParents[targetParent] == null) {
+    final isServiceGroupEdge =
+        edge.leftGroup &&
+        edge.rightGroup &&
+        source?.kind == ArchitectureNodeKind.service &&
+        target?.kind == ArchitectureNodeKind.service;
+    if (isServiceGroupEdge) {
+      final ratio = edge.leftDirection.axisSign > 0
+          ? _architectureLeadingGroupEdgeSpacingRatio
+          : _architectureTrailingGroupEdgeSpacingRatio;
+      return spacing + options.iconSize * ratio;
+    }
     return spacing + options.iconSize * _architectureTopLevelSiblingGroupSpacingRatio;
   }
   return spacing;
@@ -482,11 +526,28 @@ List<ArchitectureEdgeLayout> _routeArchitectureEdges(
   return result;
 }
 
-Point _edgeDelta(ArchitectureEdgeAst edge, double spacing) {
-  final source = _directionDelta(edge.leftDirection, spacing);
-  final target = _directionDelta(edge.rightDirection.opposite, spacing);
+Point _edgeDelta(ArchitectureEdgeAst edge, double spacing, {double? mixedAxisIconSize}) {
+  double axisSpacing(ArchitectureDirection direction) {
+    if (mixedAxisIconSize == null) return spacing;
+    if (!direction.isVertical) return mixedAxisIconSize * _architectureMixedAxisHorizontalSpacingRatio;
+    if (edge.leftDirection.isVertical == edge.rightDirection.isVertical) {
+      return mixedAxisIconSize * _architectureMixedAxisVerticalSpacingRatio;
+    }
+    final verticalPort = edge.leftDirection.isVertical ? edge.leftDirection : edge.rightDirection;
+    final ratio = verticalPort == ArchitectureDirection.top
+        ? _architectureMixedAxisTopElbowSpacingRatio
+        : _architectureMixedAxisBottomElbowSpacingRatio;
+    return mixedAxisIconSize * ratio;
+  }
+
+  final source = _directionDelta(edge.leftDirection, axisSpacing(edge.leftDirection));
+  final targetDirection = edge.rightDirection.opposite;
+  final target = _directionDelta(targetDirection, axisSpacing(targetDirection));
   return Point(source.x == 0 ? target.x : source.x, source.y == 0 ? target.y : source.y);
 }
+
+bool _hasMixedAxisRouting(List<ArchitectureEdgeAst> edges) =>
+    edges.any((edge) => edge.leftDirection.isVertical != edge.rightDirection.isVertical);
 
 Point _directionDelta(ArchitectureDirection direction, double distance) =>
     direction.isVertical ? Point(0, direction.axisSign * distance) : Point(direction.axisSign * distance, 0);

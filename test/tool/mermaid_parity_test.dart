@@ -11,8 +11,8 @@ void main() {
     final manifest = ParityManifest.load(File('tool/mermaid_parity/fixtures.json'));
 
     expect(manifest.mermaidVersion, '11.16.0');
-    expect(manifest.fixtures.map((fixture) => fixture.id), hasLength(26));
-    expect(manifest.fixtures.map((fixture) => fixture.id).toSet(), hasLength(26));
+    expect(manifest.fixtures.map((fixture) => fixture.id), hasLength(28));
+    expect(manifest.fixtures.map((fixture) => fixture.id).toSet(), hasLength(28));
     expect(
       manifest.fixtures.map((fixture) => fixture.id),
       containsAll([
@@ -21,6 +21,8 @@ void main() {
         'architecture-align-column',
         'architecture-junction-group-edge',
         'architecture-align-grid',
+        'architecture-group-edges',
+        'architecture-split-directioning',
         'event-modeling-unicode-multiline',
         'git-special-commits',
         'git-special-commits-tb',

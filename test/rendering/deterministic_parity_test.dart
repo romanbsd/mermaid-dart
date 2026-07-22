@@ -1761,6 +1761,89 @@ void main() {
       expect(services['A2']!.x - services['A1']!.x, closeTo(157.62032405276386, 1e-9));
       expect(services['B1']!.y - services['A1']!.y, closeTo(250.87339226640756, 1e-9));
     });
+
+    test('architecture routes every sibling group boundary direction like Mermaid fCoSE', () {
+      final ast =
+          parse(
+                DiagramType.architecture,
+                'architecture-beta\n'
+                'group left_group(cloud)[Left]\n'
+                'group right_group(cloud)[Right]\n'
+                'group top_group(cloud)[Top]\n'
+                'group bottom_group(cloud)[Bottom]\n'
+                'group center_group(cloud)[Center]\n'
+                'service left_disk(disk)[Left disk] in left_group\n'
+                'service right_disk(disk)[Right disk] in right_group\n'
+                'service top_disk(disk)[Top disk] in top_group\n'
+                'service bottom_disk(disk)[Bottom disk] in bottom_group\n'
+                'service center_disk(disk)[Center disk] in center_group\n'
+                'left_disk{group}:R --> L:center_disk{group}\n'
+                'right_disk{group}:L --> R:center_disk{group}\n'
+                'top_disk{group}:B --> T:center_disk{group}\n'
+                'bottom_disk{group}:T --> B:center_disk{group}\n',
+              )
+              as ArchitectureAst;
+      final scene = layoutDiagram(ast, textMeasurer: measurer, options: const RenderOptions(padding: 0));
+      final services = {
+        for (final service in _flatten(
+          scene.elements,
+        ).whereType<SceneGroup>().where((element) => element.cssClasses.contains('architecture-service')))
+          service.label!: service.transforms.single as Translate,
+      };
+      final edges = _flatten(
+        scene.elements,
+      ).whereType<ScenePath>().where((element) => element.cssClasses.contains('architecture-edge')).toList();
+
+      expect(services['Center disk']!.x - services['Left disk']!.x, closeTo(242.9767601208352, 1e-9));
+      expect(services['Right disk']!.x - services['Center disk']!.x, closeTo(241.3602280180233, 1e-9));
+      expect(services['Center disk']!.y - services['Top disk']!.y, closeTo(242.97676012083514, 1e-9));
+      expect(services['Bottom disk']!.y - services['Center disk']!.y, closeTo(241.36022801802325, 1e-9));
+
+      final leftStart = (edges[0].commands.first as MoveTo).point;
+      final topStart = (edges[2].commands.first as MoveTo).point;
+      final bottomStart = (edges[3].commands.first as MoveTo).point;
+      expect(leftStart.x - services['Left disk']!.x, 84);
+      expect(topStart.y - services['Top disk']!.y, 102);
+      expect(bottomStart.y - services['Bottom disk']!.y, -84);
+    });
+
+    test('architecture preserves fCoSE spacing and elbows in a mixed-axis component', () {
+      final ast =
+          parse(
+                DiagramType.architecture,
+                'architecture-beta\n'
+                'service db(database)[Database]\n'
+                'service s3(disk)[Storage]\n'
+                'service serv1(server)[Server 1]\n'
+                'service serv2(server)[Server 2]\n'
+                'service disk(disk)[Disk]\n'
+                'db:L -- R:s3\n'
+                'serv1:L -- T:s3\n'
+                'serv2:L -- B:s3\n'
+                'serv1:T -- B:disk\n',
+              )
+              as ArchitectureAst;
+      final scene = layoutDiagram(ast, textMeasurer: measurer, options: const RenderOptions(padding: 0));
+      final services = {
+        for (final service in _flatten(
+          scene.elements,
+        ).whereType<SceneGroup>().where((element) => element.cssClasses.contains('architecture-service')))
+          service.label!: service.transforms.single as Translate,
+      };
+      final edges = _flatten(
+        scene.elements,
+      ).whereType<ScenePath>().where((element) => element.cssClasses.contains('architecture-edge')).toList();
+
+      expect(services['Database']!.x - services['Storage']!.x, closeTo(186.83865249837297, 1e-9));
+      expect(services['Storage']!.y - services['Server 1']!.y, closeTo(126.62426221746131, 1e-9));
+      expect(services['Server 2']!.y - services['Storage']!.y, closeTo(126.79396513402435, 1e-9));
+      expect(services['Server 1']!.y - services['Disk']!.y, closeTo(200.58493229670734, 1e-9));
+
+      final upperElbow = (edges[1].commands[1] as LineTo).point;
+      final lowerElbow = (edges[2].commands[1] as LineTo).point;
+      expect(upperElbow, Point(services['Storage']!.x, services['Server 1']!.y));
+      expect(lowerElbow, Point(services['Storage']!.x, services['Server 2']!.y));
+    });
   });
 }
 

@@ -32,6 +32,16 @@
       "source": "architecture-beta\ngroup tier1(cloud)[Tier 1]\nservice a1(server)[A1] in tier1\nservice a2(server)[A2] in tier1\nservice a3(server)[A3] in tier1\ngroup tier2(database)[Tier 2]\nservice b1(database)[B1] in tier2\nservice b2(database)[B2] in tier2\nservice b3(database)[B3] in tier2\na1:B --> T:b1\na2:B --> T:b2\na3:B --> T:b3\nalign row a1 a2 a3\nalign row b1 b2 b3\nalign column a1 b1\nalign column a2 b2\nalign column a3 b3\n"
     },
     {
+      "id": "architecture-group-edges",
+      "type": "architecture",
+      "source": "architecture-beta\ngroup left_group(cloud)[Left]\ngroup right_group(cloud)[Right]\ngroup top_group(cloud)[Top]\ngroup bottom_group(cloud)[Bottom]\ngroup center_group(cloud)[Center]\nservice left_disk(disk)[Disk] in left_group\nservice right_disk(disk)[Disk] in right_group\nservice top_disk(disk)[Disk] in top_group\nservice bottom_disk(disk)[Disk] in bottom_group\nservice center_disk(disk)[Disk] in center_group\nleft_disk{group}:R --> L:center_disk{group}\nright_disk{group}:L --> R:center_disk{group}\ntop_disk{group}:B --> T:center_disk{group}\nbottom_disk{group}:T --> B:center_disk{group}\n"
+    },
+    {
+      "id": "architecture-split-directioning",
+      "type": "architecture",
+      "source": "architecture-beta\nservice db(database)[Database]\nservice s3(disk)[Storage]\nservice serv1(server)[Server 1]\nservice serv2(server)[Server 2]\nservice disk(disk)[Disk]\ndb:L -- R:s3\nserv1:L -- T:s3\nserv2:L -- B:s3\nserv1:T -- B:disk\n"
+    },
+    {
       "id": "cynefin-domains",
       "type": "cynefin",
       "source": "cynefin-beta\ncomplex \"Probe\"\ncomplicated \"Analyze\"\nclear \"Sense\"\nchaotic \"Act\"\nconfusion \"Collect\"\n",
