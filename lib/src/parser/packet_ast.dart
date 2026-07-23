@@ -4,6 +4,9 @@ part of 'ast.dart';
 final class PacketAst extends DiagramAst {
   const PacketAst({this.blocks = const [], super.title, super.accessibilityTitle, super.accessibilityDescription});
 
+  @override
+  DiagramType get type => DiagramType.packet;
+
   final List<PacketBlockAst> blocks;
 
   @override

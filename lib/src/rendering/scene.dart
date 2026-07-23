@@ -1,6 +1,8 @@
 import 'package:characters/characters.dart';
 import 'package:collection/collection.dart';
 
+import '../parser/diagram_type.dart';
+
 const _deepEquality = DeepCollectionEquality();
 
 mixin _SceneValue {
@@ -273,14 +275,16 @@ final class SceneGroup extends SceneElement with _SceneValue {
     required super.id,
     this.children = const [],
     this.transforms = const [],
+    this.clipId,
     super.role,
     super.cssClasses,
     super.label,
   });
   final List<SceneElement> children;
   final List<SceneTransform> transforms;
+  final String? clipId;
   @override
-  List<Object?> get fields => [id, children, transforms, role, cssClasses, label];
+  List<Object?> get fields => [id, children, transforms, clipId, role, cssClasses, label];
 }
 
 final class SceneLine extends SceneElement with _SceneValue {
@@ -481,6 +485,7 @@ enum SceneWidthPolicy {
 
 final class DiagramScene with _SceneValue {
   const DiagramScene({
+    required this.diagramType,
     required this.viewport,
     required this.bounds,
     this.widthPolicy = SceneWidthPolicy.fixed,
@@ -492,6 +497,7 @@ final class DiagramScene with _SceneValue {
     this.elements = const [],
     this.clips = const [],
   });
+  final DiagramType diagramType;
   final Bounds viewport;
   final Bounds bounds;
   final SceneWidthPolicy widthPolicy;
@@ -504,6 +510,7 @@ final class DiagramScene with _SceneValue {
   final List<SceneClip> clips;
   @override
   List<Object?> get fields => [
+    diagramType,
     viewport,
     bounds,
     widthPolicy,

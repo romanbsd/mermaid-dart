@@ -315,6 +315,7 @@ cell:B --> T:rowspan
 
     test('serializes valid accessible SVG and escapes text', () {
       const scene = DiagramScene(
+        diagramType: DiagramType.info,
         viewport: Bounds(left: 0, top: 0, width: 100, height: 50),
         bounds: Bounds(left: 0, top: 0, width: 100, height: 50),
         title: 'A & B',
@@ -337,6 +338,68 @@ cell:B --> T:rowspan
       expect(root.findElements('title').single.innerText, 'A & B');
       expect(root.findAllElements('text').single.innerText, 'x < y');
       expect(root.findAllElements('text').single.getAttribute('x'), '10');
+    });
+
+    test('serializes backend-neutral clip definitions and group references', () {
+      const clipId = 'content-clip';
+      const scene = DiagramScene(
+        diagramType: DiagramType.treemap,
+        viewport: Bounds(left: 0, top: 0, width: 100, height: 50),
+        bounds: Bounds(left: 0, top: 0, width: 100, height: 50),
+        clips: [
+          SceneClip(
+            id: clipId,
+            path: ScenePath(
+              id: 'clip-shape',
+              commands: [
+                MoveTo(Point(0, 0)),
+                LineTo(Point(40, 0)),
+                LineTo(Point(40, 20)),
+                LineTo(Point(0, 20)),
+                ClosePath(),
+              ],
+            ),
+          ),
+        ],
+        elements: [
+          SceneGroup(
+            id: 'clipped-content',
+            clipId: clipId,
+            children: [
+              SceneText(
+                id: 'clipped-label',
+                position: Point(0, 16),
+                text: 'A long clipped label',
+                bounds: Bounds(left: 0, top: 0, width: 120, height: 20),
+              ),
+            ],
+          ),
+        ],
+      );
+
+      final root = XmlDocument.parse(renderSvg(scene)).rootElement;
+      expect(root.findAllElements('clipPath').single.getAttribute('id'), clipId);
+      expect(
+        root
+            .findAllElements('g')
+            .singleWhere((element) => element.getAttribute('id') == 'clipped-content')
+            .getAttribute('clip-path'),
+        'url(#$clipId)',
+      );
+    });
+
+    test('Treemap exposes applied clips for bounded labels and headers', () {
+      final scene = layoutDiagram(
+        parse(DiagramType.treemap, 'treemap\n"Products"\n  "A very long product label": 3\n  "Small": 1\n'),
+      );
+      final clipIds = scene.clips.map((clip) => clip.id).toSet();
+      final clippedGroups = _flatten(
+        scene.elements,
+      ).whereType<SceneGroup>().where((group) => group.clipId != null).toList();
+
+      expect(scene.clips, isNotEmpty);
+      expect(clippedGroups, isNotEmpty);
+      expect(clippedGroups.map((group) => group.clipId), everyElement(isIn(clipIds)));
     });
 
     test('Mermaid useMaxWidth controls SVG sizing without changing scene geometry', () {
@@ -444,6 +507,7 @@ disk2:T -- B:db
 
     test('serializes fractional geometry without replacement artifacts', () {
       const scene = DiagramScene(
+        diagramType: DiagramType.info,
         viewport: Bounds(left: 0, top: 0, width: 10.5, height: 5.25),
         bounds: Bounds(left: 0, top: 0, width: 10.5, height: 5.25),
         elements: [SceneLine(id: 'precise', start: Point(0, 209.144957), end: Point(10, 20))],
@@ -474,8 +538,14 @@ disk2:T -- B:db
       };
 
       for (final type in DiagramType.values) {
-        final svg = renderDiagramSvg(type, minimalSources[type]!);
-        expect(XmlDocument.parse(svg).rootElement.name.local, 'svg', reason: type.name);
+        final diagram = parse(type, minimalSources[type]!);
+        final scene = layoutDiagram(diagram);
+        final root = XmlDocument.parse(renderSvg(scene)).rootElement;
+
+        expect(diagram.type, type, reason: type.name);
+        expect(scene.diagramType, type, reason: type.name);
+        expect(root.name.local, 'svg', reason: type.name);
+        expect(root.getAttribute('aria-roledescription'), type.wireName, reason: type.name);
       }
     });
 
@@ -494,10 +564,11 @@ rule = "a" [b] ;
 rule <- "a" b? ;
 ''',
       };
-      final rendered = [for (final entry in sources.entries) renderDiagramSvg(entry.key, entry.value)];
+      final scenes = [for (final entry in sources.entries) layoutDiagram(parse(entry.key, entry.value))];
 
-      expect(rendered.skip(1), everyElement(rendered.first));
-      final document = XmlDocument.parse(rendered.first);
+      expect(scenes.skip(1).map((scene) => scene.viewport), everyElement(scenes.first.viewport));
+      expect(scenes.skip(1).map((scene) => scene.elements), everyElement(scenes.first.elements));
+      final document = XmlDocument.parse(renderSvg(scenes.first));
       expect(document.findAllElements('circle'), hasLength(2));
       expect(document.findAllElements('path'), isNotEmpty);
     });

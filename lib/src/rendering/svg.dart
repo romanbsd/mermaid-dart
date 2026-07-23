@@ -29,6 +29,7 @@ String renderSvg(DiagramScene scene, {SvgRenderOptions options = const SvgRender
         'height': _number(scene.viewport.height),
       },
       'role': 'img',
+      'aria-roledescription': scene.diagramType.wireName,
       if (title != null) 'aria-labelledby': 'diagram-title',
       if (description != null) 'aria-describedby': 'diagram-description',
     },
@@ -82,10 +83,14 @@ void _element(XmlBuilder builder, SceneElement element, {bool omitIdentity = fal
     if (element.label != null) 'aria-label': element.label!,
   };
   switch (element) {
-    case SceneGroup(:final children, :final transforms):
+    case SceneGroup(:final children, :final transforms, :final clipId):
       builder.element(
         'g',
-        attributes: {...common, if (transforms.isNotEmpty) 'transform': transforms.map(_transform).join(' ')},
+        attributes: {
+          ...common,
+          if (transforms.isNotEmpty) 'transform': transforms.map(_transform).join(' '),
+          if (clipId != null) 'clip-path': 'url(#$clipId)',
+        },
         nest: () {
           for (final child in children) {
             _element(builder, child);

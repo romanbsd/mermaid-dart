@@ -4,6 +4,9 @@ part of 'ast.dart';
 final class TreemapAst extends DiagramAst {
   const TreemapAst({this.rows = const [], super.title, super.accessibilityTitle, super.accessibilityDescription});
 
+  @override
+  DiagramType get type => DiagramType.treemap;
+
   final List<TreemapRowAst> rows;
 
   @override

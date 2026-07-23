@@ -2,6 +2,8 @@ library;
 
 import 'package:collection/collection.dart';
 
+import 'diagram_type.dart';
+
 part 'architecture_ast.dart';
 part 'ast_value_equality.dart';
 part 'common_ast.dart';

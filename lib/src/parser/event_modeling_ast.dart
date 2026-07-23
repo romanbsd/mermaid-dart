@@ -16,6 +16,9 @@ final class EventModelingAst extends DiagramAst {
     super.accessibilityDescription,
   });
 
+  @override
+  DiagramType get type => DiagramType.eventModeling;
+
   final List<EventModelEntityAst> modelEntities;
   final List<EventModelFrameAst> frames;
   final List<EventModelDataEntityAst> dataEntities;

@@ -1,13 +1,34 @@
 part of 'ast.dart';
 
 /// Renderer-ready syntax tree shared by all railroad grammar frontends.
-final class RailroadAst extends DiagramAst {
-  const RailroadAst({this.rules = const [], super.title, super.accessibilityTitle, super.accessibilityDescription});
+enum RailroadSyntax {
+  classic(DiagramType.railroad),
+  ebnf(DiagramType.railroadEbnf),
+  abnf(DiagramType.railroadAbnf),
+  peg(DiagramType.railroadPeg);
 
+  const RailroadSyntax(this.diagramType);
+
+  final DiagramType diagramType;
+}
+
+final class RailroadAst extends DiagramAst {
+  const RailroadAst({
+    this.syntax = RailroadSyntax.classic,
+    this.rules = const [],
+    super.title,
+    super.accessibilityTitle,
+    super.accessibilityDescription,
+  });
+
+  final RailroadSyntax syntax;
   final List<RailroadRuleAst> rules;
 
   @override
-  List<Object?> get diagramFields => [rules];
+  DiagramType get type => syntax.diagramType;
+
+  @override
+  List<Object?> get diagramFields => [syntax, rules];
 }
 
 final class RailroadRuleAst with _AstValueEquality {

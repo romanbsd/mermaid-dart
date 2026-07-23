@@ -119,6 +119,7 @@ DiagramScene layoutDiagram(
     WardleyAst() => options.optionsFor(const WardleyRenderOptions()),
   };
   return DiagramScene(
+    diagramType: diagram.type,
     viewport: viewport,
     bounds: contentBounds,
     widthPolicy: diagramOptions.useMaxWidth == true ? SceneWidthPolicy.fitContainer : SceneWidthPolicy.fixed,
@@ -128,6 +129,7 @@ DiagramScene layoutDiagram(
     accessibilityTitle: diagram.accessibilityTitle ?? diagram.title,
     accessibilityDescription: diagram.accessibilityDescription,
     elements: elements,
+    clips: content.clips,
   );
 }
 
@@ -158,12 +160,20 @@ final class _LayoutContext {
 }
 
 final class _LayoutResult {
-  const _LayoutResult(this.width, this.height, this.elements, {this.bounds, this.viewportPadding = 0});
+  const _LayoutResult(
+    this.width,
+    this.height,
+    this.elements, {
+    this.bounds,
+    this.viewportPadding = 0,
+    this.clips = const [],
+  });
   final double width;
   final double height;
   final List<SceneElement> elements;
   final Bounds? bounds;
   final double viewportPadding;
+  final List<SceneClip> clips;
 }
 
 Bounds? _sceneGeometryBounds(Iterable<SceneElement> elements) {
@@ -292,6 +302,14 @@ Color _colorWithOpacity(Color color, double opacity) => Color(
   color.blue,
   (color.alpha / _colorAlphaMaximum * opacity.clamp(0, 1) * _colorAlphaMaximum).round(),
 );
+
+List<PathCommand> _rectanglePathCommands(Bounds bounds) => [
+  MoveTo(Point(bounds.left, bounds.top)),
+  LineTo(Point(bounds.right, bounds.top)),
+  LineTo(Point(bounds.right, bounds.bottom)),
+  LineTo(Point(bounds.left, bounds.bottom)),
+  const ClosePath(),
+];
 
 SceneTextStyle _mermaidTextStyle(_LayoutContext context, double fontSize, {Color? color}) => SceneTextStyle(
   fontFamily: context.options.theme.resolveFontFamily(fallback: _mermaidFontFamily),

@@ -24,6 +24,9 @@ final class WardleyAst extends DiagramAst {
     super.accessibilityDescription,
   });
 
+  @override
+  DiagramType get type => DiagramType.wardley;
+
   final WardleySizeAst? size;
   final List<WardleyEvolutionStageAst> evolutionStages;
   final List<WardleyAnchorAst> anchors;

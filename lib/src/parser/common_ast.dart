@@ -4,6 +4,8 @@ part of 'ast.dart';
 sealed class DiagramAst with _AstValueEquality {
   const DiagramAst({this.title, this.accessibilityTitle, this.accessibilityDescription});
 
+  DiagramType get type;
+
   final String? title;
   final String? accessibilityTitle;
   final String? accessibilityDescription;

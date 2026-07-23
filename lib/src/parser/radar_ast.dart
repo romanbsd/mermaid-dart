@@ -11,6 +11,9 @@ final class RadarAst extends DiagramAst {
     super.accessibilityDescription,
   });
 
+  @override
+  DiagramType get type => DiagramType.radar;
+
   final List<RadarAxisAst> axes;
   final List<RadarCurveAst> curves;
   final List<RadarOptionAst> options;

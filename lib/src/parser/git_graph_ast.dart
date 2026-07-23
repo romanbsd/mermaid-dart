@@ -13,6 +13,9 @@ final class GitGraphAst extends DiagramAst {
     super.accessibilityDescription,
   });
 
+  @override
+  DiagramType get type => DiagramType.gitGraph;
+
   final GitGraphDirection? direction;
   final List<GitGraphStatementAst> statements;
 

@@ -3,6 +3,9 @@ part of 'ast.dart';
 final class TreeViewAst extends DiagramAst {
   const TreeViewAst({this.nodes = const [], super.title, super.accessibilityTitle, super.accessibilityDescription});
 
+  @override
+  DiagramType get type => DiagramType.treeView;
+
   final List<TreeViewNodeAst> nodes;
 
   @override

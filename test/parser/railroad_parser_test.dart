@@ -34,7 +34,14 @@ rule <- "a" b? ;
           ),
         ],
       );
-      expect(diagrams, everyElement(expected));
+      expect(diagrams.map((diagram) => diagram.rules), everyElement(expected.rules));
+      expect(diagrams.map((diagram) => diagram.syntax), RailroadSyntax.values);
+      expect(diagrams.map((diagram) => diagram.type), [
+        DiagramType.railroad,
+        DiagramType.railroadEbnf,
+        DiagramType.railroadAbnf,
+        DiagramType.railroadPeg,
+      ]);
       expect(expected.rules.single.definition, isA<RailroadNodeAst>());
     });
 

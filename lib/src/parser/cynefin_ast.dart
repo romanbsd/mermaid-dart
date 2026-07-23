@@ -11,6 +11,9 @@ final class CynefinAst extends DiagramAst {
     super.accessibilityDescription,
   });
 
+  @override
+  DiagramType get type => DiagramType.cynefin;
+
   final List<CynefinDomainAst> domains;
   final List<CynefinTransitionAst> transitions;
 

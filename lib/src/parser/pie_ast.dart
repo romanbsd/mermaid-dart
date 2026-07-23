@@ -10,6 +10,9 @@ final class PieAst extends DiagramAst {
     super.accessibilityDescription,
   });
 
+  @override
+  DiagramType get type => DiagramType.pie;
+
   final bool showData;
   final List<PieSectionAst> sections;
 

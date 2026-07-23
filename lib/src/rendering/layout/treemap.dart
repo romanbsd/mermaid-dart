@@ -83,6 +83,7 @@ _LayoutResult _layoutTreemap(TreemapAst ast, _LayoutContext context) {
   final width = config.nodeWidth * _treemapSectionInnerPadding;
   final height = config.nodeHeight * _treemapSectionInnerPadding;
   final elements = <SceneElement>[];
+  final clips = <SceneClip>[];
   SceneText? titleElement;
   if (ast.title case final title?) {
     titleElement = _text(
@@ -146,6 +147,7 @@ _LayoutResult _layoutTreemap(TreemapAst ast, _LayoutContext context) {
     final customStyle = leaf.cssClass == null ? null : classStyles[leaf.cssClass];
     final fillColor = customStyle?.fill ?? color;
     final strokeColor = customStyle?.stroke ?? fillColor;
+    final labelChildren = <SceneElement>[];
     final groupChildren = <SceneElement>[
       SceneRect(
         id: context.id('treemap-leaf'),
@@ -185,7 +187,7 @@ _LayoutResult _layoutTreemap(TreemapAst ast, _LayoutContext context) {
         context.measurer.measure(leaf.label, labelStyle()).width <= availableWidth &&
         labelSize <= availableHeight;
     if (labelFits) {
-      groupChildren.add(
+      labelChildren.add(
         _text(
           context,
           leaf.label,
@@ -206,7 +208,7 @@ _LayoutResult _layoutTreemap(TreemapAst ast, _LayoutContext context) {
         final valueY = bounds.center.y + labelSize / 2 + labelMetrics.spacing;
         if (context.measurer.measure(value, valueStyle).width <= availableWidth &&
             valueY + valueSize <= bounds.bottom - _treemapValueBottomPadding) {
-          groupChildren.add(
+          labelChildren.add(
             _text(
               context,
               value,
@@ -220,6 +222,23 @@ _LayoutResult _layoutTreemap(TreemapAst ast, _LayoutContext context) {
           );
         }
       }
+    }
+    if (labelChildren.isNotEmpty) {
+      final clipId = context.id('treemap-leaf-clip');
+      clips.add(
+        SceneClip(
+          id: clipId,
+          path: ScenePath(id: context.id('treemap-leaf-clip-path'), commands: _rectanglePathCommands(bounds)),
+        ),
+      );
+      groupChildren.add(
+        SceneGroup(
+          id: context.id('treemap-leaf-labels'),
+          clipId: clipId,
+          children: labelChildren,
+          cssClasses: const ['treemapLeafLabels'],
+        ),
+      );
     }
     container.add(
       SceneGroup(
@@ -276,7 +295,7 @@ _LayoutResult _layoutTreemap(TreemapAst ast, _LayoutContext context) {
           label: child.label,
         ),
       );
-      container.add(
+      final headerChildren = <SceneElement>[
         _text(
           context,
           child.label,
@@ -290,9 +309,9 @@ _LayoutResult _layoutTreemap(TreemapAst ast, _LayoutContext context) {
           ),
           cssClasses: const ['treemapSectionLabel'],
         ),
-      );
+      ];
       if (config.showValues) {
-        container.add(
+        headerChildren.add(
           _text(
             context,
             _formatTreemapValue(child.value, config.valueFormat),
@@ -309,6 +328,30 @@ _LayoutResult _layoutTreemap(TreemapAst ast, _LayoutContext context) {
           ),
         );
       }
+      final headerClipId = context.id('treemap-section-header-clip');
+      final headerClipBounds = Bounds(
+        left: bounds.left,
+        top: bounds.top,
+        width: bounds.width,
+        height: math.min(bounds.height, _treemapSectionHeaderHeight),
+      );
+      clips.add(
+        SceneClip(
+          id: headerClipId,
+          path: ScenePath(
+            id: context.id('treemap-section-header-clip-path'),
+            commands: _rectanglePathCommands(headerClipBounds),
+          ),
+        ),
+      );
+      container.add(
+        SceneGroup(
+          id: context.id('treemap-section-header'),
+          clipId: headerClipId,
+          children: headerChildren,
+          cssClasses: const ['treemapSectionHeaderLabels'],
+        ),
+      );
       layoutChildren(child, bounds, depth + 1);
     }
   }
@@ -334,6 +377,7 @@ _LayoutResult _layoutTreemap(TreemapAst ast, _LayoutContext context) {
     elements,
     bounds: contentBounds,
     viewportPadding: config.diagramPadding,
+    clips: clips,
   );
 }
 

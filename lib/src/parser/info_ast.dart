@@ -5,6 +5,9 @@ final class InfoAst extends DiagramAst {
   const InfoAst({super.title, super.accessibilityTitle, super.accessibilityDescription});
 
   @override
+  DiagramType get type => DiagramType.info;
+
+  @override
   List<Object?> get diagramFields => const [];
 
   @override

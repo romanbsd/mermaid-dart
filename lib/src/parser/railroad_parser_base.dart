@@ -4,14 +4,19 @@ import 'common_syntax.dart';
 enum RailroadCommentKind { cStyleBlock, isoEbnf, hashLine }
 
 enum RailroadDialect {
-  classic('railroad-beta', comments: {RailroadCommentKind.cStyleBlock}),
-  ebnf('railroad-ebnf-beta', comments: {RailroadCommentKind.cStyleBlock, RailroadCommentKind.isoEbnf}),
-  abnf('railroad-abnf-beta', hideCommentLines: true),
-  peg('railroad-peg-beta', comments: {RailroadCommentKind.hashLine});
+  classic('railroad-beta', RailroadSyntax.classic, comments: {RailroadCommentKind.cStyleBlock}),
+  ebnf(
+    'railroad-ebnf-beta',
+    RailroadSyntax.ebnf,
+    comments: {RailroadCommentKind.cStyleBlock, RailroadCommentKind.isoEbnf},
+  ),
+  abnf('railroad-abnf-beta', RailroadSyntax.abnf, hideCommentLines: true),
+  peg('railroad-peg-beta', RailroadSyntax.peg, comments: {RailroadCommentKind.hashLine});
 
-  const RailroadDialect(this.header, {this.comments = const {}, this.hideCommentLines = false});
+  const RailroadDialect(this.header, this.syntax, {this.comments = const {}, this.hideCommentLines = false});
 
   final String header;
+  final RailroadSyntax syntax;
   final Set<RailroadCommentKind> comments;
   final bool hideCommentLines;
 }
@@ -33,7 +38,7 @@ RailroadAst parseRailroadRules(
   while (!document.scanner.isAtEnd) {
     rules.add(parseRule(document.scanner));
   }
-  return railroadAst(document.metadata, rules);
+  return railroadAst(document.metadata, rules, dialect.syntax);
 }
 
 RailroadDocumentContext prepareRailroadDocument(String source, RailroadDialect dialect) {
@@ -55,7 +60,8 @@ RailroadDocumentContext prepareRailroadDocument(String source, RailroadDialect d
   );
 }
 
-RailroadAst railroadAst(CommonMetadata metadata, List<RailroadRuleAst> rules) => RailroadAst(
+RailroadAst railroadAst(CommonMetadata metadata, List<RailroadRuleAst> rules, RailroadSyntax syntax) => RailroadAst(
+  syntax: syntax,
   rules: List.unmodifiable(rules),
   title: metadata.title,
   accessibilityTitle: metadata.accessibilityTitle,

@@ -32,6 +32,9 @@ final class ArchitectureAst extends DiagramAst {
     super.accessibilityDescription,
   });
 
+  @override
+  DiagramType get type => DiagramType.architecture;
+
   final List<ArchitectureGroupAst> groups;
   final List<ArchitectureServiceAst> services;
   final List<ArchitectureJunctionAst> junctions;
