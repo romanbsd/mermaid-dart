@@ -11,6 +11,50 @@ const _treeDescriptionGap = 16.0;
 const _treeHighlightVerticalInset = 1.0;
 const _treeHighlightRightOverflow = 8.0;
 const _treeHighlightStrokeAllowance = 2.0;
+const _treeHighlightCornerRadius = 3.0;
+final _treeClassWhitespace = RegExp(r'\s+');
+
+final class _TreeLayoutNode {
+  _TreeLayoutNode({
+    required this.name,
+    required this.directory,
+    required this.depth,
+    required this.cssClasses,
+    this.description,
+    this.explicitIcon,
+  });
+
+  final String name;
+  final bool directory;
+  final int depth;
+  final List<String> cssClasses;
+  final String? description;
+  final String? explicitIcon;
+  int? lastChildIndex;
+
+  bool get highlighted => cssClasses.contains('highlight');
+}
+
+final class _TreeLayoutRow {
+  const _TreeLayoutRow({
+    required this.node,
+    required this.x,
+    required this.top,
+    required this.height,
+    required this.labelRightEdge,
+    required this.children,
+  });
+
+  final _TreeLayoutNode node;
+  final double x;
+  final double top;
+  final double height;
+  final double labelRightEdge;
+  final List<SceneElement> children;
+
+  double get centerY => top + height / 2;
+}
+
 SceneTextStyle _treeTextStyle(
   _LayoutContext context,
   Color color, {
@@ -67,43 +111,46 @@ String? _treeIconReference({
   return directory ? TreeViewRenderOptions.builtInFolderIcon : TreeViewRenderOptions.builtInFileIcon;
 }
 
+List<_TreeLayoutNode> _buildTreeLayoutNodes(TreeViewAst ast) {
+  final nodes = <_TreeLayoutNode>[
+    _TreeLayoutNode(name: _treeRootName, directory: true, depth: 0, cssClasses: const []),
+  ];
+  final ancestors = <({int indent, int nodeIndex})>[];
+  for (final astNode in ast.nodes) {
+    final indent = astNode.indent ?? 0;
+    while (ancestors.isNotEmpty && ancestors.last.indent >= indent) {
+      ancestors.removeLast();
+    }
+    final parentIndex = ancestors.isEmpty ? 0 : ancestors.last.nodeIndex;
+    final directory = astNode.name.endsWith('/');
+    final nodeIndex = nodes.length;
+    nodes[parentIndex].lastChildIndex = nodeIndex;
+    nodes.add(
+      _TreeLayoutNode(
+        name: directory ? astNode.name.substring(0, astNode.name.length - 1) : astNode.name,
+        directory: directory,
+        depth: ancestors.length + 1,
+        cssClasses: astNode.cssClass?.split(_treeClassWhitespace) ?? const [],
+        description: astNode.description,
+        explicitIcon: astNode.icon,
+      ),
+    );
+    ancestors.add((indent: indent, nodeIndex: nodeIndex));
+  }
+  return nodes;
+}
+
 _LayoutResult _layoutTree(TreeViewAst ast, _LayoutContext context) {
   final config = context.options.optionsFor(const TreeViewRenderOptions());
   final textStyle = _treeTextStyle(context, config.labelColor);
   final directoryStyle = _treeTextStyle(context, config.labelColor, weight: FontWeight.bold);
   final descriptionStyle = _treeTextStyle(context, config.descriptionColor, style: FontStyle.italic);
   final elements = <SceneElement>[];
-  final indentStack = <int>[];
-  final depths = <int>[];
-  for (final node in ast.nodes) {
-    final indent = node.indent ?? 0;
-    while (indentStack.isNotEmpty && indentStack.last >= indent) {
-      indentStack.removeLast();
-    }
-    depths.add(indentStack.length);
-    indentStack.add(indent);
-  }
-  final nodes = <({TreeViewNodeAst? ast, String name, bool directory, int depth})>[
-    (ast: null, name: _treeRootName, directory: true, depth: 0),
-    for (var i = 0; i < ast.nodes.length; i++)
-      (
-        ast: ast.nodes[i],
-        name: ast.nodes[i].name.endsWith('/')
-            ? ast.nodes[i].name.substring(0, ast.nodes[i].name.length - 1)
-            : ast.nodes[i].name,
-        directory: ast.nodes[i].name.endsWith('/'),
-        depth: depths[i] + 1,
-      ),
-  ];
-
-  final labelRightEdges = <double>[];
-  final rowTops = <double>[];
-  final rowHeights = <double>[];
-  final labelGroups = <List<SceneElement>>[];
+  final nodes = _buildTreeLayoutNodes(ast);
+  final rows = <_TreeLayoutRow>[];
   var totalHeight = 0.0;
   var totalWidth = 0.0;
-  for (var i = 0; i < nodes.length; i++) {
-    final node = nodes[i];
+  for (final node in nodes) {
     final x = node.depth * (config.rowIndent + config.paddingX);
     final labelStyle = node.directory ? directoryStyle : textStyle;
     final measured = context.measurer.measure(node.name, labelStyle);
@@ -113,7 +160,7 @@ _LayoutResult _layoutTree(TreeViewAst ast, _LayoutContext context) {
     final icon = _treeIconReference(
       name: node.name,
       directory: node.directory,
-      explicitIcon: node.ast?.icon,
+      explicitIcon: node.explicitIcon,
       config: config,
     );
     final hasIcon = icon != null;
@@ -140,35 +187,34 @@ _LayoutResult _layoutTree(TreeViewAst ast, _LayoutContext context) {
         centerY,
         baseline: TextBaseline.middle,
         style: labelStyle,
-        cssClasses: [
-          'treeView-node-label',
-          if (node.directory) 'treeView-node-dir',
-          if (node.ast?.cssClass case final cssClass?) ...cssClass.split(RegExp(r'\s+')),
-        ],
+        cssClasses: ['treeView-node-label', if (node.directory) 'treeView-node-dir', ...node.cssClasses],
       ),
     );
-    labelGroups.add(children);
-    labelRightEdges.add(labelX + measured.width);
-    rowTops.add(totalHeight);
-    rowHeights.add(height);
+    rows.add(
+      _TreeLayoutRow(
+        node: node,
+        x: x,
+        top: totalHeight,
+        height: height,
+        labelRightEdge: labelX + measured.width,
+        children: children,
+      ),
+    );
     totalWidth = math.max(totalWidth, x + measured.width + config.paddingX * 2 + (hasIcon ? _treeIconLabelOffset : 0));
     totalHeight += height;
   }
 
-  final descriptionIndices = <int>[
-    for (var i = 0; i < nodes.length; i++)
-      if (nodes[i].ast?.description != null) i,
-  ];
-  if (descriptionIndices.isNotEmpty) {
-    final descriptionX = labelRightEdges.reduce(math.max) + _treeDescriptionGap;
-    for (final i in descriptionIndices) {
-      final description = nodes[i].ast!.description!;
-      labelGroups[i].add(
+  final describedRows = rows.where((row) => row.node.description != null);
+  if (describedRows.isNotEmpty) {
+    final descriptionX = rows.map((row) => row.labelRightEdge).reduce(math.max) + _treeDescriptionGap;
+    for (final row in describedRows) {
+      final description = row.node.description!;
+      row.children.add(
         _text(
           context,
           description,
           descriptionX,
-          rowTops[i] + rowHeights[i] / 2,
+          row.centerY,
           baseline: TextBaseline.middle,
           style: descriptionStyle,
           cssClasses: const ['treeView-node-description'],
@@ -181,52 +227,46 @@ _LayoutResult _layoutTree(TreeViewAst ast, _LayoutContext context) {
     }
   }
 
-  for (var i = 0; i < nodes.length; i++) {
-    final node = nodes[i];
-    final depth = node.depth;
-    final x = depth * (config.rowIndent + config.paddingX);
-    final centerY = rowTops[i] + rowHeights[i] / 2;
-    if (node.ast?.cssClass?.split(RegExp(r'\s+')).contains('highlight') ?? false) {
-      final width = totalWidth - x + _treeHighlightRightOverflow;
-      labelGroups[i].insert(
+  for (final row in rows) {
+    final node = row.node;
+    if (node.highlighted) {
+      final width = totalWidth - row.x + _treeHighlightRightOverflow;
+      row.children.insert(
         0,
         SceneRect(
           id: context.id('tree-highlight'),
           bounds: Bounds(
-            left: x,
-            top: rowTops[i] + _treeHighlightVerticalInset,
+            left: row.x,
+            top: row.top + _treeHighlightVerticalInset,
             width: width,
-            height: rowHeights[i] - _treeHighlightVerticalInset * 2,
+            height: row.height - _treeHighlightVerticalInset * 2,
           ),
-          radiusX: 3,
-          radiusY: 3,
+          radiusX: _treeHighlightCornerRadius,
+          radiusY: _treeHighlightCornerRadius,
           fill: SolidFill(config.highlightBackground),
           stroke: _treeStroke(config.highlightStroke, config.highlightStrokeWidth),
           cssClasses: const ['treeView-highlight-bg'],
         ),
       );
-      totalWidth = math.max(totalWidth, x + width + _treeHighlightStrokeAllowance);
+      totalWidth = math.max(totalWidth, row.x + width + _treeHighlightStrokeAllowance);
     }
     elements.add(
       SceneLine(
         id: context.id('tree-edge'),
-        start: Point(x - config.rowIndent, centerY),
-        end: Point(x, centerY),
+        start: Point(row.x - config.rowIndent, row.centerY),
+        end: Point(row.x, row.centerY),
         stroke: _treeStroke(config.lineColor, config.lineThickness),
         role: SemanticRole.edge,
         cssClasses: const ['treeView-node-line'],
       ),
     );
-    var lastChild = -1;
-    for (var candidate = i + 1; candidate < nodes.length && nodes[candidate].depth > depth; candidate++) {
-      if (nodes[candidate].depth == depth + 1) lastChild = candidate;
-    }
-    if (lastChild >= 0) {
+    if (node.lastChildIndex case final lastChildIndex?) {
+      final lastChild = rows[lastChildIndex];
       elements.add(
         SceneLine(
           id: context.id('tree-edge'),
-          start: Point(x + config.paddingX, rowTops[i] + rowHeights[i]),
-          end: Point(x + config.paddingX, rowTops[lastChild] + rowHeights[lastChild] / 2 + config.lineThickness / 2),
+          start: Point(row.x + config.paddingX, row.top + row.height),
+          end: Point(row.x + config.paddingX, lastChild.centerY + config.lineThickness / 2),
           stroke: _treeStroke(config.lineColor, config.lineThickness),
           role: SemanticRole.edge,
           cssClasses: const ['treeView-node-line'],
@@ -236,7 +276,7 @@ _LayoutResult _layoutTree(TreeViewAst ast, _LayoutContext context) {
     elements.add(
       SceneGroup(
         id: context.id('tree-node'),
-        children: labelGroups[i],
+        children: row.children,
         role: SemanticRole.node,
         label: node.name,
         cssClasses: const ['treeView-node'],

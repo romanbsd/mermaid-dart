@@ -101,6 +101,48 @@ void main() {
       expectSvgGolden('tree_descriptions', renderSvg(scene));
     });
 
+    test('tree view trunks end at the last direct child in nested sibling trees', () {
+      final scene = layoutDiagram(
+        const TreeViewAst(
+          nodes: [
+            TreeViewNodeAst(name: 'dir-a/'),
+            TreeViewNodeAst(name: 'child-1', indent: 2),
+            TreeViewNodeAst(name: 'grandchild', indent: 4, cssClass: 'leaf   highlight\tselected'),
+            TreeViewNodeAst(name: 'child-2', indent: 2),
+            TreeViewNodeAst(name: 'dir-b/'),
+            TreeViewNodeAst(name: 'child-3', indent: 2),
+          ],
+        ),
+        textMeasurer: measurer,
+        options: const RenderOptions(padding: 0),
+      );
+      final elements = _flatten(scene.elements).toList();
+      final labels = elements
+          .whereType<SceneText>()
+          .where((element) => element.cssClasses.contains('treeView-node-label'))
+          .toList();
+      final verticalLines = elements
+          .whereType<SceneLine>()
+          .where((element) => element.cssClasses.contains('treeView-node-line') && element.start.x == element.end.x)
+          .toList();
+
+      expect(labels.map((label) => label.text), ['/', 'dir-a', 'child-1', 'grandchild', 'child-2', 'dir-b', 'child-3']);
+      expect(
+        labels.singleWhere((label) => label.text == 'grandchild').cssClasses,
+        containsAll(['leaf', 'highlight', 'selected']),
+      );
+      expect(verticalLines.map((line) => (line.start.x, line.start.y, line.end.y)), const [
+        (5, 30, 165.5),
+        (20, 60, 135.5),
+        (35, 90, 105.5),
+        (20, 180, 195.5),
+      ]);
+      expect(
+        elements.whereType<SceneRect>().where((element) => element.cssClasses.contains('treeView-highlight-bg')),
+        hasLength(1),
+      );
+    });
+
     test('railroad uses Mermaid baselines, markers, and typed arcs', () {
       final scene = layoutDiagram(
         const RailroadAst(
