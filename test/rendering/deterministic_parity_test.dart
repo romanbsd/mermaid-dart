@@ -1294,6 +1294,23 @@ void main() {
       final stageBoundary = elements.whereType<SceneLine>().singleWhere(
         (element) => element.cssClasses.contains('wardley-stage-boundary'),
       );
+      final inertia = elements.whereType<SceneLine>().singleWhere(
+        (element) => element.cssClasses.contains('wardley-inertia'),
+      );
+      final annotation = elements.whereType<SceneCircle>().singleWhere(
+        (element) => element.cssClasses.contains('wardley-annotation-circle'),
+      );
+      final annotationNumber = elements.whereType<SceneText>().singleWhere(
+        (element) => element.cssClasses.contains('wardley-annotation-number'),
+      );
+      final markers = elements
+          .whereType<ScenePath>()
+          .where((element) => element.cssClasses.contains('wardley-marker'))
+          .toList();
+      final markerLabels = elements
+          .whereType<SceneText>()
+          .where((element) => element.cssClasses.contains('wardley-marker-label'))
+          .toList();
 
       expect(scene.bounds, const Bounds(left: 0, top: 0, width: 500, height: 400));
       expect(axes.map((axis) => (axis.start, axis.end)), [
@@ -1308,6 +1325,11 @@ void main() {
       );
       expect(stageBoundary.start.x, 208);
       expect(stageBoundary.stroke?.color, const Color(0, 0, 0, 204));
+      expect((inertia.start, inertia.end), const (Point(285, 163), Point(285, 173)));
+      expect(inertia.stroke?.width, 6);
+      expect((annotation.center, annotation.radius), const (Point(334, 200), 10));
+      expect(annotation.stroke?.width, 1.5);
+      expect(annotationNumber.style.fontSize, 10);
       expect(
         elements.whereType<SceneLine>().where((element) => element.cssClasses.contains('wardley-link')),
         hasLength(1),
@@ -1325,6 +1347,27 @@ void main() {
         elements.whereType<ScenePath>().where((element) => element.cssClasses.contains('wardley-marker')),
         hasLength(2),
       );
+      expect(markers.first.commands, const [
+        MoveTo(Point(103, 105)),
+        LineTo(Point(143, 105)),
+        LineTo(Point(143, 97)),
+        LineTo(Point(163, 120)),
+        LineTo(Point(143, 143)),
+        LineTo(Point(143, 135)),
+        LineTo(Point(103, 135)),
+        ClosePath(),
+      ]);
+      expect(markers.last.commands, const [
+        MoveTo(Point(352, 281)),
+        LineTo(Point(312, 281)),
+        LineTo(Point(312, 273)),
+        LineTo(Point(292, 296)),
+        LineTo(Point(312, 319)),
+        LineTo(Point(312, 311)),
+        LineTo(Point(352, 311)),
+        ClosePath(),
+      ]);
+      expect(markerLabels.map((label) => label.position), const [Point(133, 150), Point(322, 326)]);
       expect(
         elements.whereType<SceneText>().singleWhere((element) => element.text == 'Watch this').position,
         const Point(124, 104),
@@ -1457,6 +1500,8 @@ void main() {
       expect(pipelineBox.bounds.top, 288);
       expect(pipelineBox.bounds.width, closeTo(351.6, 1e-9));
       expect(pipelineBox.bounds.height, 24);
+      expect((pipelineBox.radiusX, pipelineBox.radiusY), const (4, 4));
+      expect(pipelineBox.stroke?.width, 1.5);
       expect(parent.bounds.center.x, 450);
       expect(parent.bounds.center.y, closeTo(286.4, 1e-9));
       expect(
