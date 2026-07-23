@@ -30,7 +30,12 @@ Bounds? sceneElementGeometryBounds(SceneElement element, {bool includeText = tru
     final bounds? => _transformBounds(bounds, transforms),
     null => null,
   },
-  SceneLine(:final start, :final end) => _pointsBounds([start, end]),
+  SceneLine(:final start, :final end) => Bounds(
+    left: math.min(start.x, end.x),
+    top: math.min(start.y, end.y),
+    width: (end.x - start.x).abs(),
+    height: (end.y - start.y).abs(),
+  ),
   SceneRect(:final bounds) => bounds,
   SceneCircle(:final center, :final radius) => Bounds(
     left: center.x - radius,
@@ -293,14 +298,22 @@ Point _ellipsePoint(Point center, double radiusX, double radiusY, double rotatio
   );
 }
 
-Bounds _transformBounds(Bounds bounds, List<SceneTransform> transforms) => _pointsBounds(
-  [
-    Point(bounds.left, bounds.top),
-    Point(bounds.right, bounds.top),
-    Point(bounds.right, bounds.bottom),
-    Point(bounds.left, bounds.bottom),
-  ].map((point) => transforms.reversed.fold(point, _transformPoint)),
-)!;
+Bounds _transformBounds(Bounds bounds, List<SceneTransform> transforms) {
+  final transformed = _BoundsAccumulator();
+  void addTransformed(Point point) {
+    var result = point;
+    for (var index = transforms.length - 1; index >= 0; index--) {
+      result = _transformPoint(result, transforms[index]);
+    }
+    transformed.addPoint(result);
+  }
+
+  addTransformed(Point(bounds.left, bounds.top));
+  addTransformed(Point(bounds.right, bounds.top));
+  addTransformed(Point(bounds.right, bounds.bottom));
+  addTransformed(Point(bounds.left, bounds.bottom));
+  return transformed.value!;
+}
 
 Point _transformPoint(Point point, SceneTransform transform) => switch (transform) {
   Translate(:final x, :final y) => Point(point.x + x, point.y + y),
@@ -334,17 +347,19 @@ final class _BoundsAccumulator {
   double? _top;
   double? _bottom;
 
-  void addPoint(Point point) {
-    _left = _left == null ? point.x : math.min(_left!, point.x);
-    _right = _right == null ? point.x : math.max(_right!, point.x);
-    _top = _top == null ? point.y : math.min(_top!, point.y);
-    _bottom = _bottom == null ? point.y : math.max(_bottom!, point.y);
+  void addPoint(Point point) => addCoordinates(point.x, point.y);
+
+  void addCoordinates(double x, double y) {
+    _left = _left == null ? x : math.min(_left!, x);
+    _right = _right == null ? x : math.max(_right!, x);
+    _top = _top == null ? y : math.min(_top!, y);
+    _bottom = _bottom == null ? y : math.max(_bottom!, y);
   }
 
   void addBounds(Bounds? bounds) {
     if (bounds == null) return;
-    addPoint(Point(bounds.left, bounds.top));
-    addPoint(Point(bounds.right, bounds.bottom));
+    addCoordinates(bounds.left, bounds.top);
+    addCoordinates(bounds.right, bounds.bottom);
   }
 
   Bounds? get value => switch ((_left, _right, _top, _bottom)) {

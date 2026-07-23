@@ -53,5 +53,22 @@ void main() {
 
       expect(model.commits.map((commit) => commit.id), ['commit-0', 'commit-1']);
     });
+
+    test('keeps the latest commit when an explicit ID is reused', () {
+      final model = buildGitGraphModel(
+        const GitGraphAst(
+          statements: [
+            GitGraphCommitAst(id: 'A', message: 'first'),
+            GitGraphCommitAst(id: 'A', message: 'replacement'),
+            GitGraphCommitAst(id: 'B'),
+          ],
+        ),
+        const GitGraphRenderOptions(),
+      );
+
+      expect(model.commits.map((commit) => commit.id), ['A', 'B']);
+      expect(model.commits.first.message, 'replacement');
+      expect(model.commits.last.parents, ['A']);
+    });
   });
 }

@@ -60,8 +60,7 @@ String renderSvg(DiagramScene scene, {SvgRenderOptions options = const SvgRender
             'y': _number(scene.viewport.top),
             'width': _number(scene.viewport.width),
             'height': _number(scene.viewport.height),
-            'fill': scene.background.hex,
-            if (scene.background.alpha < 255) 'fill-opacity': _number(scene.background.alpha / 255),
+            ..._colorAttributes('fill', scene.background),
             'class': 'background',
           },
         );
@@ -187,8 +186,7 @@ void _element(XmlBuilder builder, SceneElement element, {bool omitIdentity = fal
             FontWeight.bold => '700',
           },
           if (style.style == FontStyle.italic) 'font-style': 'italic',
-          'fill': style.color.hex,
-          if (style.color.alpha < 255) 'fill-opacity': _number(style.color.alpha / 255),
+          ..._colorAttributes('fill', style.color),
         },
         nest: () {
           final lines = text.split('\n');
@@ -224,19 +222,23 @@ void _element(XmlBuilder builder, SceneElement element, {bool omitIdentity = fal
 Map<String, String> _fill(SceneFill? fill) => switch (fill) {
   null => const {},
   NoFill() => const {'fill': 'none'},
-  SolidFill(:final color) => {'fill': color.hex, if (color.alpha < 255) 'fill-opacity': _number(color.alpha / 255)},
+  SolidFill(:final color) => _colorAttributes('fill', color),
 };
 
 Map<String, String> _stroke(SceneStroke? stroke) => stroke == null
     ? const {}
     : {
-        'stroke': stroke.color.hex,
+        ..._colorAttributes('stroke', stroke.color),
         'stroke-width': _number(stroke.width),
-        if (stroke.color.alpha < 255) 'stroke-opacity': _number(stroke.color.alpha / 255),
         if (stroke.dashes.isNotEmpty) 'stroke-dasharray': stroke.dashes.map(_number).join(' '),
         'stroke-linecap': stroke.cap.name,
         'stroke-linejoin': stroke.join.name,
       };
+
+Map<String, String> _colorAttributes(String name, Color color) => {
+  name: color.hex,
+  if (color.alpha < 255) '$name-opacity': _number(color.alpha / 255),
+};
 
 String _transform(SceneTransform transform) => switch (transform) {
   Translate(:final x, :final y) => 'translate(${_number(x)} ${_number(y)})',

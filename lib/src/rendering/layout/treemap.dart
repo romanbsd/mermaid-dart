@@ -440,7 +440,7 @@ final class _TreemapLayoutNode {
   final String? cssClass;
   final children = <_TreemapLayoutNode>[];
 
-  double get value => ownValue ?? children.fold(0, (sum, child) => sum + child.value);
+  late final double value = ownValue ?? children.fold(0, (sum, child) => sum + child.value);
 }
 
 final class _TreemapClassStyle {

@@ -1,5 +1,3 @@
-import 'package:collection/collection.dart';
-
 import '../../parser/ast.dart';
 import '../options.dart';
 
@@ -53,12 +51,13 @@ GitGraphModel buildGitGraphModel(GitGraphAst ast, GitGraphRenderOptions options)
     GitBranchModel(name: options.mainBranchName, order: options.mainBranchOrder, creationIndex: 0),
   ];
   final heads = <String, String?>{options.mainBranchName: null};
-  final commits = <GitCommitModel>[];
+  final commitsById = <String, GitCommitModel>{};
   var currentBranch = options.mainBranchName;
+  var nextSequence = 0;
 
-  GitCommitModel? commitById(String? id) => id == null ? null : commits.where((commit) => commit.id == id).lastOrNull;
+  GitCommitModel? commitById(String? id) => id == null ? null : commitsById[id];
   void addCommit(GitCommitModel commit) {
-    commits.add(commit);
+    commitsById[commit.id] = commit;
     heads[currentBranch] = commit.id;
   }
 
@@ -82,7 +81,7 @@ GitGraphModel buildGitGraphModel(GitGraphAst ast, GitGraphRenderOptions options)
         }
         currentBranch = branch;
       case GitGraphCommitAst(:final id, :final message, :final tags, :final type):
-        final sequence = commits.length;
+        final sequence = nextSequence++;
         final parent = heads[currentBranch];
         addCommit(
           GitCommitModel(
@@ -101,7 +100,7 @@ GitGraphModel buildGitGraphModel(GitGraphAst ast, GitGraphRenderOptions options)
         final currentHead = heads[currentBranch];
         final otherHead = heads[branch];
         if (currentHead == null || otherHead == null || branch == currentBranch) continue;
-        final sequence = commits.length;
+        final sequence = nextSequence++;
         addCommit(
           GitCommitModel(
             id: id ?? 'merge-$sequence',
@@ -121,7 +120,7 @@ GitGraphModel buildGitGraphModel(GitGraphAst ast, GitGraphRenderOptions options)
         final currentHead = heads[currentBranch];
         if (source == null || currentHead == null || source.branch == currentBranch) continue;
         if (source.kind == GitCommitKind.merge && (parent == null || !source.parents.contains(parent))) continue;
-        final sequence = commits.length;
+        final sequence = nextSequence++;
         addCommit(
           GitCommitModel(
             id: 'cherry-pick-$sequence',
@@ -144,5 +143,6 @@ GitGraphModel buildGitGraphModel(GitGraphAst ast, GitGraphRenderOptions options)
       final byOrder = left.order.compareTo(right.order);
       return byOrder != 0 ? byOrder : left.creationIndex.compareTo(right.creationIndex);
     });
+  final commits = commitsById.values.toList()..sort((left, right) => left.sequence.compareTo(right.sequence));
   return GitGraphModel(branches: sortedBranches, commits: commits);
 }

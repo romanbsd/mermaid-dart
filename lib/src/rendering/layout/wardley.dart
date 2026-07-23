@@ -336,10 +336,11 @@ _LayoutResult _layoutWardley(WardleyAst ast, _LayoutContext context) {
       );
     }
     if (components.isEmpty) continue;
-    final componentPositions = components.map((node) => positions[node.id]!).toList();
-    final minX = componentPositions.map((point) => point.x).reduce(math.min);
-    final maxX = componentPositions.map((point) => point.x).reduce(math.max);
-    final y = componentPositions.last.y;
+    final firstPosition = positions[components.first.id]!;
+    final lastPosition = positions[components.last.id]!;
+    final minX = firstPosition.x;
+    final maxX = lastPosition.x;
+    final y = lastPosition.y;
     final pipelineHeight = config.nodeRadius * _wardleyPipelineHeightScale;
     final boxTop = y - pipelineHeight / 2;
     positions[pipeline.parentId] = Point(
@@ -603,17 +604,13 @@ _LayoutResult _layoutWardley(WardleyAst ast, _LayoutContext context) {
       ..sort((left, right) => left.number.compareTo(right.number));
     if (sorted.isNotEmpty) {
       final annotationStyle = textStyles.annotationText;
-      final maxWidth = sorted
-          .map(
-            (annotation) => context.measurer.measure('${annotation.number}. ${annotation.text}', annotationStyle).width,
-          )
-          .reduce(math.max);
-      final textHeight = sorted
-          .map(
-            (annotation) =>
-                context.measurer.measure('${annotation.number}. ${annotation.text}', annotationStyle).height,
-          )
-          .reduce(math.max);
+      var maxWidth = 0.0;
+      var textHeight = 0.0;
+      for (final annotation in sorted) {
+        final size = context.measurer.measure('${annotation.number}. ${annotation.text}', annotationStyle);
+        maxWidth = math.max(maxWidth, size.width);
+        textHeight = math.max(textHeight, size.height);
+      }
       final boxWidth = maxWidth + _wardleyAnnotationBoxPadding * 2 + _wardleyAnnotationBoxSafetyWidth;
       final boxHeight =
           sorted.length * _wardleyAnnotationLineHeight + _wardleyAnnotationBoxPadding * 2 + textHeight / 2;

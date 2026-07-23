@@ -67,6 +67,8 @@ _LayoutResult _layoutGitGraph(GitGraphAst ast, _LayoutContext context) {
   final config = context.options.optionsFor(const GitGraphRenderOptions());
   final theme = config.resolveTheme(context.options.theme);
   final model = buildGitGraphModel(ast, config);
+  final commitsById = {for (final commit in model.commits) commit.id: commit};
+  final branchIndices = {for (final (index, branch) in model.branches.indexed) branch.name: index};
   final direction = ast.direction ?? GitGraphDirection.leftToRight;
   final vertical = direction != GitGraphDirection.leftToRight;
   final branchStyle = SceneTextStyle(
@@ -235,9 +237,10 @@ _LayoutResult _layoutGitGraph(GitGraphAst ast, _LayoutContext context) {
       final parentId = commit.parents[parentIndex];
       final start = positions[parentId];
       if (start == null) continue;
-      final parent = model.commits.firstWhere((candidate) => candidate.id == parentId);
+      final parent = commitsById[parentId];
+      if (parent == null) continue;
       final colorBranch = commit.kind == GitCommitKind.merge && parentIndex > 0 ? parent.branch : commit.branch;
-      final branchIndex = model.branches.indexWhere((branch) => branch.name == colorBranch);
+      final branchIndex = branchIndices[colorBranch] ?? -1;
       elements.add(
         ScenePath(
           id: context.id('git-edge'),
@@ -260,7 +263,7 @@ _LayoutResult _layoutGitGraph(GitGraphAst ast, _LayoutContext context) {
 
   for (final commit in model.commits) {
     final point = positions[commit.id]!;
-    final branchIndex = model.branches.indexWhere((branch) => branch.name == commit.branch);
+    final branchIndex = branchIndices[commit.branch] ?? -1;
     final color = _gitBranchColor(theme, branchIndex);
     final highlightColor = _gitHighlightColor(theme, branchIndex);
     _addGitCommit(elements, context, commit, point, color, highlightColor, config, theme);

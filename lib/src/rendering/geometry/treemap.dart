@@ -66,14 +66,13 @@ List<TreemapTile<T>> squarifyTreemap<T>(
       end++;
     }
 
-    final row = items.sublist(start, end);
     if (dx < dy) {
       final rowBottom = remaining == 0 ? y1 : y0 + dy * sum / remaining;
-      _dice(row, x0, y0, x1, rowBottom, innerPadding, round, result);
+      _dice(items, start, end, sum, x0, y0, x1, rowBottom, innerPadding, round, result);
       y0 = rowBottom;
     } else {
       final rowRight = remaining == 0 ? x1 : x0 + dx * sum / remaining;
-      _slice(row, x0, y0, rowRight, y1, innerPadding, round, result);
+      _slice(items, start, end, sum, x0, y0, rowRight, y1, innerPadding, round, result);
       x0 = rowRight;
     }
     remaining -= sum;
@@ -90,7 +89,10 @@ double _worstRatio(double minimum, double maximum, double beta) {
 }
 
 void _dice<T>(
-  List<TreemapItem<T>> row,
+  List<TreemapItem<T>> items,
+  int start,
+  int end,
+  double total,
   double x0,
   double y0,
   double x1,
@@ -99,17 +101,20 @@ void _dice<T>(
   bool round,
   List<TreemapTile<T>> output,
 ) {
-  final total = row.fold<double>(0, (sum, item) => sum + item.value);
   var x = x0;
-  for (var i = 0; i < row.length; i++) {
-    final next = i == row.length - 1 ? x1 : x + (x1 - x0) * row[i].value / total;
-    output.add(TreemapTile(row[i].data, _tileBounds(x, y0, next, y1, padding, round)));
+  for (var index = start; index < end; index++) {
+    final item = items[index];
+    final next = index == end - 1 ? x1 : x + (x1 - x0) * item.value / total;
+    output.add(TreemapTile(item.data, _tileBounds(x, y0, next, y1, padding, round)));
     x = next;
   }
 }
 
 void _slice<T>(
-  List<TreemapItem<T>> row,
+  List<TreemapItem<T>> items,
+  int start,
+  int end,
+  double total,
   double x0,
   double y0,
   double x1,
@@ -118,11 +123,11 @@ void _slice<T>(
   bool round,
   List<TreemapTile<T>> output,
 ) {
-  final total = row.fold<double>(0, (sum, item) => sum + item.value);
   var y = y0;
-  for (var i = 0; i < row.length; i++) {
-    final next = i == row.length - 1 ? y1 : y + (y1 - y0) * row[i].value / total;
-    output.add(TreemapTile(row[i].data, _tileBounds(x0, y, x1, next, padding, round)));
+  for (var index = start; index < end; index++) {
+    final item = items[index];
+    final next = index == end - 1 ? y1 : y + (y1 - y0) * item.value / total;
+    output.add(TreemapTile(item.data, _tileBounds(x0, y, x1, next, padding, round)));
     y = next;
   }
 }

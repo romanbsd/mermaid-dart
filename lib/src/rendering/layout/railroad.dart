@@ -153,9 +153,15 @@ _RailBox _railSequence(List<RailroadNodeAst> nodes, _RailroadContext context) {
   if (nodes.isEmpty) return const _RailBox(0, 0, 0, 0, []);
   final config = context.config;
   final scene = context.scene;
-  final boxes = nodes.map((node) => _railNode(node, context)).toList();
-  final up = boxes.map((box) => box.up).reduce(math.max);
-  final down = boxes.map((box) => box.down).reduce(math.max);
+  final boxes = <_RailBox>[];
+  var up = 0.0;
+  var down = 0.0;
+  for (final node in nodes) {
+    final box = _railNode(node, context);
+    boxes.add(box);
+    up = math.max(up, box.up);
+    down = math.max(down, box.down);
+  }
   final height = up + down;
   final elements = <SceneElement>[];
   var x = 0.0;
@@ -175,13 +181,20 @@ _RailBox _railSequence(List<RailroadNodeAst> nodes, _RailroadContext context) {
 }
 
 _RailBox _railChoice(List<RailroadNodeAst> nodes, _RailroadContext context) {
-  final boxes = nodes.map((node) => _railNode(node, context)).toList();
-  if (boxes.isEmpty) return const _RailBox(0, 0, 0, 0, []);
   final config = context.config;
   final scene = context.scene;
   final radius = config.arcRadius;
-  final maxWidth = boxes.map((box) => box.width).fold(0.0, math.max);
-  final height = boxes.fold(0.0, (sum, box) => sum + box.height) + config.verticalSeparation * (boxes.length - 1);
+  final boxes = <_RailBox>[];
+  var maxWidth = 0.0;
+  var height = 0.0;
+  for (final node in nodes) {
+    final box = _railNode(node, context);
+    boxes.add(box);
+    maxWidth = math.max(maxWidth, box.width);
+    height += box.height;
+  }
+  if (boxes.isEmpty) return const _RailBox(0, 0, 0, 0, []);
+  height += config.verticalSeparation * (boxes.length - 1);
   final width = maxWidth + radius * 4;
   final centerY = height / 2;
   final elements = <SceneElement>[];

@@ -1,5 +1,3 @@
-import 'package:collection/collection.dart';
-
 import '../../parser/ast.dart';
 import '../options.dart';
 import '../scene.dart';
@@ -81,12 +79,18 @@ EventModelLayout layoutEventModel(
   final boxes = <EventModelBox>[];
   final relations = <EventModelRelation>[];
   final latestBoxByFrameName = <String, EventModelBox>{};
+  final dataByName = <String, String>{};
+  for (final entity in ast.dataEntities) {
+    dataByName.putIfAbsent(entity.name, () => entity.value);
+  }
   EventModelLane? previousLane;
+  EventModelBox? latestBoxInOtherLane;
   var maxRight = 0.0;
 
   for (var frameIndex = 0; frameIndex < ast.frames.length; frameIndex++) {
     final frame = ast.frames[frameIndex];
-    final laneIdentity = _laneIdentity(frame, lanesByIndex);
+    final entity = _entityIdentity(frame.entityIdentifier);
+    final laneIdentity = _laneIdentity(frame.entityType, entity.namespace, lanesByIndex);
     final lane = lanesByIndex.putIfAbsent(
       laneIdentity.index,
       () => EventModelLane(
@@ -98,7 +102,7 @@ EventModelLayout layoutEventModel(
         maxHeight: options.swimlaneMinHeight,
       ),
     );
-    final text = _frameText(frame, ast.dataEntities);
+    final text = _frameText(frame, entity.name, dataByName);
     final measured = measurer.measure(text, textStyle);
     final width = _eventModelBoxDimension(
       measured.width,
@@ -112,7 +116,10 @@ EventModelLayout layoutEventModel(
       maximum: options.boxMaxHeight,
       padding: options.boxPadding,
     );
-    final previousBox = boxes.lastOrNull;
+    final previousBox = boxes.isEmpty ? null : boxes.last;
+    if (!identical(previousLane, lane)) {
+      latestBoxInOtherLane = previousBox;
+    }
     final x = switch (previousBox) {
       null => options.contentStartX,
       _ when identical(previousLane, lane) && lane.right > 0 => lane.right + options.boxPadding,
@@ -144,8 +151,9 @@ EventModelLayout layoutEventModel(
           if (source != null) relations.add(EventModelRelation(source: source, target: box));
         }
       } else {
-        final source = boxes.reversed.skip(1).where((candidate) => candidate.lane.index != lane.index).firstOrNull;
-        if (source != null) relations.add(EventModelRelation(source: source, target: box));
+        if (latestBoxInOtherLane case final source?) {
+          relations.add(EventModelRelation(source: source, target: box));
+        }
       }
     }
     previousLane = lane;
@@ -159,9 +167,12 @@ EventModelLayout layoutEventModel(
   return EventModelLayout(lanes: lanes, boxes: boxes, relations: relations, maxRight: maxRight, height: height);
 }
 
-({int index, String label, String? namespace}) _laneIdentity(EventModelFrameAst frame, Map<int, EventModelLane> lanes) {
-  final namespace = _entityNamespace(frame.entityIdentifier);
-  final (:lower, :label, :prefix) = frame.entityType._lane;
+({int index, String label, String? namespace}) _laneIdentity(
+  EventModelEntityType type,
+  String? namespace,
+  Map<int, EventModelLane> lanes,
+) {
+  final (:lower, :label, :prefix) = type._lane;
   final upper = lower + _eventModelLaneBandSize;
   if (namespace == null) return (index: lower, label: label, namespace: null);
   final occupied = lanes.keys.where((index) => index > lower && index < upper);
@@ -169,21 +180,17 @@ EventModelLayout layoutEventModel(
   return (index: index, label: '$prefix$namespace', namespace: namespace);
 }
 
-String? _entityNamespace(String identifier) {
+({String name, String? namespace}) _entityIdentity(String identifier) {
   final parts = identifier.split('.');
-  return parts.length == _eventModelNamespaceSegmentCount ? parts.first : null;
+  return parts.length == _eventModelNamespaceSegmentCount
+      ? (name: parts.last, namespace: parts.first)
+      : (name: identifier, namespace: null);
 }
 
-String _entityName(String identifier) {
-  final parts = identifier.split('.');
-  return parts.length == _eventModelNamespaceSegmentCount ? parts.last : identifier;
-}
-
-String _frameText(EventModelFrameAst frame, List<EventModelDataEntityAst> dataEntities) {
-  final name = _entityName(frame.entityIdentifier);
+String _frameText(EventModelFrameAst frame, String name, Map<String, String> dataByName) {
   var data = frame.dataInlineValue;
   if (frame.dataReference case final reference?) {
-    data = dataEntities.where((entity) => entity.name == reference).firstOrNull?.value;
+    data = dataByName[reference];
   }
   if (data == null) return name;
   final open = data.indexOf('{');

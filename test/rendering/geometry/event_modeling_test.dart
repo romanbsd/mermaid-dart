@@ -121,6 +121,11 @@ void main() {
       expect(layout.lanes.map((lane) => lane.height), [140, 70]);
       expect(layout.lanes.map((lane) => lane.y), [0, 150]);
       expect(layout.height, 220);
+      expect(layout.relations, hasLength(2));
+      expect(layout.relations.first.source, same(layout.boxes[0]));
+      expect(layout.relations.first.target, same(layout.boxes[1]));
+      expect(layout.relations.last.source, same(layout.boxes[1]));
+      expect(layout.relations.last.target, same(layout.boxes[2]));
     });
 
     test('explicit sources resolve to the latest duplicate frame name', () {

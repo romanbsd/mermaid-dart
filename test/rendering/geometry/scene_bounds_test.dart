@@ -95,6 +95,13 @@ void main() {
     expect(sceneGeometryBounds(const [text]), text.bounds);
     expect(sceneGeometryBounds(const [text], includeText: false), isNull);
   });
+
+  test('sceneElementGeometryBounds handles lines in either direction', () {
+    expect(
+      sceneElementGeometryBounds(const SceneLine(id: 'line', start: Point(10, 20), end: Point(-5, 8))),
+      const Bounds(left: -5, top: 8, width: 15, height: 12),
+    );
+  });
 }
 
 void _expectBoundsClose(Bounds actual, Bounds expected) {

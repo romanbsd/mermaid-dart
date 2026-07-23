@@ -57,30 +57,69 @@ DiagramScene layoutDiagram(
   IconResolver iconResolver = const EmptyIconResolver(),
 }) {
   final context = _LayoutContext(options, textMeasurer, iconResolver);
-  final content = switch (diagram) {
-    ArchitectureAst ast => _layoutArchitecture(ast, context),
-    CynefinAst ast => _layoutCynefin(ast, context),
-    EventModelingAst ast => _layoutEventModeling(ast, context),
-    GitGraphAst ast => _layoutGitGraph(ast, context),
-    InfoAst ast => _layoutInfo(ast, context),
-    PacketAst ast => _layoutPacket(ast, context),
-    PieAst ast => _layoutPie(ast, context),
-    RadarAst ast => _layoutRadar(ast, context),
-    RailroadAst ast => _layoutRailroad(ast, context),
-    TreeViewAst ast => _layoutTree(ast, context),
-    TreemapAst ast => _layoutTreemap(ast, context),
-    WardleyAst ast => _layoutWardley(ast, context),
+  final (:content, :diagramOptions, :rendererHandlesTitle) = switch (diagram) {
+    ArchitectureAst ast => (
+      content: _layoutArchitecture(ast, context),
+      diagramOptions: options.optionsFor(const ArchitectureRenderOptions()),
+      rendererHandlesTitle: true,
+    ),
+    CynefinAst ast => (
+      content: _layoutCynefin(ast, context),
+      diagramOptions: options.optionsFor(const CynefinRenderOptions()),
+      rendererHandlesTitle: true,
+    ),
+    EventModelingAst ast => (
+      content: _layoutEventModeling(ast, context),
+      diagramOptions: options.optionsFor(const EventModelingRenderOptions()),
+      rendererHandlesTitle: false,
+    ),
+    GitGraphAst ast => (
+      content: _layoutGitGraph(ast, context),
+      diagramOptions: options.optionsFor(const GitGraphRenderOptions()),
+      rendererHandlesTitle: true,
+    ),
+    InfoAst ast => (
+      content: _layoutInfo(ast, context),
+      diagramOptions: options.optionsFor(const InfoRenderOptions()),
+      rendererHandlesTitle: false,
+    ),
+    PacketAst ast => (
+      content: _layoutPacket(ast, context),
+      diagramOptions: options.optionsFor(const PacketRenderOptions()),
+      rendererHandlesTitle: true,
+    ),
+    PieAst ast => (
+      content: _layoutPie(ast, context),
+      diagramOptions: options.optionsFor(const PieRenderOptions()),
+      rendererHandlesTitle: true,
+    ),
+    RadarAst ast => (
+      content: _layoutRadar(ast, context),
+      diagramOptions: options.optionsFor(const RadarRenderOptions()),
+      rendererHandlesTitle: true,
+    ),
+    RailroadAst ast => (
+      content: _layoutRailroad(ast, context),
+      diagramOptions: options.optionsFor(const RailroadRenderOptions()),
+      rendererHandlesTitle: false,
+    ),
+    TreeViewAst ast => (
+      content: _layoutTree(ast, context),
+      diagramOptions: options.optionsFor(const TreeViewRenderOptions()),
+      rendererHandlesTitle: false,
+    ),
+    TreemapAst ast => (
+      content: _layoutTreemap(ast, context),
+      diagramOptions: options.optionsFor(const TreemapRenderOptions()),
+      rendererHandlesTitle: true,
+    ),
+    WardleyAst ast => (
+      content: _layoutWardley(ast, context),
+      diagramOptions: options.optionsFor(const WardleyRenderOptions()),
+      rendererHandlesTitle: true,
+    ),
   };
 
-  final rendererHandlesTitle =
-      diagram is ArchitectureAst ||
-      diagram is PacketAst ||
-      diagram is PieAst ||
-      diagram is RadarAst ||
-      diagram is TreemapAst ||
-      diagram is CynefinAst ||
-      diagram is GitGraphAst ||
-      diagram is WardleyAst;
   final positionsSharedTitle = diagram.title != null && !rendererHandlesTitle;
   final width = math.max(content.width, _minimumSceneExtent);
   final height = math.max(content.height, _minimumSceneExtent);
@@ -109,20 +148,6 @@ DiagramScene layoutDiagram(
       ? baseBounds
       : sharedTitle.bounds.union(baseBounds.translated(0, _diagramTitleBandHeight));
   final viewport = contentBounds.expand(options.padding + content.viewportPadding);
-  final diagramOptions = switch (diagram) {
-    ArchitectureAst() => options.optionsFor(const ArchitectureRenderOptions()),
-    CynefinAst() => options.optionsFor(const CynefinRenderOptions()),
-    EventModelingAst() => options.optionsFor(const EventModelingRenderOptions()),
-    GitGraphAst() => options.optionsFor(const GitGraphRenderOptions()),
-    InfoAst() => options.optionsFor(const InfoRenderOptions()),
-    PacketAst() => options.optionsFor(const PacketRenderOptions()),
-    PieAst() => options.optionsFor(const PieRenderOptions()),
-    RadarAst() => options.optionsFor(const RadarRenderOptions()),
-    RailroadAst() => options.optionsFor(const RailroadRenderOptions()),
-    TreeViewAst() => options.optionsFor(const TreeViewRenderOptions()),
-    TreemapAst() => options.optionsFor(const TreemapRenderOptions()),
-    WardleyAst() => options.optionsFor(const WardleyRenderOptions()),
-  };
   return DiagramScene(
     diagramType: diagram.type,
     viewport: viewport,
@@ -157,7 +182,7 @@ final class _LayoutContext {
   final IconResolver iconResolver;
   int _nextId = 0;
   String id(String prefix) => '$prefix-${_nextId++}';
-  SceneTextStyle get textStyle => SceneTextStyle(
+  late final SceneTextStyle textStyle = SceneTextStyle(
     fontFamily: options.theme.fontFamily,
     fontSize: options.theme.fontSize,
     color: options.theme.primaryText,
