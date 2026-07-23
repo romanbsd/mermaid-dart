@@ -851,6 +851,7 @@ final class SceneIcon extends SceneElement with _SceneValue {
   /// Creates a typed [SceneIcon].
   const SceneIcon({
     required super.id,
+    required this.reference,
     required this.position,
     required this.geometry,
     this.fill,
@@ -859,6 +860,9 @@ final class SceneIcon extends SceneElement with _SceneValue {
     super.cssClasses,
     super.label,
   });
+
+  /// The source icon reference used to resolve backend-specific rendering.
+  final String reference;
 
   /// The position.
   final Point position;
@@ -872,7 +876,7 @@ final class SceneIcon extends SceneElement with _SceneValue {
   /// The stroke.
   final SceneStroke? stroke;
   @override
-  List<Object?> get fields => [id, position, geometry, fill, stroke, role, cssClasses, label];
+  List<Object?> get fields => [id, reference, position, geometry, fill, stroke, role, cssClasses, label];
 }
 
 /// Backend-neutral scene clip in a laid-out diagram scene.

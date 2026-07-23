@@ -3,6 +3,7 @@ import 'architecture_parser.dart';
 import 'cynefin_parser.dart';
 import 'diagram_type.dart';
 import 'event_modeling_parser.dart';
+import 'flowchart_parser.dart';
 import 'gantt_parser.dart';
 import 'git_graph_parser.dart';
 import 'info_parser.dart';
@@ -26,6 +27,7 @@ DiagramAst parse(DiagramType diagramType, String source) => switch (diagramType)
   DiagramType.architecture => parseArchitecture(source),
   DiagramType.cynefin => parseCynefin(source),
   DiagramType.eventModeling => parseEventModeling(source),
+  DiagramType.flowchart => parseFlowchart(source),
   DiagramType.gantt => parseGantt(source),
   DiagramType.gitGraph => parseGitGraph(source),
   DiagramType.info => parseInfo(source),

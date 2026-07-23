@@ -66,6 +66,16 @@ void main() {
         EventModelingAst(modelEntities: const [EventModelEntityAst(name: 'Order')]),
         EventModelingAst(modelEntities: const [EventModelEntityAst(name: 'Order')]),
       ),
+      (
+        FlowchartAst(
+          nodes: const [FlowchartNodeAst(id: 'A', label: 'Start')],
+          edges: const [FlowchartEdgeAst(from: 'A', to: 'B')],
+        ),
+        FlowchartAst(
+          nodes: const [FlowchartNodeAst(id: 'A', label: 'Start')],
+          edges: const [FlowchartEdgeAst(from: 'A', to: 'B')],
+        ),
+      ),
     ];
 
     for (final (left, right) in pairs) {

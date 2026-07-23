@@ -523,6 +523,7 @@ disk2:T -- B:db
         DiagramType.architecture: 'architecture-beta',
         DiagramType.cynefin: 'cynefin-beta',
         DiagramType.eventModeling: 'eventmodeling',
+        DiagramType.flowchart: 'flowchart TD',
         DiagramType.gantt: 'gantt',
         DiagramType.gitGraph: 'gitGraph',
         DiagramType.info: 'info',
@@ -709,6 +710,7 @@ rule <- "a" b? ;
       ).whereType<SceneIcon>().single;
 
       expect(fallback.label, 'iconnamedoesntexist');
+      expect(fallback.reference, 'iconnamedoesntexist');
       expect(fallback.geometry, const PlaceholderIconResolver().resolve('iconnamedoesntexist'));
       expect(fallbackScene.bounds.width, closeTo(115.2, 1e-9));
       expect(
@@ -722,6 +724,7 @@ rule <- "a" b? ;
         40,
       );
       expect(resolved.label, 'iconnamedoesntexist');
+      expect(resolved.reference, 'iconnamedoesntexist');
       expect(resolved.geometry, _TestIconResolver.geometry);
       expect(resolved.role, SemanticRole.icon);
     });

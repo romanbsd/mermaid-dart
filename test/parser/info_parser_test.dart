@@ -83,10 +83,8 @@ title Visible title %% trailing comment
   test('converts diagram types only at string boundaries', () {
     expect(DiagramType.fromWireName('eventmodeling'), DiagramType.eventModeling);
     expect(DiagramType.gitGraph.wireName, 'gitGraph');
-    expect(DiagramType.tryFromWireName('flowchart'), isNull);
-    expect(
-      () => parseByName('flowchart', 'flowchart LR'),
-      throwsA(isA<UnsupportedDiagramTypeException>().having((error) => error.diagramType, 'diagramType', 'flowchart')),
-    );
+    expect(DiagramType.tryFromWireName('flowchart'), DiagramType.flowchart);
+    expect(parseByName('flowchart', 'flowchart LR'), isA<FlowchartAst>());
+    expect(DiagramType.tryFromWireName('sequenceDiagram'), isNull);
   });
 }

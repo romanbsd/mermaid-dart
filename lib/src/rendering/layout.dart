@@ -24,6 +24,7 @@ import 'svg.dart';
 part 'layout/architecture.dart';
 part 'layout/cynefin.dart';
 part 'layout/event_modeling.dart';
+part 'layout/flowchart.dart';
 part 'layout/gantt.dart';
 part 'layout/git_graph.dart';
 part 'layout/info.dart';
@@ -81,6 +82,11 @@ DiagramScene layoutDiagram(
     EventModelingAst ast => (
       content: _layoutEventModeling(ast, context),
       diagramOptions: options.optionsFor(const EventModelingRenderOptions()),
+      rendererHandlesTitle: false,
+    ),
+    FlowchartAst ast => (
+      content: _layoutFlowchart(ast, context),
+      diagramOptions: options.optionsFor(const FlowchartRenderOptions()),
       rendererHandlesTitle: false,
     ),
     GanttAst ast => (
@@ -345,6 +351,7 @@ SceneGroup _scaledIcon(
     children: [
       SceneIcon(
         id: context.id('$idPrefix-icon-geometry'),
+        reference: reference,
         position: Point(-geometry.bounds.left, -geometry.bounds.top),
         geometry: geometry,
         fill: fill,

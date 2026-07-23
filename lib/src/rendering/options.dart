@@ -2448,6 +2448,35 @@ final class RadarRenderOptions extends DiagramRenderOptions {
   }
 }
 
+/// Typed rendering options for Mermaid flowcharts.
+final class FlowchartRenderOptions extends DiagramRenderOptions {
+  /// Creates flowchart options with Mermaid-compatible spacing defaults.
+  const FlowchartRenderOptions({
+    super.useWidth,
+    super.useMaxWidth = true,
+    this.nodeSpacing = 50,
+    this.rankSpacing = 50,
+    this.diagramPadding = 8,
+    this.nodePadding = 15,
+    this.edgeWidth = 1,
+  });
+
+  /// Separation between nodes in the same rank, in scene units.
+  final double nodeSpacing;
+
+  /// Separation between consecutive ranks, in scene units.
+  final double rankSpacing;
+
+  /// Padding around flowchart content before global viewport padding.
+  final double diagramPadding;
+
+  /// Horizontal and vertical padding around node labels.
+  final double nodePadding;
+
+  /// Normal flowchart edge width.
+  final double edgeWidth;
+}
+
 /// Top-level configuration for layout and rendering.
 ///
 /// [theme] supplies global Mermaid variables, while each diagram-specific
@@ -2461,6 +2490,7 @@ final class RenderOptions {
     this.architecture = const ArchitectureRenderOptions(),
     this.cynefin = const CynefinRenderOptions(),
     this.eventModeling = const EventModelingRenderOptions(),
+    this.flowchart = const FlowchartRenderOptions(),
     this.gantt = const GanttRenderOptions(),
     this.gitGraph = const GitGraphRenderOptions(),
     this.info = const InfoRenderOptions(),
@@ -2489,6 +2519,9 @@ final class RenderOptions {
 
   /// Event Modeling renderer configuration.
   final EventModelingRenderOptions eventModeling;
+
+  /// Flowchart renderer configuration.
+  final FlowchartRenderOptions flowchart;
 
   /// Gantt renderer configuration.
   final GanttRenderOptions gantt;
@@ -2537,6 +2570,7 @@ final class RenderOptions {
           ArchitectureRenderOptions() => architecture,
           CynefinRenderOptions() => cynefin,
           EventModelingRenderOptions() => eventModeling,
+          FlowchartRenderOptions() => flowchart,
           GanttRenderOptions() => gantt,
           GitGraphRenderOptions() => gitGraph,
           InfoRenderOptions() => info,

@@ -920,6 +920,21 @@
       "id": "wardley-strategies",
       "type": "wardley",
       "source": "wardley-beta\nanchor User [0.9, 0.1]\ncomponent Build [0.8, 0.25] (build)\ncomponent Buy [0.6, 0.45] (buy)\ncomponent Outsource [0.4, 0.65] (outsource)\ncomponent Market [0.2, 0.85] (market)\n"
+    },
+    {
+      "id": "flowchart-request-lifecycle",
+      "type": "flowchart",
+      "source": "---\ntitle: Request lifecycle\n---\nflowchart LR\naccTitle: Request lifecycle flowchart\naccDescr: A request passes through authorization and application services\nClient([Client]) -->|request| Gateway{Authorized?}\nsubgraph services [Services]\n  direction TB\n  Gateway --> API[API]\n  API ==> Database[(Database)]\nend\nGateway -. denied .-> Error((Denied))\nclassDef success fill:#d5f5e3,stroke:#1e8449,color:#145a32\nclass API,Database success\n",
+      "textMeasurements": {
+        "Client": { "width": 42.672, "height": 24 },
+        "request": { "width": 54.156, "height": 24 },
+        "Authorized?": { "width": 83.75, "height": 24 },
+        "Services": { "width": 58.172, "height": 24 },
+        "API": { "width": 22.813, "height": 24 },
+        "Database": { "width": 65.5, "height": 24 },
+        "denied": { "width": 48.594, "height": 24 },
+        "Denied": { "width": 49.484, "height": 24 }
+      }
     }
   ]
 }

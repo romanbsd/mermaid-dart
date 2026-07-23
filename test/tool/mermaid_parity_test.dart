@@ -26,8 +26,8 @@ void main() {
     final manifest = ParityManifest.load(File('tool/mermaid_parity/fixtures.json'));
 
     expect(manifest.mermaidVersion, '11.16.0');
-    expect(manifest.fixtures.map((fixture) => fixture.id), hasLength(78));
-    expect(manifest.fixtures.map((fixture) => fixture.id).toSet(), hasLength(78));
+    expect(manifest.fixtures.map((fixture) => fixture.id), hasLength(79));
+    expect(manifest.fixtures.map((fixture) => fixture.id).toSet(), hasLength(79));
     expect(
       manifest.fixtures.map((fixture) => fixture.id),
       containsAll([
@@ -46,6 +46,7 @@ void main() {
         'architecture-split-directioning',
         'architecture-directional-arrows',
         'architecture-edge-labels',
+        'flowchart-request-lifecycle',
         'architecture-simple-junctions',
         'architecture-edge-length-default',
         'architecture-no-icon-edge-lengths',
@@ -1623,6 +1624,7 @@ void main() {
       (type: 'architecture', options: 'architectureOptions', config: 'architecture'),
       (type: 'cynefin', options: 'cynefinOptions', config: 'cynefin'),
       (type: 'eventmodeling', options: 'eventModelingOptions', config: 'eventmodeling'),
+      (type: 'flowchart', options: 'flowchartOptions', config: 'flowchart'),
       (type: 'gitGraph', options: 'gitGraphOptions', config: 'gitGraph'),
       (type: 'packet', options: 'packetOptions', config: 'packet'),
       (type: 'pie', options: 'pieOptions', config: 'pie'),
@@ -1645,6 +1647,7 @@ void main() {
         DiagramType.architecture => fixture.renderOptions.architecture,
         DiagramType.cynefin => fixture.renderOptions.cynefin,
         DiagramType.eventModeling => fixture.renderOptions.eventModeling,
+        DiagramType.flowchart => fixture.renderOptions.flowchart,
         DiagramType.gitGraph => fixture.renderOptions.gitGraph,
         DiagramType.packet => fixture.renderOptions.packet,
         DiagramType.pie => fixture.renderOptions.pie,

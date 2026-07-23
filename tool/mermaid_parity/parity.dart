@@ -83,6 +83,7 @@ final class ParityFixture {
     const architectureDefaults = ArchitectureRenderOptions();
     const cynefinDefaults = CynefinRenderOptions();
     const eventModelingDefaults = EventModelingRenderOptions();
+    const flowchartDefaults = FlowchartRenderOptions();
     const ganttDefaults = GanttRenderOptions();
     const gitGraphDefaults = GitGraphRenderOptions();
     const kanbanDefaults = KanbanRenderOptions();
@@ -128,6 +129,15 @@ final class ParityFixture {
         useMaxWidth: _configuredUseMaxWidth(diagramConfig, eventModelingDefaults),
         padding: (diagramConfig['padding'] as num?)?.toDouble() ?? eventModelingDefaults.padding,
         rowHeight: (diagramConfig['rowHeight'] as num?)?.toDouble() ?? eventModelingDefaults.rowHeight,
+      ),
+      flowchart: FlowchartRenderOptions(
+        useWidth: _configuredUseWidth(diagramConfig, flowchartDefaults),
+        useMaxWidth: _configuredUseMaxWidth(diagramConfig, flowchartDefaults),
+        nodeSpacing: (diagramConfig['nodeSpacing'] as num?)?.toDouble() ?? flowchartDefaults.nodeSpacing,
+        rankSpacing: (diagramConfig['rankSpacing'] as num?)?.toDouble() ?? flowchartDefaults.rankSpacing,
+        diagramPadding: (diagramConfig['diagramPadding'] as num?)?.toDouble() ?? flowchartDefaults.diagramPadding,
+        nodePadding: (diagramConfig['nodePadding'] as num?)?.toDouble() ?? flowchartDefaults.nodePadding,
+        edgeWidth: (diagramConfig['edgeWidth'] as num?)?.toDouble() ?? flowchartDefaults.edgeWidth,
       ),
       gantt: GanttRenderOptions(
         useWidth: _configuredUseWidth(diagramConfig, ganttDefaults),
@@ -740,6 +750,7 @@ const _fixtureOptionNames = {
   DiagramType.architecture: 'architectureOptions',
   DiagramType.cynefin: 'cynefinOptions',
   DiagramType.eventModeling: 'eventModelingOptions',
+  DiagramType.flowchart: 'flowchartOptions',
   DiagramType.gantt: 'ganttOptions',
   DiagramType.gitGraph: 'gitGraphOptions',
   DiagramType.kanban: 'kanbanOptions',
@@ -759,6 +770,7 @@ const _mermaidConfigNames = {
   DiagramType.architecture: 'architecture',
   DiagramType.cynefin: 'cynefin',
   DiagramType.eventModeling: 'eventmodeling',
+  DiagramType.flowchart: 'flowchart',
   DiagramType.gantt: 'gantt',
   DiagramType.gitGraph: 'gitGraph',
   DiagramType.kanban: 'kanban',
@@ -794,6 +806,7 @@ Map<String, Object> _diagramConfig(Map<Object?, Object?> json, DiagramType type)
     DiagramType.architecture => _architectureConfig(value),
     DiagramType.cynefin => _cynefinConfig(value),
     DiagramType.eventModeling => _eventModelingConfig(value),
+    DiagramType.flowchart => _flowchartConfig(value),
     DiagramType.gantt => _ganttConfig(value),
     DiagramType.gitGraph => _gitGraphConfig(value),
     DiagramType.kanban => _kanbanConfig(value),
@@ -812,6 +825,35 @@ Map<String, Object> _diagramConfig(Map<Object?, Object?> json, DiagramType type)
 }
 
 const _kanbanConfigKeys = {..._baseDiagramConfigKeys, 'padding', 'sectionWidth', 'ticketBaseUrl'};
+
+const _flowchartConfigKeys = {
+  ..._baseDiagramConfigKeys,
+  'nodeSpacing',
+  'rankSpacing',
+  'diagramPadding',
+  'nodePadding',
+  'edgeWidth',
+};
+
+Map<String, Object> _flowchartConfig(Object? value) {
+  if (value is! Map<String, Object?> || value.isEmpty || value.keys.any((key) => !_flowchartConfigKeys.contains(key))) {
+    throw const FormatException('Invalid fixture flowchartOptions');
+  }
+  final result = <String, Object>{};
+  for (final MapEntry(:key, :value) in value.entries) {
+    final valid = _baseDiagramConfigKeys.contains(key)
+        ? _baseDiagramConfigValue(key, value)
+        : switch ((key, value)) {
+            ('nodeSpacing' || 'rankSpacing' || 'nodePadding' || 'edgeWidth', final num option) when option > 0 =>
+              option,
+            ('diagramPadding', final num option) when option >= 0 => option,
+            _ => null,
+          };
+    if (valid == null) throw const FormatException('Invalid fixture flowchartOptions');
+    result[key] = valid;
+  }
+  return Map.unmodifiable(result);
+}
 
 const _ganttConfigKeys = {
   ..._baseDiagramConfigKeys,
