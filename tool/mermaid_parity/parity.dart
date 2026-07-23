@@ -453,7 +453,9 @@ MermaidTheme _themeOptions(Map<String, Object> variables) {
     secondBackground: _themeOptionalColor(variables, 'secondBkg'),
     labelBackground: _themeOptionalColor(variables, 'labelBackground'),
     nodeBorder: _themeOptionalColor(variables, 'nodeBorder'),
-    strokeWidth: variables.containsKey('strokeWidth') ? _themeDouble(variables, 'strokeWidth', defaults.strokeWidth) : null,
+    strokeWidth: variables.containsKey('strokeWidth')
+        ? _themeDouble(variables, 'strokeWidth', defaults.strokeWidth)
+        : null,
     fontFamily: variables['fontFamily'] as String?,
     fontSize: _themeDouble(variables, 'fontSize', defaults.fontSize),
     pieColors: List.unmodifiable(pieColors),
@@ -1655,7 +1657,7 @@ String _geometrySignature(XmlElement element, String transform, String styleShee
       number(attribute('rx', '0')),
       number(attribute('ry', attribute('rx', '0'))),
     ],
-    'foreignObject' => _foreignObjectGeometryValues(element, translation),
+    'foreignObject' => _foreignObjectGeometryValues(element, translation, styleSheets),
     'text' => _textGeometryValues(element, translation, styleSheets, attribute),
     _ => const <String>[],
   };
@@ -1695,7 +1697,7 @@ bool _isDisplayNone(XmlElement element) {
 
 double? _numberAttribute(XmlElement element, String name) => double.tryParse(element.getAttribute(name) ?? '');
 
-List<String> _foreignObjectGeometryValues(XmlElement element, _Translation? translation) {
+List<String> _foreignObjectGeometryValues(XmlElement element, _Translation? translation, String styleSheets) {
   final left = _numberAttribute(element, 'x') ?? 0;
   final top = _numberAttribute(element, 'y') ?? 0;
   final width = _numberAttribute(element, 'width') ?? 0;
@@ -1706,6 +1708,7 @@ List<String> _foreignObjectGeometryValues(XmlElement element, _Translation? tran
     '16',
     'middle',
     'central',
+    _fontFamilyGeometryValue(element, styleSheets),
   ];
 }
 
@@ -1770,7 +1773,16 @@ List<String> _textGeometryValues(
     _formatNumber(fontSize),
     anchor,
     baseline,
+    _fontFamilyGeometryValue(element, styleSheets),
   ];
+}
+
+String _fontFamilyGeometryValue(XmlElement element, String styleSheets) {
+  final family = _inheritedPresentationValue(element, 'font-family', styleSheets) ?? 'sans-serif';
+  return family
+      .split(',')
+      .map((part) => part.trim().replaceAllMapped(RegExp(r'''^(['"])(.*)\1$'''), (match) => match[2]!).toLowerCase())
+      .join(',');
 }
 
 String? _inheritedAttribute(XmlElement element, String name) {

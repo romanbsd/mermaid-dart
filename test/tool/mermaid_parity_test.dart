@@ -331,6 +331,20 @@ void main() {
     expect(comparison.exact, isFalse);
   });
 
+  test('compares normalized inherited font families as visual text geometry', () {
+    final inherited = SvgSnapshot.fromSvg(
+      '<svg style="font-family: &quot;Trebuchet MS&quot;,verdana, sans-serif">'
+      '<text x="1" y="2">Label</text></svg>',
+    );
+    final equivalent = SvgSnapshot.fromSvg(
+      '<svg><text x="1" y="2" font-family="trebuchet ms, verdana,sans-serif">Label</text></svg>',
+    );
+    final different = SvgSnapshot.fromSvg('<svg><text x="1" y="2" font-family="monospace">Label</text></svg>');
+
+    expect(SvgComparison.compare(inherited, equivalent).sameGeometry, isTrue);
+    expect(SvgComparison.compare(inherited, different).sameGeometry, isFalse);
+  });
+
   test('normalizes Mermaid createText wrappers to positioned SVG text', () {
     final mermaid = SvgSnapshot.fromSvg(
       '<svg><g transform="translate(10 20)" dominant-baseline="middle" '

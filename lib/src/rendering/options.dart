@@ -345,6 +345,10 @@ final class WardleyTheme {
 }
 
 final class MermaidTheme {
+  /// Mermaid's default SVG font stack when no `fontFamily` theme variable is
+  /// supplied.
+  static const defaultFontFamily = '"trebuchet ms", verdana, arial, sans-serif';
+
   const MermaidTheme({
     this.background = const Color(255, 255, 255, 0),
     this.primary = const Color(236, 236, 255),
@@ -431,7 +435,7 @@ final class MermaidTheme {
   Color get nodeBorder => _railroadCommonOverrides.nodeBorder ?? const Color(147, 112, 219);
   double get strokeWidth => _railroadCommonOverrides.strokeWidth ?? 1;
   final String? _fontFamilyOverride;
-  String get fontFamily => _fontFamilyOverride ?? 'Arial, sans-serif';
+  String get fontFamily => _fontFamilyOverride ?? defaultFontFamily;
 
   /// Uses a renderer-specific Mermaid default unless the caller explicitly
   /// supplied the global `fontFamily` theme variable.

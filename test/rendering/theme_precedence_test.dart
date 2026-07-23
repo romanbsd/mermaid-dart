@@ -21,6 +21,14 @@ const _q = Color(49, 50, 51);
 
 void main() {
   group('typed Mermaid theme precedence', () {
+    test('global font family defaults to Mermaid and preserves renderer-specific fallbacks', () {
+      const theme = MermaidTheme();
+
+      expect(theme.fontFamily, '"trebuchet ms", verdana, arial, sans-serif');
+      expect(theme.resolveFontFamily(fallback: 'renderer fallback'), 'renderer fallback');
+      expect(const MermaidTheme(fontFamily: 'explicit').resolveFontFamily(fallback: 'renderer fallback'), 'explicit');
+    });
+
     test('architecture resolves every global field and every diagram override', () {
       const global = ArchitectureTheme(
         edgeColor: _a,
@@ -503,6 +511,17 @@ void main() {
       expect(treeTexts.map((text) => text.style.fontFamily), everyElement('monospace'));
       expect(treeTexts.map((text) => text.style.fontSize), everyElement(16));
       expect(treeTexts.map((text) => text.style.color), everyElement(TreeViewRenderOptions.defaultLabelColor));
+    });
+
+    test('Wardley preserves Mermaid browser fallback typography', () {
+      final texts = _flatten(
+        layoutDiagram(
+          parse(DiagramType.wardley, 'wardley-beta\ncomponent API [0.6, 0.5]\n'),
+          options: const RenderOptions(theme: MermaidTheme(fontFamily: 'monospace')),
+        ).elements,
+      ).whereType<SceneText>();
+
+      expect(texts.map((text) => text.style.fontFamily), everyElement('sans-serif'));
     });
   });
 }

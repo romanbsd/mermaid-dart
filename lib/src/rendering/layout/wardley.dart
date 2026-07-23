@@ -1,5 +1,10 @@
 part of '../layout.dart';
 
+// Mermaid's Wardley renderer emits no root typography stylesheet, so text
+// uses the browser's generic SVG fallback even when a global fontFamily theme
+// variable is configured.
+const _wardleyFontFamily = 'sans-serif';
+
 // Non-configurable geometry retained from Mermaid's Wardley renderer. These
 // constants affect label readability and browser-measured annotation boxes.
 const _wardleyTitleFontScale = 1.05;
@@ -20,12 +25,12 @@ _LayoutResult _layoutWardley(WardleyAst ast, _LayoutContext context) {
   final axisStroke = SceneStroke(color: theme.axisColor);
   final componentStroke = SceneStroke(color: theme.componentStroke);
   final axisStyle = SceneTextStyle(
-    fontFamily: context.options.theme.fontFamily,
+    fontFamily: _wardleyFontFamily,
     fontSize: config.axisFontSize,
     color: theme.axisTextColor,
   );
   final labelStyle = SceneTextStyle(
-    fontFamily: context.options.theme.fontFamily,
+    fontFamily: _wardleyFontFamily,
     fontSize: config.labelFontSize,
     color: theme.componentLabelColor,
   );
@@ -56,7 +61,7 @@ _LayoutResult _layoutWardley(WardleyAst ast, _LayoutContext context) {
         baseline: TextBaseline.central,
         role: SemanticRole.title,
         style: SceneTextStyle(
-          fontFamily: context.options.theme.fontFamily,
+          fontFamily: _wardleyFontFamily,
           fontSize: config.axisFontSize * _wardleyTitleFontScale,
           weight: FontWeight.bold,
           color: theme.axisTextColor,
@@ -485,7 +490,7 @@ _LayoutResult _layoutWardley(WardleyAst ast, _LayoutContext context) {
         point.y,
         anchor: TextAnchor.middle,
         style: SceneTextStyle(
-          fontFamily: context.options.theme.fontFamily,
+          fontFamily: _wardleyFontFamily,
           fontSize: 10,
           weight: FontWeight.bold,
           color: theme.annotationTextColor,
@@ -501,7 +506,7 @@ _LayoutResult _layoutWardley(WardleyAst ast, _LayoutContext context) {
       const boxPadding = 10.0;
       const lineHeight = 16.0;
       final annotationStyle = SceneTextStyle(
-        fontFamily: context.options.theme.fontFamily,
+        fontFamily: _wardleyFontFamily,
         fontSize: 11,
         color: theme.annotationTextColor,
       );
@@ -559,7 +564,7 @@ _LayoutResult _layoutWardley(WardleyAst ast, _LayoutContext context) {
         role: SemanticRole.annotation,
         baseline: TextBaseline.alphabetic,
         style: SceneTextStyle(
-          fontFamily: context.options.theme.fontFamily,
+          fontFamily: _wardleyFontFamily,
           fontSize: 11,
           weight: FontWeight.bold,
           color: theme.axisTextColor,
@@ -591,7 +596,7 @@ _LayoutResult _layoutWardley(WardleyAst ast, _LayoutContext context) {
         anchor: TextAnchor.middle,
         baseline: TextBaseline.alphabetic,
         style: SceneTextStyle(
-          fontFamily: context.options.theme.fontFamily,
+          fontFamily: _wardleyFontFamily,
           fontSize: 10,
           weight: FontWeight.bold,
           color: theme.axisTextColor,

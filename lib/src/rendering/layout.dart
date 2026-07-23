@@ -37,7 +37,7 @@ const _palette = <Color>[
   Color(72, 169, 197),
   Color(222, 190, 73),
 ];
-const _mermaidFontFamily = '"trebuchet ms", verdana, arial, sans-serif';
+const _mermaidFontFamily = MermaidTheme.defaultFontFamily;
 
 // Mermaid reserves a fixed header band for renderers that do not position
 // their own title. The baseline leaves the remaining space below the glyphs.

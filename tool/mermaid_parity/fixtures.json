@@ -811,6 +811,7 @@
       "type": "wardley",
       "source": "wardley-beta\ntitle Platform Map\nanchor User [0.9, 0.1]\ncomponent API [0.6, 0.5]\nUser -> API\n",
       "themeVariables": {
+        "fontFamily": "monospace",
         "wardley": {
           "backgroundColor": "#f0f1f2",
           "axisColor": "#123456",
