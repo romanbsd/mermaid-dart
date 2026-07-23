@@ -17,6 +17,9 @@ import 'treemap_parser.dart';
 import 'wardley_parser.dart';
 
 /// Parses [source] using the Mermaid grammar identified by [diagramType].
+///
+/// The returned concrete [DiagramAst] subtype matches [diagramType]. Syntax
+/// failures throw [MermaidParseException] with a one-based source location.
 DiagramAst parse(DiagramType diagramType, String source) => switch (diagramType) {
   DiagramType.architecture => parseArchitecture(source),
   DiagramType.cynefin => parseCynefin(source),
@@ -35,5 +38,9 @@ DiagramAst parse(DiagramType diagramType, String source) => switch (diagramType)
   DiagramType.wardley => parseWardley(source),
 };
 
-/// Parses using Mermaid's string diagram type at an interoperability boundary.
+/// Parses [source] using Mermaid's string [diagramType] identifier.
+///
+/// Prefer [parse] in typed Dart code. This entry point is intended for
+/// interoperability with Mermaid detectors and serialized configuration.
+/// An unknown name throws [UnsupportedDiagramTypeException].
 DiagramAst parseByName(String diagramType, String source) => parse(DiagramType.fromWireName(diagramType), source);

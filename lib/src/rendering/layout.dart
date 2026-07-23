@@ -50,6 +50,13 @@ const _diagramTitleBandHeight = 38.0;
 const _diagramTitleBaselineY = 24.0;
 const _minimumSceneExtent = 1.0;
 
+/// Lays out layout diagram.
+/// Lays out a typed Mermaid [diagram] into backend-neutral scene geometry.
+///
+/// [textMeasurer] controls label metrics and therefore exact geometry.
+/// [iconResolver] supplies vector icon paths without coupling layout to an
+/// asset system. The returned scene contains absolute bounds, transforms,
+/// semantic roles, accessibility metadata, and the requested width policy.
 DiagramScene layoutDiagram(
   DiagramAst diagram, {
   RenderOptions options = const RenderOptions(),
@@ -163,6 +170,12 @@ DiagramScene layoutDiagram(
   );
 }
 
+/// Renders render diagram svg.
+/// Parses, lays out, and renders Mermaid [source] as SVG.
+///
+/// This convenience method is equivalent to calling [parse], [layoutDiagram],
+/// and [renderSvg]. Supply the same injected measurer and icon resolver used by
+/// other backends when deterministic cross-backend geometry is required.
 String renderDiagramSvg(
   DiagramType diagramType,
   String source, {

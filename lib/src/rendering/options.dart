@@ -70,6 +70,7 @@ List<Color> _resolveThemePalette(List<Color>? diagram, List<Color> theme, List<C
 
 /// Typed Mermaid architecture theme variables.
 final class ArchitectureTheme {
+  /// Creates a typed [ArchitectureTheme].
   const ArchitectureTheme({
     this.edgeColor = const Color(51, 51, 51),
     this.edgeArrowColor = const Color(51, 51, 51),
@@ -78,15 +79,25 @@ final class ArchitectureTheme {
     this.groupBorderWidth = 2,
   });
 
+  /// The edge color.
   final Color edgeColor;
+
+  /// The edge arrow color.
   final Color edgeArrowColor;
+
+  /// The edge width.
   final double edgeWidth;
+
+  /// The group border color.
   final Color groupBorderColor;
+
+  /// The group border width.
   final double groupBorderWidth;
 }
 
 /// Typed Mermaid Cynefin theme block.
 final class CynefinTheme {
+  /// Creates a typed [CynefinTheme].
   const CynefinTheme({
     this.domainFontSize = 16,
     this.itemFontSize = 12,
@@ -105,25 +116,55 @@ final class CynefinTheme {
     this.labelColor = const Color(19, 19, 0),
   });
 
+  /// The domain font size.
   final double domainFontSize;
+
+  /// The item font size.
   final double itemFontSize;
+
+  /// The boundary color.
   final Color boundaryColor;
+
+  /// The boundary width.
   final double boundaryWidth;
+
+  /// The cliff color.
   final Color cliffColor;
+
+  /// The cliff width.
   final double cliffWidth;
+
+  /// The arrow color.
   final Color arrowColor;
+
+  /// The arrow width.
   final double arrowWidth;
+
+  /// The complex background.
   final Color complexBackground;
+
+  /// The complicated background.
   final Color complicatedBackground;
+
+  /// The chaotic background.
   final Color chaoticBackground;
+
+  /// The clear background.
   final Color clearBackground;
+
+  /// The confusion background.
   final Color confusionBackground;
+
+  /// The text color.
   final Color textColor;
+
+  /// The label color.
   final Color labelColor;
 }
 
 /// Typed Mermaid Event Modeling theme variables.
 final class EventModelingTheme {
+  /// Creates a typed [EventModelingTheme].
   const EventModelingTheme({
     this.uiFill = const Color(255, 255, 255),
     this.uiStroke = const Color(219, 218, 218),
@@ -141,34 +182,70 @@ final class EventModelingTheme {
     this.relationStroke = const Color(51, 51, 51),
   });
 
+  /// The ui fill.
   final Color uiFill;
+
+  /// The ui stroke.
   final Color uiStroke;
+
+  /// The processor fill.
   final Color processorFill;
+
+  /// The processor stroke.
   final Color processorStroke;
+
+  /// The read model fill.
   final Color readModelFill;
+
+  /// The read model stroke.
   final Color readModelStroke;
+
+  /// The command fill.
   final Color commandFill;
+
+  /// The command stroke.
   final Color commandStroke;
+
+  /// The event fill.
   final Color eventFill;
+
+  /// The event stroke.
   final Color eventStroke;
+
+  /// The swimlane background odd.
   final Color swimlaneBackgroundOdd;
+
+  /// The swimlane background stroke.
   final Color swimlaneBackgroundStroke;
+
+  /// The arrowhead.
   final Color arrowhead;
+
+  /// The relation stroke.
   final Color relationStroke;
 }
 
 /// Backend-neutral representation of Mermaid's Git Graph shadow variable.
 final class ThemeShadow {
+  /// Creates a typed [ThemeShadow].
   const ThemeShadow({this.color = const Color(185, 185, 185), this.offsetX = 1, this.offsetY = 2, this.blurRadius = 2});
 
+  /// The color.
   final Color color;
+
+  /// The offset x.
   final double offsetX;
+
+  /// The offset y.
   final double offsetY;
+
+  /// The blur radius.
   final double blurRadius;
 }
 
 /// Typed Mermaid Git Graph theme variables.
 final class GitGraphTheme {
+  /// Creates a typed [GitGraphTheme].
   const GitGraphTheme({
     this.branchColors = GitGraphRenderOptions.defaultBranchColors,
     this.highlightColors = GitGraphRenderOptions.defaultHighlightColors,
@@ -192,30 +269,70 @@ final class GitGraphTheme {
     this.dropShadow = const ThemeShadow(),
   });
 
+  /// The branch colors.
   final List<Color> branchColors;
+
+  /// The highlight colors.
   final List<Color> highlightColors;
+
+  /// The branch label colors.
   final List<Color> branchLabelColors;
+
+  /// The tag label color.
   final Color tagLabelColor;
+
+  /// The tag label background.
   final Color tagLabelBackground;
+
+  /// The tag label border.
   final Color tagLabelBorder;
+
+  /// The tag label font size.
   final double tagLabelFontSize;
+
+  /// The commit label color.
   final Color commitLabelColor;
+
+  /// The commit label background.
   final Color commitLabelBackground;
+
+  /// The commit label font size.
   final double commitLabelFontSize;
+
+  /// The commit line color.
   final Color? commitLineColor;
+
+  /// The tag hole color.
   final Color tagHoleColor;
+
+  /// The primary color.
   final Color primaryColor;
+
+  /// The special color.
   final Color specialColor;
+
+  /// The theme color limit.
   final int themeColorLimit;
+
+  /// The use gradient.
   final bool useGradient;
+
+  /// The gradient start.
   final Color gradientStart;
+
+  /// The gradient stop.
   final Color gradientStop;
+
+  /// The filter color.
   final Color filterColor;
+
+  /// The drop shadow.
   final ThemeShadow dropShadow;
 }
 
 /// Typed Mermaid Pie theme variables other than the slice palette.
 final class PieTheme {
+  /// Creates a typed [PieTheme].
   const PieTheme({
     this.titleTextSize = 25,
     this.titleTextColor = const Color(0, 0, 0),
@@ -230,21 +347,43 @@ final class PieTheme {
     this.opacity = .7,
   });
 
+  /// The title text size.
   final double titleTextSize;
+
+  /// The title text color.
   final Color titleTextColor;
+
+  /// The section text size.
   final double sectionTextSize;
+
+  /// The section text color.
   final Color sectionTextColor;
+
+  /// The legend text size.
   final double legendTextSize;
+
+  /// The legend text color.
   final Color legendTextColor;
+
+  /// The stroke color.
   final Color strokeColor;
+
+  /// The stroke width.
   final double strokeWidth;
+
+  /// The outer stroke width.
   final double outerStrokeWidth;
+
+  /// The outer stroke color.
   final Color outerStrokeColor;
+
+  /// The opacity.
   final double opacity;
 }
 
 /// Typed Mermaid Radar theme block.
 final class RadarTheme {
+  /// Creates a typed [RadarTheme].
   const RadarTheme({
     this.axisColor = const Color(51, 51, 51),
     this.axisStrokeWidth = 2,
@@ -258,22 +397,40 @@ final class RadarTheme {
     this.legendFontSize = 12,
   });
 
+  /// The axis color.
   final Color axisColor;
+
+  /// The axis stroke width.
   final double axisStrokeWidth;
+
+  /// The axis label font size.
   final double axisLabelFontSize;
+
+  /// The curve opacity.
   final double curveOpacity;
+
+  /// The curve stroke width.
   final double curveStrokeWidth;
+
+  /// The graticule color.
   final Color graticuleColor;
+
+  /// The graticule stroke width.
   final double graticuleStrokeWidth;
+
+  /// The graticule opacity.
   final double graticuleOpacity;
 
   /// Compatibility-only in Mermaid 11.16, whose renderer draws 12px swatches.
   final double legendBoxSize;
+
+  /// The legend font size.
   final double legendFontSize;
 }
 
 /// Resolved Mermaid theme values shared by the four railroad frontends.
 final class RailroadTheme {
+  /// Creates a typed [RailroadTheme].
   const RailroadTheme({
     this.fontSize = 16,
     this.fontFamily = '"trebuchet ms", verdana, arial, sans-serif',
@@ -294,27 +451,61 @@ final class RailroadTheme {
     this.ruleNameColor = const Color(51, 51, 51),
   });
 
+  /// The font size.
   final double fontSize;
+
+  /// The font family.
   final String fontFamily;
+
+  /// The stroke width.
   final double strokeWidth;
+
+  /// The terminal fill.
   final Color terminalFill;
+
+  /// The terminal stroke.
   final Color terminalStroke;
+
+  /// The terminal text color.
   final Color terminalTextColor;
+
+  /// The non terminal fill.
   final Color nonTerminalFill;
+
+  /// The non terminal stroke.
   final Color nonTerminalStroke;
+
+  /// The non terminal text color.
   final Color nonTerminalTextColor;
+
+  /// The line color.
   final Color lineColor;
+
+  /// The marker fill.
   final Color markerFill;
+
+  /// The comment fill.
   final Color commentFill;
+
+  /// The comment stroke.
   final Color commentStroke;
+
+  /// The comment text color.
   final Color commentTextColor;
+
+  /// The special fill.
   final Color specialFill;
+
+  /// The special stroke.
   final Color specialStroke;
+
+  /// The rule name color.
   final Color ruleNameColor;
 }
 
 /// Typed Mermaid Wardley theme block.
 final class WardleyTheme {
+  /// Creates a typed [WardleyTheme].
   const WardleyTheme({
     this.backgroundColor = const Color(255, 255, 255),
     this.axisColor = const Color(51, 51, 51),
@@ -330,25 +521,50 @@ final class WardleyTheme {
     this.annotationFill = const Color(255, 255, 255),
   });
 
+  /// The background color.
   final Color backgroundColor;
+
+  /// The axis color.
   final Color axisColor;
+
+  /// The axis text color.
   final Color axisTextColor;
+
+  /// The grid color.
   final Color gridColor;
+
+  /// The component fill.
   final Color componentFill;
+
+  /// The component stroke.
   final Color componentStroke;
+
+  /// The component label color.
   final Color componentLabelColor;
+
+  /// The link stroke.
   final Color linkStroke;
+
+  /// The evolution stroke.
   final Color evolutionStroke;
+
+  /// The annotation stroke.
   final Color annotationStroke;
+
+  /// The annotation text color.
   final Color annotationTextColor;
+
+  /// The annotation fill.
   final Color annotationFill;
 }
 
+/// Resolved Mermaid theme values used by the mermaid renderer.
 final class MermaidTheme {
   /// Mermaid's default SVG font stack when no `fontFamily` theme variable is
   /// supplied.
   static const defaultFontFamily = '"trebuchet ms", verdana, arial, sans-serif';
 
+  /// Creates a typed [MermaidTheme].
   const MermaidTheme({
     this.background = const Color(255, 255, 255, 0),
     this.primary = const Color(236, 236, 255),
@@ -399,9 +615,16 @@ final class MermaidTheme {
          strokeWidth: strokeWidth,
        );
 
+  /// The background.
   final Color background;
+
+  /// The primary.
   final Color primary;
+
+  /// The secondary.
   final Color secondary;
+
+  /// The text.
   final Color text;
   final ({
     Color? primaryText,
@@ -420,26 +643,58 @@ final class MermaidTheme {
     double? strokeWidth,
   })
   _railroadCommonOverrides;
+
+  /// The resolved primary text after applying Mermaid theme precedence.
   Color get primaryText => _railroadCommonOverrides.primaryText ?? const Color(51, 51, 51);
+
+  /// The resolved primary border after applying Mermaid theme precedence.
   Color get primaryBorder => _railroadCommonOverrides.primaryBorder ?? const Color(147, 112, 219);
+
+  /// The resolved line after applying Mermaid theme precedence.
   Color get line => _railroadCommonOverrides.line ?? const Color(51, 51, 51);
+
+  /// The resolved tertiary after applying Mermaid theme precedence.
   Color get tertiary => _railroadCommonOverrides.tertiary ?? const Color(238, 238, 238);
+
+  /// The resolved secondary border after applying Mermaid theme precedence.
   Color get secondaryBorder => _railroadCommonOverrides.secondaryBorder ?? const Color(170, 170, 51);
+
+  /// The resolved tertiary border after applying Mermaid theme precedence.
   Color get tertiaryBorder => _railroadCommonOverrides.tertiaryBorder ?? const Color(211, 211, 211);
+
+  /// The resolved secondary text after applying Mermaid theme precedence.
   Color get secondaryText => _railroadCommonOverrides.secondaryText ?? const Color(0, 0, 33);
+
+  /// The resolved tertiary text after applying Mermaid theme precedence.
   Color get tertiaryText => _railroadCommonOverrides.tertiaryText ?? const Color(51, 51, 51);
+
+  /// The resolved title after applying Mermaid theme precedence.
   Color get title => _railroadCommonOverrides.title ?? const Color(51, 51, 51);
+
+  /// The resolved main background after applying Mermaid theme precedence.
   Color get mainBackground => _railroadCommonOverrides.mainBackground ?? const Color(236, 236, 255);
+
+  /// The resolved second background after applying Mermaid theme precedence.
   Color get secondBackground => _railroadCommonOverrides.secondBackground ?? const Color(255, 255, 222);
+
+  /// The resolved label background after applying Mermaid theme precedence.
   Color get labelBackground => _railroadCommonOverrides.labelBackground ?? const Color(232, 232, 232, 204);
+
+  /// The resolved node border after applying Mermaid theme precedence.
   Color get nodeBorder => _railroadCommonOverrides.nodeBorder ?? const Color(147, 112, 219);
+
+  /// The resolved stroke width after applying Mermaid theme precedence.
   double get strokeWidth => _railroadCommonOverrides.strokeWidth ?? 1;
   final String? _fontFamilyOverride;
+
+  /// The resolved font family after applying Mermaid theme precedence.
   String get fontFamily => _fontFamilyOverride ?? defaultFontFamily;
 
   /// Uses a renderer-specific Mermaid default unless the caller explicitly
   /// supplied the global `fontFamily` theme variable.
   String resolveFontFamily({required String fallback}) => _fontFamilyOverride ?? fallback;
+
+  /// The font size.
   final double fontSize;
 
   /// Mermaid's `cScale0` through `cScale11` categorical colors.
@@ -454,17 +709,38 @@ final class MermaidTheme {
   /// Mermaid's `pie1` through `pie12` slice colors.
   final List<Color> pieColors;
 
+  /// The architecture.
   final ArchitectureTheme architecture;
+
+  /// The cynefin.
   final CynefinTheme cynefin;
+
+  /// The event modeling.
   final EventModelingTheme eventModeling;
+
+  /// The git graph.
   final GitGraphTheme gitGraph;
+
+  /// The pie.
   final PieTheme pie;
+
+  /// The radar.
   final RadarTheme radar;
+
+  /// The wardley.
   final WardleyTheme wardley;
 }
 
-enum DiagramDirection { leftToRight, topToBottom }
+/// Defines the supported diagram direction values.
+enum DiagramDirection {
+  /// Selects the left to right variant.
+  leftToRight,
 
+  /// Selects the top to bottom variant.
+  topToBottom,
+}
+
+/// Base configuration shared by every Mermaid diagram renderer.
 sealed class DiagramRenderOptions {
   const DiagramRenderOptions({this.useWidth, this.useMaxWidth});
 
@@ -480,7 +756,9 @@ sealed class DiagramRenderOptions {
   final bool? useMaxWidth;
 }
 
+/// Typed rendering options for Mermaid architecture diagrams.
 final class ArchitectureRenderOptions extends DiagramRenderOptions {
+  /// Creates a typed [ArchitectureRenderOptions].
   const ArchitectureRenderOptions({
     super.useWidth,
     super.useMaxWidth = true,
@@ -506,7 +784,10 @@ final class ArchitectureRenderOptions extends DiagramRenderOptions {
          groupBorderWidth: groupBorderWidth,
        );
 
+  /// The padding.
   final double padding;
+
+  /// The icon size.
   final double iconSize;
 
   /// Font size used by Mermaid's architecture graph layout.
@@ -518,7 +799,10 @@ final class ArchitectureRenderOptions extends DiagramRenderOptions {
   /// Whether fCoSE-compatible layouts randomize their initial node positions.
   final bool randomize;
 
+  /// The node separation.
   final double nodeSeparation;
+
+  /// The ideal edge length multiplier.
   final double idealEdgeLengthMultiplier;
 
   /// Spring elasticity for edges whose endpoints share a compound group.
@@ -539,12 +823,22 @@ final class ArchitectureRenderOptions extends DiagramRenderOptions {
   })
   _themeOverrides;
 
+  /// The resolved group border color after applying Mermaid theme precedence.
   Color get groupBorderColor => _themeOverrides.groupBorderColor ?? const Color(199, 199, 241);
+
+  /// The resolved edge color after applying Mermaid theme precedence.
   Color get edgeColor => _themeOverrides.edgeColor ?? const Color(51, 51, 51);
+
+  /// The resolved edge arrow color after applying Mermaid theme precedence.
   Color get edgeArrowColor => _themeOverrides.edgeArrowColor ?? const Color(51, 51, 51);
+
+  /// The resolved edge width after applying Mermaid theme precedence.
   double get edgeWidth => _themeOverrides.edgeWidth ?? 3;
+
+  /// The resolved group border width after applying Mermaid theme precedence.
   double get groupBorderWidth => _themeOverrides.groupBorderWidth ?? 2;
 
+  /// Resolves renderer-specific values against the global [MermaidTheme].
   ArchitectureTheme resolveTheme(MermaidTheme theme) {
     final inherited = theme.architecture;
     return ArchitectureTheme(
@@ -557,7 +851,9 @@ final class ArchitectureRenderOptions extends DiagramRenderOptions {
   }
 }
 
+/// Typed rendering options for Mermaid cynefin diagrams.
 final class CynefinRenderOptions extends DiagramRenderOptions {
+  /// Creates a typed [CynefinRenderOptions].
   const CynefinRenderOptions({
     super.useWidth,
     super.useMaxWidth = true,
@@ -602,11 +898,22 @@ final class CynefinRenderOptions extends DiagramRenderOptions {
          cliffWidth: cliffWidth,
        );
 
+  /// The width.
   final double width;
+
+  /// The height.
   final double height;
+
+  /// The padding.
   final double padding;
+
+  /// The show domain descriptions.
   final bool showDomainDescriptions;
+
+  /// The boundary amplitude.
   final double boundaryAmplitude;
+
+  /// The seed.
   final int seed;
   final ({
     Color? complexColor,
@@ -626,19 +933,41 @@ final class CynefinRenderOptions extends DiagramRenderOptions {
     double? cliffWidth,
   })
   _themeOverrides;
+
+  /// The boundary dashes.
   final List<double> boundaryDashes;
+
+  /// The confusion dashes.
   final List<double> confusionDashes;
 
+  /// The resolved complex color after applying Mermaid theme precedence.
   Color get complexColor => _themeOverrides.complexColor ?? const CynefinTheme().complexBackground;
+
+  /// The resolved complicated color after applying Mermaid theme precedence.
   Color get complicatedColor => _themeOverrides.complicatedColor ?? const CynefinTheme().complicatedBackground;
+
+  /// The resolved chaotic color after applying Mermaid theme precedence.
   Color get chaoticColor => _themeOverrides.chaoticColor ?? const CynefinTheme().chaoticBackground;
+
+  /// The resolved clear color after applying Mermaid theme precedence.
   Color get clearColor => _themeOverrides.clearColor ?? const CynefinTheme().clearBackground;
+
+  /// The resolved confusion color after applying Mermaid theme precedence.
   Color get confusionColor => _themeOverrides.confusionColor ?? const CynefinTheme().confusionBackground;
+
+  /// The resolved cliff color after applying Mermaid theme precedence.
   Color get cliffColor => _themeOverrides.cliffColor ?? const CynefinTheme().cliffColor;
+
+  /// The resolved domain label color after applying Mermaid theme precedence.
   Color get domainLabelColor => _themeOverrides.domainLabelColor ?? const CynefinTheme().labelColor;
+
+  /// The resolved text color after applying Mermaid theme precedence.
   Color get textColor => _themeOverrides.textColor ?? const CynefinTheme().textColor;
+
+  /// The resolved stroke color after applying Mermaid theme precedence.
   Color get strokeColor => _themeOverrides.strokeColor ?? const CynefinTheme().boundaryColor;
 
+  /// Resolves renderer-specific values against the global [MermaidTheme].
   CynefinTheme resolveTheme(MermaidTheme theme) {
     final inherited = theme.cynefin;
     return CynefinTheme(
@@ -661,13 +990,18 @@ final class CynefinRenderOptions extends DiagramRenderOptions {
   }
 }
 
+/// Typed rendering options for Mermaid info diagrams.
 final class InfoRenderOptions extends DiagramRenderOptions {
+  /// Creates a typed [InfoRenderOptions].
   const InfoRenderOptions({this.version = '11.16.0'});
 
+  /// The version.
   final String version;
 }
 
+/// Typed rendering options for Mermaid event modeling diagrams.
 final class EventModelingRenderOptions extends DiagramRenderOptions {
+  /// Creates a typed [EventModelingRenderOptions].
   const EventModelingRenderOptions({
     super.useWidth,
     super.useMaxWidth = true,
@@ -695,16 +1029,37 @@ final class EventModelingRenderOptions extends DiagramRenderOptions {
   /// renderer does not currently consult it during layout.
   final double rowHeight;
 
+  /// The swimlane min height.
   final double swimlaneMinHeight;
+
+  /// The swimlane padding.
   final double swimlanePadding;
+
+  /// The swimlane gap.
   final double swimlaneGap;
+
+  /// The box padding.
   final double boxPadding;
+
+  /// The box overlap.
   final double boxOverlap;
+
+  /// The box min width.
   final double boxMinWidth;
+
+  /// The box max width.
   final double boxMaxWidth;
+
+  /// The box min height.
   final double boxMinHeight;
+
+  /// The box max height.
   final double boxMaxHeight;
+
+  /// The content start x.
   final double contentStartX;
+
+  /// The text max width.
   final double textMaxWidth;
 }
 
@@ -713,6 +1068,7 @@ final class EventModelingRenderOptions extends DiagramRenderOptions {
 /// Mermaid 11.16 retains this object in its public configuration but its Git
 /// renderer does not currently consult it.
 final class GitGraphNodeLabelOptions {
+  /// Creates a typed [GitGraphNodeLabelOptions].
   const GitGraphNodeLabelOptions({
     this.width = defaultWidth,
     this.height = defaultHeight,
@@ -720,14 +1076,28 @@ final class GitGraphNodeLabelOptions {
     this.y = defaultY,
   });
 
+  /// The default width behavior exposed by [GitGraphNodeLabelOptions].
   static const defaultWidth = 75.0;
+
+  /// The default height behavior exposed by [GitGraphNodeLabelOptions].
   static const defaultHeight = 100.0;
+
+  /// The default x behavior exposed by [GitGraphNodeLabelOptions].
   static const defaultX = -25.0;
+
+  /// The default y behavior exposed by [GitGraphNodeLabelOptions].
   static const defaultY = 0.0;
 
+  /// The width.
   final double width;
+
+  /// The height.
   final double height;
+
+  /// The x.
   final double x;
+
+  /// The y.
   final double y;
 
   @override
@@ -742,16 +1112,36 @@ final class GitGraphNodeLabelOptions {
   int get hashCode => Object.hash(width, height, x, y);
 }
 
+/// Typed rendering options for Mermaid git graph diagrams.
 final class GitGraphRenderOptions extends DiagramRenderOptions {
+  /// The default use max width behavior exposed by [GitGraphRenderOptions].
   static const defaultUseMaxWidth = true;
+
+  /// The default title top margin behavior exposed by [GitGraphRenderOptions].
   static const defaultTitleTopMargin = 25.0;
+
+  /// The default diagram padding behavior exposed by [GitGraphRenderOptions].
   static const defaultDiagramPadding = 8.0;
+
+  /// The default main branch name behavior exposed by [GitGraphRenderOptions].
   static const defaultMainBranchName = 'main';
+
+  /// The default main branch order behavior exposed by [GitGraphRenderOptions].
   static const defaultMainBranchOrder = 0.0;
+
+  /// The default show commit label behavior exposed by [GitGraphRenderOptions].
   static const defaultShowCommitLabel = true;
+
+  /// The default show branches behavior exposed by [GitGraphRenderOptions].
   static const defaultShowBranches = true;
+
+  /// The default rotate commit label behavior exposed by [GitGraphRenderOptions].
   static const defaultRotateCommitLabel = true;
+
+  /// The default parallel commits behavior exposed by [GitGraphRenderOptions].
   static const defaultParallelCommits = false;
+
+  /// The default arrow marker absolute behavior exposed by [GitGraphRenderOptions].
   static const defaultArrowMarkerAbsolute = false;
 
   /// Mermaid's default-theme `git0` through `git7` colors after its standard
@@ -792,6 +1182,7 @@ final class GitGraphRenderOptions extends DiagramRenderOptions {
     Color(0, 147, 147),
   ];
 
+  /// Creates a typed [GitGraphRenderOptions].
   const GitGraphRenderOptions({
     super.useWidth,
     super.useMaxWidth = defaultUseMaxWidth,
@@ -856,17 +1247,31 @@ final class GitGraphRenderOptions extends DiagramRenderOptions {
          dropShadow: dropShadow,
        );
 
+  /// The title top margin.
   final double titleTopMargin;
+
+  /// The diagram padding.
   final double diagramPadding;
 
   /// Compatibility-only in Mermaid 11.16; see [GitGraphNodeLabelOptions].
   final GitGraphNodeLabelOptions nodeLabel;
 
+  /// The main branch name.
   final String mainBranchName;
+
+  /// The main branch order.
   final double mainBranchOrder;
+
+  /// The show commit label.
   final bool showCommitLabel;
+
+  /// The show branches.
   final bool showBranches;
+
+  /// The rotate commit label.
   final bool rotateCommitLabel;
+
+  /// The parallel commits.
   final bool parallelCommits;
 
   /// Compatibility-only in Mermaid 11.16's Git renderer.
@@ -874,13 +1279,28 @@ final class GitGraphRenderOptions extends DiagramRenderOptions {
   /// Git Graph draws typed paths directly and does not emit SVG arrow markers.
   final bool arrowMarkerAbsolute;
 
+  /// The commit radius.
   final double commitRadius;
+
+  /// The branch spacing.
   final double branchSpacing;
+
+  /// The commit spacing.
   final double commitSpacing;
+
+  /// The branch line width.
   final double branchLineWidth;
+
+  /// The branch line dashes.
   final List<double> branchLineDashes;
+
+  /// The commit stroke width.
   final double commitStrokeWidth;
+
+  /// The commit edge width.
   final double commitEdgeWidth;
+
+  /// The commit edge cap.
   final StrokeCap commitEdgeCap;
   final ({
     List<Color>? branchColors,
@@ -906,25 +1326,64 @@ final class GitGraphRenderOptions extends DiagramRenderOptions {
   })
   _themeOverrides;
 
+  /// The resolved branch colors after applying Mermaid theme precedence.
   List<Color> get branchColors => _themeOverrides.branchColors ?? defaultBranchColors;
+
+  /// The resolved branch label colors after applying Mermaid theme precedence.
   List<Color> get branchLabelColors => _themeOverrides.branchLabelColors ?? defaultBranchLabelColors;
+
+  /// The resolved highlight colors after applying Mermaid theme precedence.
   List<Color> get highlightColors => _themeOverrides.highlightColors ?? defaultHighlightColors;
+
+  /// The resolved branch line color after applying Mermaid theme precedence.
   Color get branchLineColor => _themeOverrides.branchLineColor ?? const Color(51, 51, 51);
+
+  /// The resolved commit label color after applying Mermaid theme precedence.
   Color get commitLabelColor => _themeOverrides.commitLabelColor ?? const Color(0, 0, 33);
+
+  /// The resolved commit label background after applying Mermaid theme precedence.
   Color get commitLabelBackground => _themeOverrides.commitLabelBackground ?? const Color(255, 255, 222, 128);
+
+  /// The resolved commit label font size after applying Mermaid theme precedence.
   double get commitLabelFontSize => _themeOverrides.commitLabelFontSize ?? 10;
+
+  /// The resolved special commit color after applying Mermaid theme precedence.
   Color get specialCommitColor => _themeOverrides.specialCommitColor ?? const Color(236, 236, 255);
+
+  /// The resolved cherry pick color after applying Mermaid theme precedence.
   Color get cherryPickColor => _themeOverrides.cherryPickColor ?? const Color(51, 51, 51);
+
+  /// The resolved tag label color after applying Mermaid theme precedence.
   Color get tagLabelColor => _themeOverrides.tagLabelColor ?? const Color(19, 19, 0);
+
+  /// The resolved tag background after applying Mermaid theme precedence.
   Color get tagBackground => _themeOverrides.tagBackground ?? const Color(236, 236, 255);
+
+  /// The resolved tag border after applying Mermaid theme precedence.
   Color get tagBorder => _themeOverrides.tagBorder ?? const Color(199, 199, 241);
+
+  /// The resolved tag label font size after applying Mermaid theme precedence.
   double get tagLabelFontSize => _themeOverrides.tagLabelFontSize ?? 10;
+
+  /// The resolved tag hole color after applying Mermaid theme precedence.
   Color get tagHoleColor => _themeOverrides.tagHoleColor ?? const Color(51, 51, 51);
+
+  /// The resolved theme color limit after applying Mermaid theme precedence.
   int get themeColorLimit => _themeOverrides.themeColorLimit ?? 12;
+
+  /// The resolved use gradient after applying Mermaid theme precedence.
   bool get useGradient => _themeOverrides.useGradient ?? false;
+
+  /// The resolved gradient start after applying Mermaid theme precedence.
   Color get gradientStart => _themeOverrides.gradientStart ?? const Color(147, 112, 219);
+
+  /// The resolved gradient stop after applying Mermaid theme precedence.
   Color get gradientStop => _themeOverrides.gradientStop ?? const Color(170, 170, 51);
+
+  /// The resolved filter color after applying Mermaid theme precedence.
   Color get filterColor => _themeOverrides.filterColor ?? const Color(255, 255, 255);
+
+  /// The resolved drop shadow after applying Mermaid theme precedence.
   ThemeShadow get dropShadow => _themeOverrides.dropShadow ?? const ThemeShadow();
 
   /// Resolves Mermaid's precedence: diagram config, then global theme.
@@ -955,7 +1414,9 @@ final class GitGraphRenderOptions extends DiagramRenderOptions {
   }
 }
 
+/// Typed rendering options for Mermaid tree view diagrams.
 final class TreeViewRenderOptions extends DiagramRenderOptions {
+  /// Creates a typed [TreeViewRenderOptions].
   const TreeViewRenderOptions({
     super.useWidth,
     super.useMaxWidth = true,
@@ -976,24 +1437,43 @@ final class TreeViewRenderOptions extends DiagramRenderOptions {
     this.highlightStrokeWidth = 1,
   });
 
+  /// The default label color behavior exposed by [TreeViewRenderOptions].
   static const defaultLabelColor = Color(0, 0, 0);
+
+  /// The default line color behavior exposed by [TreeViewRenderOptions].
   static const defaultLineColor = Color(0, 0, 0);
+
+  /// The default icon color behavior exposed by [TreeViewRenderOptions].
   static const defaultIconColor = Color(84, 110, 122);
+
+  /// The default description color behavior exposed by [TreeViewRenderOptions].
   static const defaultDescriptionColor = Color(106, 153, 85);
 
   /// Namespace used by Mermaid's small built-in file and folder icon pack.
   static const builtInIconPack = 'mermaid-treeview';
+
+  /// The built in file icon behavior exposed by [TreeViewRenderOptions].
   static const builtInFileIcon = '$builtInIconPack:file';
+
+  /// The built in folder icon behavior exposed by [TreeViewRenderOptions].
   static const builtInFolderIcon = '$builtInIconPack:folder';
 
   /// Mermaid's 15%-opaque amber highlight background.
   static const defaultHighlightBackground = Color(255, 193, 7, 38);
 
+  /// The default highlight stroke behavior exposed by [TreeViewRenderOptions].
   static const defaultHighlightStroke = Color(255, 193, 7);
 
+  /// The row indent.
   final double rowIndent;
+
+  /// The padding x.
   final double paddingX;
+
+  /// The padding y.
   final double paddingY;
+
+  /// The line thickness.
   final double lineThickness;
 
   /// Whether nodes without explicit `icon(...)` annotations receive icons.
@@ -1025,11 +1505,25 @@ final class TreeViewRenderOptions extends DiagramRenderOptions {
 
   /// Background and outline used by the built-in `highlight` class.
   final Color highlightBackground;
+
+  /// The highlight stroke.
   final Color highlightStroke;
+
+  /// The highlight stroke width.
   final double highlightStrokeWidth;
 }
 
-enum TreemapValueFormat { plain, grouped, currencyGrouped }
+/// Defines the supported treemap value format values.
+enum TreemapValueFormat {
+  /// Selects the plain variant.
+  plain,
+
+  /// Selects the grouped variant.
+  grouped,
+
+  /// Selects the currency grouped variant.
+  currencyGrouped,
+}
 
 // Mermaid 11.16 treemap configuration defaults.
 const _treemapUseMaxWidth = true;
@@ -1042,7 +1536,9 @@ const _treemapBorderWidth = 1.0;
 const _treemapValueFontSize = 12.0;
 const _treemapLabelFontSize = 14.0;
 
+/// Typed rendering options for Mermaid treemap diagrams.
 final class TreemapRenderOptions extends DiagramRenderOptions {
+  /// Creates a typed [TreemapRenderOptions].
   const TreemapRenderOptions({
     super.useWidth,
     super.useMaxWidth = _treemapUseMaxWidth,
@@ -1066,9 +1562,16 @@ final class TreemapRenderOptions extends DiagramRenderOptions {
   /// Padding between D3 treemap tiles.
   final double padding;
 
+  /// The diagram padding.
   final double diagramPadding;
+
+  /// The show values.
   final bool showValues;
+
+  /// The node width.
   final double nodeWidth;
+
+  /// The node height.
   final double nodeHeight;
 
   /// Mermaid configuration retained for parity with the current renderer.
@@ -1087,27 +1590,44 @@ final class TreemapRenderOptions extends DiagramRenderOptions {
   /// Mermaid 11.16 accepts this setting but computes label sizes dynamically.
   final double labelFontSize;
 
+  /// The value format.
   final TreemapValueFormat valueFormat;
+
+  /// The section opacity.
   final double sectionOpacity;
+
+  /// The section stroke opacity.
   final double sectionStrokeOpacity;
+
+  /// The leaf opacity.
   final double leafOpacity;
   final ({List<Color>? primary, List<Color>? peer, List<Color>? label}) _palettes;
 
+  /// The resolved section colors after applying Mermaid theme precedence.
   List<Color> get sectionColors => _palettes.primary ?? _mermaidColorScale;
+
+  /// The resolved section border colors after applying Mermaid theme precedence.
   List<Color> get sectionBorderColors => _palettes.peer ?? _mermaidColorScalePeers;
+
+  /// The resolved label colors after applying Mermaid theme precedence.
   List<Color> get labelColors => _palettes.label ?? _mermaidColorScaleLabels;
 
+  /// Resolves section colors using diagram, global theme, and default precedence.
   List<Color> resolveSectionColors(MermaidTheme theme) =>
       _resolveThemePalette(_palettes.primary, theme.categoricalColors, _mermaidColorScale);
 
+  /// Resolves section border colors using diagram, global theme, and default precedence.
   List<Color> resolveSectionBorderColors(MermaidTheme theme) =>
       _resolveThemePalette(_palettes.peer, theme.categoricalPeerColors, _mermaidColorScalePeers);
 
+  /// Resolves label colors using diagram, global theme, and default precedence.
   List<Color> resolveLabelColors(MermaidTheme theme) =>
       _resolveThemePalette(_palettes.label, theme.categoricalLabelColors, _mermaidColorScaleLabels);
 }
 
+/// Typed rendering options for Mermaid wardley diagrams.
 final class WardleyRenderOptions extends DiagramRenderOptions {
+  /// Creates a typed [WardleyRenderOptions].
   const WardleyRenderOptions({
     super.useWidth,
     super.useMaxWidth = true,
@@ -1149,13 +1669,28 @@ final class WardleyRenderOptions extends DiagramRenderOptions {
          annotationFill: annotationFill,
        );
 
+  /// The width.
   final double width;
+
+  /// The height.
   final double height;
+
+  /// The padding.
   final double padding;
+
+  /// The node radius.
   final double nodeRadius;
+
+  /// The node label offset.
   final double nodeLabelOffset;
+
+  /// The axis font size.
   final double axisFontSize;
+
+  /// The label font size.
   final double labelFontSize;
+
+  /// The show grid.
   final bool showGrid;
   final ({
     Color? backgroundColor,
@@ -1172,20 +1707,44 @@ final class WardleyRenderOptions extends DiagramRenderOptions {
     Color? annotationFill,
   })
   _themeOverrides;
+
+  /// The stage boundary color.
   final Color stageBoundaryColor;
+
+  /// The anchor label color.
   final Color anchorLabelColor;
+
+  /// The build strategy stroke.
   final Color buildStrategyStroke;
 
+  /// The resolved background color after applying Mermaid theme precedence.
   Color get backgroundColor => _themeOverrides.backgroundColor ?? const WardleyTheme().backgroundColor;
+
+  /// The resolved axis color after applying Mermaid theme precedence.
   Color get axisColor => _themeOverrides.axisColor ?? const Color(51, 51, 51);
+
+  /// The resolved axis text color after applying Mermaid theme precedence.
   Color get axisTextColor => _themeOverrides.axisTextColor ?? const WardleyTheme().axisTextColor;
+
+  /// The resolved grid color after applying Mermaid theme precedence.
   Color get gridColor => _themeOverrides.gridColor ?? const Color(211, 211, 211);
+
+  /// The resolved component fill after applying Mermaid theme precedence.
   Color get componentFill => _themeOverrides.componentFill ?? const WardleyTheme().componentFill;
+
+  /// The resolved component stroke after applying Mermaid theme precedence.
   Color get componentStroke => _themeOverrides.componentStroke ?? const Color(51, 51, 51);
+
+  /// The resolved component label color after applying Mermaid theme precedence.
   Color get componentLabelColor => _themeOverrides.componentLabelColor ?? const WardleyTheme().componentLabelColor;
+
+  /// The resolved link stroke after applying Mermaid theme precedence.
   Color get linkStroke => _themeOverrides.linkStroke ?? const Color(51, 51, 51);
+
+  /// The resolved evolution stroke after applying Mermaid theme precedence.
   Color get evolutionStroke => _themeOverrides.evolutionStroke ?? const WardleyTheme().evolutionStroke;
 
+  /// Resolves renderer-specific values against the global [MermaidTheme].
   WardleyTheme resolveTheme(MermaidTheme theme) {
     final inherited = theme.wardley;
     return WardleyTheme(
@@ -1205,7 +1764,9 @@ final class WardleyRenderOptions extends DiagramRenderOptions {
   }
 }
 
+/// Typed rendering options for Mermaid railroad diagrams.
 final class RailroadRenderOptions extends DiagramRenderOptions {
+  /// Creates a typed [RailroadRenderOptions].
   const RailroadRenderOptions({
     super.useWidth,
     super.useMaxWidth,
@@ -1255,11 +1816,23 @@ final class RailroadRenderOptions extends DiagramRenderOptions {
 
   /// Mermaid currently accepts this option but does not alter its renderer.
   final bool compactMode;
+
+  /// The padding.
   final double padding;
+
+  /// The vertical separation.
   final double verticalSeparation;
+
+  /// The horizontal separation.
   final double horizontalSeparation;
+
+  /// The arc radius.
   final double arcRadius;
+
+  /// The show markers.
   final bool showMarkers;
+
+  /// The marker radius.
   final double markerRadius;
   final ({
     double? fontSize,
@@ -1293,22 +1866,55 @@ final class RailroadRenderOptions extends DiagramRenderOptions {
     specialStroke: Color(199, 199, 241),
   );
 
+  /// The resolved font size after applying Mermaid theme precedence.
   double get fontSize => _themeOverrides.fontSize ?? _defaults.fontSize;
+
+  /// The resolved font family after applying Mermaid theme precedence.
   String get fontFamily => _themeOverrides.fontFamily ?? _defaults.fontFamily;
+
+  /// The resolved stroke width after applying Mermaid theme precedence.
   double get strokeWidth => _themeOverrides.strokeWidth ?? _defaults.strokeWidth;
+
+  /// The resolved terminal fill after applying Mermaid theme precedence.
   Color get terminalFill => _themeOverrides.terminalFill ?? _defaults.terminalFill;
+
+  /// The resolved terminal stroke after applying Mermaid theme precedence.
   Color get terminalStroke => _themeOverrides.terminalStroke ?? _defaults.terminalStroke;
+
+  /// The resolved terminal text color after applying Mermaid theme precedence.
   Color get terminalTextColor => _themeOverrides.terminalTextColor ?? _defaults.terminalTextColor;
+
+  /// The resolved non terminal fill after applying Mermaid theme precedence.
   Color get nonTerminalFill => _themeOverrides.nonTerminalFill ?? _defaults.nonTerminalFill;
+
+  /// The resolved non terminal stroke after applying Mermaid theme precedence.
   Color get nonTerminalStroke => _themeOverrides.nonTerminalStroke ?? _defaults.nonTerminalStroke;
+
+  /// The resolved non terminal text color after applying Mermaid theme precedence.
   Color get nonTerminalTextColor => _themeOverrides.nonTerminalTextColor ?? _defaults.nonTerminalTextColor;
+
+  /// The resolved line color after applying Mermaid theme precedence.
   Color get lineColor => _themeOverrides.lineColor ?? _defaults.lineColor;
+
+  /// The resolved marker fill after applying Mermaid theme precedence.
   Color get markerFill => _themeOverrides.markerFill ?? _defaults.markerFill;
+
+  /// The resolved comment fill after applying Mermaid theme precedence.
   Color get commentFill => _themeOverrides.commentFill ?? _defaults.commentFill;
+
+  /// The resolved comment stroke after applying Mermaid theme precedence.
   Color get commentStroke => _themeOverrides.commentStroke ?? _defaults.commentStroke;
+
+  /// The resolved comment text color after applying Mermaid theme precedence.
   Color get commentTextColor => _themeOverrides.commentTextColor ?? _defaults.commentTextColor;
+
+  /// The resolved special fill after applying Mermaid theme precedence.
   Color get specialFill => _themeOverrides.specialFill ?? _defaults.specialFill;
+
+  /// The resolved special stroke after applying Mermaid theme precedence.
   Color get specialStroke => _themeOverrides.specialStroke ?? _defaults.specialStroke;
+
+  /// The resolved rule name color after applying Mermaid theme precedence.
   Color get ruleNameColor => _themeOverrides.ruleNameColor ?? _defaults.ruleNameColor;
 
   /// Resolves explicit railroad styling over Mermaid's common theme variables.
@@ -1351,10 +1957,12 @@ final class RailroadRenderOptions extends DiagramRenderOptions {
   );
 }
 
+/// Typed rendering options for Mermaid packet diagrams.
 final class PacketRenderOptions extends DiagramRenderOptions {
   /// Mermaid's packet renderer uses black title text independently of the global theme.
   static const defaultTitleTextColor = Color(0, 0, 0);
 
+  /// Creates a typed [PacketRenderOptions].
   const PacketRenderOptions({
     super.useWidth,
     super.useMaxWidth = true,
@@ -1367,21 +1975,52 @@ final class PacketRenderOptions extends DiagramRenderOptions {
     this.titleText = defaultTitleTextColor,
   });
 
+  /// The row height.
   final double rowHeight;
+
+  /// The bit width.
   final double bitWidth;
+
+  /// The bits per row.
   final int bitsPerRow;
+
+  /// The show bits.
   final bool showBits;
+
+  /// The padding x.
   final double paddingX;
+
+  /// The padding y.
   final double paddingY;
+
+  /// The title text.
   final Color titleText;
 }
 
-enum PieLegendPosition { top, bottom, left, right, center }
+/// Defines the supported pie legend position values.
+enum PieLegendPosition {
+  /// Selects the top variant.
+  top,
 
+  /// Selects the bottom variant.
+  bottom,
+
+  /// Selects the left variant.
+  left,
+
+  /// Selects the right variant.
+  right,
+
+  /// Selects the center variant.
+  center,
+}
+
+/// Typed rendering options for Mermaid pie diagrams.
 final class PieRenderOptions extends DiagramRenderOptions {
   /// Mermaid's default light-theme color for pie chart titles.
   static const defaultTitleTextColor = Color(0, 0, 0);
 
+  /// Creates a typed [PieRenderOptions].
   const PieRenderOptions({
     super.useWidth = 984,
     super.useMaxWidth = true,
@@ -1420,13 +2059,28 @@ final class PieRenderOptions extends DiagramRenderOptions {
          outerStrokeWidth: outerStrokeWidth,
        );
 
+  /// The size.
   final double size;
+
+  /// The margin.
   final double margin;
+
+  /// The radius.
   final double? radius;
+
+  /// The text position.
   final double textPosition;
+
+  /// The donut hole.
   final double donutHole;
+
+  /// The legend position.
   final PieLegendPosition legendPosition;
+
+  /// The highlight slice.
   final String? highlightSlice;
+
+  /// The show legend.
   final bool showLegend;
   final ({
     List<Color>? colors,
@@ -1444,16 +2098,29 @@ final class PieRenderOptions extends DiagramRenderOptions {
   })
   _themeOverrides;
 
+  /// The resolved section opacity after applying Mermaid theme precedence.
   double get sectionOpacity => _themeOverrides.opacity ?? const PieTheme().opacity;
+
+  /// The resolved section stroke after applying Mermaid theme precedence.
   Color get sectionStroke => _themeOverrides.sectionStroke ?? const PieTheme().strokeColor;
+
+  /// The resolved outer stroke after applying Mermaid theme precedence.
   Color get outerStroke => _themeOverrides.outerStroke ?? const PieTheme().outerStrokeColor;
+
+  /// The resolved legend text after applying Mermaid theme precedence.
   Color get legendText => _themeOverrides.legendText ?? const PieTheme().legendTextColor;
+
+  /// The resolved title text after applying Mermaid theme precedence.
   Color get titleText => _themeOverrides.titleText ?? const PieTheme().titleTextColor;
+
+  /// The resolved section colors after applying Mermaid theme precedence.
   List<Color> get sectionColors => _themeOverrides.colors ?? _mermaidPieColors;
 
+  /// Resolves section colors using diagram, global theme, and default precedence.
   List<Color> resolveSectionColors(MermaidTheme theme) =>
       _resolveThemePalette(_themeOverrides.colors, theme.pieColors, _mermaidPieColors);
 
+  /// Resolves renderer-specific values against the global [MermaidTheme].
   PieTheme resolveTheme(MermaidTheme theme) {
     final inherited = theme.pie;
     return PieTheme(
@@ -1472,7 +2139,9 @@ final class PieRenderOptions extends DiagramRenderOptions {
   }
 }
 
+/// Typed rendering options for Mermaid radar diagrams.
 final class RadarRenderOptions extends DiagramRenderOptions {
+  /// Creates a typed [RadarRenderOptions].
   const RadarRenderOptions({
     super.useWidth,
     super.useMaxWidth = true,
@@ -1511,15 +2180,34 @@ final class RadarRenderOptions extends DiagramRenderOptions {
          legendFontSize: legendFontSize,
        );
 
+  /// The width.
   final double width;
+
+  /// The height.
   final double height;
+
+  /// The margin top.
   final double marginTop;
+
+  /// The margin right.
   final double marginRight;
+
+  /// The margin bottom.
   final double marginBottom;
+
+  /// The margin left.
   final double marginLeft;
+
+  /// The radius.
   final double? radius;
+
+  /// The axis scale factor.
   final double axisScaleFactor;
+
+  /// The axis label factor.
   final double axisLabelFactor;
+
+  /// The curve tension.
   final double curveTension;
   final ({
     List<Color>? colors,
@@ -1536,15 +2224,26 @@ final class RadarRenderOptions extends DiagramRenderOptions {
   })
   _themeOverrides;
 
+  /// The resolved graticule color after applying Mermaid theme precedence.
   Color get graticuleColor => _themeOverrides.graticuleColor ?? const RadarTheme().graticuleColor;
+
+  /// The resolved graticule opacity after applying Mermaid theme precedence.
   double get graticuleOpacity => _themeOverrides.graticuleOpacity ?? const RadarTheme().graticuleOpacity;
+
+  /// The resolved axis color after applying Mermaid theme precedence.
   Color get axisColor => _themeOverrides.axisColor ?? const RadarTheme().axisColor;
+
+  /// The resolved series opacity after applying Mermaid theme precedence.
   double get seriesOpacity => _themeOverrides.seriesOpacity ?? const RadarTheme().curveOpacity;
+
+  /// The resolved series colors after applying Mermaid theme precedence.
   List<Color> get seriesColors => _themeOverrides.colors ?? _mermaidColorScale;
 
+  /// Resolves series colors using diagram, global theme, and default precedence.
   List<Color> resolveSeriesColors(MermaidTheme theme) =>
       _resolveThemePalette(_themeOverrides.colors, theme.categoricalColors, _mermaidColorScale);
 
+  /// Resolves renderer-specific values against the global [MermaidTheme].
   RadarTheme resolveTheme(MermaidTheme theme) {
     final inherited = theme.radar;
     return RadarTheme(
@@ -1562,7 +2261,13 @@ final class RadarRenderOptions extends DiagramRenderOptions {
   }
 }
 
+/// Top-level configuration for layout and rendering.
+///
+/// [theme] supplies global Mermaid variables, while each diagram-specific
+/// field contains typed renderer configuration. [padding] is applied after
+/// diagram layout when the final scene viewport is constructed.
 final class RenderOptions {
+  /// Creates rendering options with Mermaid-compatible defaults.
   const RenderOptions({
     this.theme = const MermaidTheme(),
     this.padding = 20,
@@ -1581,24 +2286,55 @@ final class RenderOptions {
     this.diagram = const <Type, DiagramRenderOptions>{},
   });
 
+  /// Global colors, typography, palettes, and renderer theme blocks.
   final MermaidTheme theme;
+
+  /// Padding in scene units added around the computed content bounds.
   final double padding;
+
+  /// Architecture renderer configuration.
   final ArchitectureRenderOptions architecture;
+
+  /// Cynefin renderer configuration.
   final CynefinRenderOptions cynefin;
+
+  /// Event Modeling renderer configuration.
   final EventModelingRenderOptions eventModeling;
+
+  /// Git Graph renderer configuration.
   final GitGraphRenderOptions gitGraph;
+
+  /// Info renderer configuration.
   final InfoRenderOptions info;
+
+  /// Packet renderer configuration.
   final PacketRenderOptions packet;
+
+  /// Pie renderer configuration.
   final PieRenderOptions pie;
+
+  /// Radar renderer configuration.
   final RadarRenderOptions radar;
+
+  /// Shared railroad, ABNF, EBNF, and PEG renderer configuration.
   final RailroadRenderOptions railroad;
+
+  /// Tree View renderer configuration.
   final TreeViewRenderOptions treeView;
+
+  /// Treemap renderer configuration.
   final TreemapRenderOptions treemap;
+
+  /// Wardley renderer configuration.
   final WardleyRenderOptions wardley;
 
   /// Additional typed options for renderer families added after this API.
   final Map<Type, DiagramRenderOptions> diagram;
 
+  /// Returns the configured options matching the runtime type of [fallback].
+  ///
+  /// Entries in [diagram] take precedence over the corresponding named field.
+  /// [fallback] also establishes the generic return type.
   T optionsFor<T extends DiagramRenderOptions>(T fallback) {
     final override = diagram[fallback.runtimeType];
     if (override != null) return override as T;
@@ -1620,6 +2356,7 @@ final class RenderOptions {
   }
 }
 
+/// Controls how SVG root width attributes are derived from a scene.
 enum SvgWidthMode {
   /// Use the backend-neutral sizing policy carried by [DiagramScene].
   scene,
@@ -1631,15 +2368,25 @@ enum SvgWidthMode {
   fitContainer,
 }
 
+/// Options that affect SVG serialization without changing scene geometry.
 final class SvgRenderOptions {
+  /// Creates SVG serialization options.
   const SvgRenderOptions({
     this.pretty = false,
     this.includeXmlDeclaration = false,
     this.rootId,
     this.widthMode = SvgWidthMode.scene,
   });
+
+  /// Whether to indent the generated XML.
   final bool pretty;
+
+  /// Whether to emit an XML declaration before the root element.
   final bool includeXmlDeclaration;
+
+  /// Optional `id` assigned to the root `<svg>` element.
   final String? rootId;
+
+  /// How root width and height attributes are emitted.
   final SvgWidthMode widthMode;
 }

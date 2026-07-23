@@ -3,6 +3,12 @@ import 'package:xml/xml.dart';
 import 'options.dart';
 import 'scene.dart';
 
+/// Renders render svg.
+/// Serializes a geometry-complete [scene] as accessible SVG.
+///
+/// The serializer preserves scene IDs, semantic roles, clip paths, transforms,
+/// paint opacity, typography, and accessibility metadata. [options] controls
+/// XML formatting and root sizing without changing scene geometry.
 String renderSvg(DiagramScene scene, {SvgRenderOptions options = const SvgRenderOptions()}) {
   final builder = XmlBuilder();
   if (options.includeXmlDeclaration) {

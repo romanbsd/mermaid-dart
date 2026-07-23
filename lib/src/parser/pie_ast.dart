@@ -2,6 +2,7 @@ part of 'ast.dart';
 
 /// Syntax tree for a `pie` diagram.
 final class PieAst extends DiagramAst {
+  /// Creates a typed [PieAst].
   const PieAst({
     this.showData = false,
     this.sections = const [],
@@ -13,7 +14,10 @@ final class PieAst extends DiagramAst {
   @override
   DiagramType get type => DiagramType.pie;
 
+  /// The show data.
   final bool showData;
+
+  /// The sections.
   final List<PieSectionAst> sections;
 
   @override
@@ -22,9 +26,13 @@ final class PieAst extends DiagramAst {
 
 /// A labeled numeric section in a [PieAst].
 final class PieSectionAst with _AstValueEquality {
+  /// Creates a typed [PieSectionAst].
   const PieSectionAst({required this.label, required this.value});
 
+  /// The label.
   final String label;
+
+  /// The value.
   final num value;
 
   @override

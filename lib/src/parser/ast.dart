@@ -1,3 +1,7 @@
+/// Typed abstract syntax trees produced by the Mermaid parsers.
+///
+/// Every concrete diagram extends [DiagramAst] and preserves common title and
+/// accessibility metadata alongside diagram-specific semantic nodes.
 library;
 
 import 'package:collection/collection.dart';
