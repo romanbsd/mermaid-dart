@@ -531,15 +531,20 @@ void main() {
           .whereType<ScenePath>()
           .where((element) => element.cssClasses.contains('em-relation'))
           .toList();
+      final arrowheads = elements
+          .whereType<ScenePolygon>()
+          .where((element) => element.cssClasses.contains('em-arrowhead'))
+          .toList();
 
       expect(lanes, hasLength(3));
       expect(lanes.map((lane) => lane.bounds.top), [0, 140, 280]);
+      expect(lanes.map((lane) => (lane.radiusX, lane.radiusY)), everyElement(const (3, 3)));
       expect(
         elements
             .whereType<SceneText>()
             .where((element) => element.cssClasses.contains('em-swimlane-label'))
-            .map((element) => element.text),
-        ['UI/A: Sales', 'Command/Read Model', 'Events'],
+            .map((element) => (element.text, element.position)),
+        const [('UI/A: Sales', Point(30, 30)), ('Command/Read Model', Point(30, 170)), ('Events', Point(30, 310))],
       );
       expect(boxes.map((box) => box.bounds), [
         const Bounds(left: 250, top: 15, width: 120, height: 100),
@@ -561,10 +566,22 @@ void main() {
       expect(relations, hasLength(2));
       expect(relations[0].commands, const [MoveTo(Point(330, 115)), LineTo(Point(350, 155))]);
       expect(relations[1].commands, const [MoveTo(Point(400, 255)), LineTo(Point(430, 295))]);
-      expect(
-        elements.whereType<ScenePolygon>().where((element) => element.cssClasses.contains('em-arrowhead')),
-        hasLength(2),
-      );
+      expect(arrowheads, hasLength(2));
+      for (final (index, arrow) in arrowheads.indexed) {
+        final relation = relations[index];
+        final tip = arrow.points.first;
+        final baseLeft = arrow.points[1];
+        final baseRight = arrow.points[2];
+        final base = Point((baseLeft.x + baseRight.x) / 2, (baseLeft.y + baseRight.y) / 2);
+        final lengthSquared = (tip.x - base.x) * (tip.x - base.x) + (tip.y - base.y) * (tip.y - base.y);
+        final widthSquared =
+            (baseLeft.x - baseRight.x) * (baseLeft.x - baseRight.x) +
+            (baseLeft.y - baseRight.y) * (baseLeft.y - baseRight.y);
+
+        expect(tip, (relation.commands.last as LineTo).point);
+        expect(lengthSquared, closeTo(100, 1e-9));
+        expect(widthSquared, closeTo(49, 1e-9));
+      }
       expect(scene.bounds, const Bounds(left: 0, top: 0, width: 555, height: 410));
       expectSvgGolden('event_modeling_swimlanes', renderSvg(scene));
     });

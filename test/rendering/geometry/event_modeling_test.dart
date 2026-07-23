@@ -91,5 +91,59 @@ void main() {
       expect(layout.boxes.single.text, 'Created\n\n"id": 7');
       expect(layout.boxes.single.lane.label, 'Stream: Order');
     });
+
+    test('reflows downstream lanes after a later frame grows an earlier lane', () {
+      final layout = layoutEventModel(
+        const EventModelingAst(
+          frames: [
+            EventModelTimeFrameAst(name: 'screen', entityType: EventModelEntityType.ui, entityIdentifier: 'Screen'),
+            EventModelTimeFrameAst(name: 'event', entityType: EventModelEntityType.event, entityIdentifier: 'Event'),
+            EventModelTimeFrameAst(
+              name: 'details',
+              entityType: EventModelEntityType.ui,
+              entityIdentifier: 'Details',
+              dataInlineValue: 'one\ntwo\nthree',
+            ),
+          ],
+        ),
+        const EventModelingRenderOptions(
+          boxMinHeight: 10,
+          boxMaxHeight: 200,
+          boxPadding: 5,
+          swimlaneMinHeight: 50,
+          swimlanePadding: 10,
+          swimlaneGap: 10,
+        ),
+        measurer,
+        style,
+      );
+
+      expect(layout.lanes.map((lane) => lane.height), [140, 70]);
+      expect(layout.lanes.map((lane) => lane.y), [0, 150]);
+      expect(layout.height, 220);
+    });
+
+    test('explicit sources resolve to the latest duplicate frame name', () {
+      final layout = layoutEventModel(
+        const EventModelingAst(
+          frames: [
+            EventModelTimeFrameAst(name: 'shared', entityType: EventModelEntityType.ui, entityIdentifier: 'Screen'),
+            EventModelTimeFrameAst(name: 'shared', entityType: EventModelEntityType.event, entityIdentifier: 'Created'),
+            EventModelTimeFrameAst(
+              name: 'target',
+              entityType: EventModelEntityType.command,
+              entityIdentifier: 'Handle',
+              sourceFrames: ['shared'],
+            ),
+          ],
+        ),
+        const EventModelingRenderOptions(),
+        measurer,
+        style,
+      );
+
+      expect(layout.relations.last.source, same(layout.boxes[1]));
+      expect(layout.relations.last.target, same(layout.boxes[2]));
+    });
   });
 }

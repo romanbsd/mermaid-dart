@@ -4,6 +4,9 @@ import '../../parser/ast.dart';
 import '../options.dart';
 import '../scene.dart';
 
+const _eventModelLaneBandSize = 100;
+const _eventModelNamespaceSegmentCount = 2;
+
 final class EventModelLayout {
   const EventModelLayout({
     required this.lanes,
@@ -77,6 +80,7 @@ EventModelLayout layoutEventModel(
   final lanesByIndex = <int, EventModelLane>{};
   final boxes = <EventModelBox>[];
   final relations = <EventModelRelation>[];
+  final latestBoxByFrameName = <String, EventModelBox>{};
   EventModelLane? previousLane;
   var maxRight = 0.0;
 
@@ -89,25 +93,30 @@ EventModelLayout layoutEventModel(
         index: laneIdentity.index,
         label: laneIdentity.label,
         namespace: laneIdentity.namespace,
-        y: laneIdentity.index * options.swimlaneMinHeight + options.swimlaneGap,
+        y: 0,
         height: options.swimlaneMinHeight,
         maxHeight: options.swimlaneMinHeight,
       ),
     );
     final text = _frameText(frame, ast.dataEntities);
     final measured = measurer.measure(text, textStyle);
-    final width =
-        (measured.width + options.boxPadding * 2).clamp(options.boxMinWidth, options.boxMaxWidth) +
-        options.boxPadding * 2;
-    final height =
-        (measured.height + options.boxPadding * 2).clamp(options.boxMinHeight, options.boxMaxHeight) +
-        options.boxPadding * 2;
+    final width = _eventModelBoxDimension(
+      measured.width,
+      minimum: options.boxMinWidth,
+      maximum: options.boxMaxWidth,
+      padding: options.boxPadding,
+    );
+    final height = _eventModelBoxDimension(
+      measured.height,
+      minimum: options.boxMinHeight,
+      maximum: options.boxMaxHeight,
+      padding: options.boxPadding,
+    );
     final previousBox = boxes.lastOrNull;
-    final x = switch ((previousLane, lane.right, previousBox)) {
-      (null, _, _) => options.contentStartX,
-      (final previous?, final right, _) when identical(previous, lane) && right > 0 => right + options.boxPadding,
-      (_, _, null) => options.contentStartX,
-      (_, _, final box?) => box.bounds.right + options.boxPadding * 2 - options.boxOverlap,
+    final x = switch (previousBox) {
+      null => options.contentStartX,
+      _ when identical(previousLane, lane) && lane.right > 0 => lane.right + options.boxPadding,
+      final box => box.bounds.right + options.boxPadding * 2 - options.boxOverlap,
     };
     final visual = _visualFor(frame.entityType, theme);
     final box = EventModelBox(
@@ -120,6 +129,7 @@ EventModelLayout layoutEventModel(
       text: text,
     );
     boxes.add(box);
+    latestBoxByFrameName[frame.name] = box;
     lane.right = box.bounds.right;
     lane.maxHeight = lane.maxHeight > height ? lane.maxHeight : height;
     lane.height =
@@ -130,7 +140,7 @@ EventModelLayout layoutEventModel(
     if (frame is! EventModelResetFrameAst && !(frameIndex == 0 && frame.sourceFrames.isEmpty)) {
       if (frame.sourceFrames.isNotEmpty) {
         for (final sourceName in frame.sourceFrames) {
-          final source = boxes.where((candidate) => candidate.frame.name == sourceName).lastOrNull;
+          final source = latestBoxByFrameName[sourceName];
           if (source != null) relations.add(EventModelRelation(source: source, target: box));
         }
       } else {
@@ -139,26 +149,20 @@ EventModelLayout layoutEventModel(
       }
     }
     previousLane = lane;
-
-    final sorted = lanesByIndex.values.toList()..sort((left, right) => left.index.compareTo(right.index));
-    if (sorted.isNotEmpty) sorted.first.y = 0;
-    for (var i = 1; i < sorted.length; i++) {
-      sorted[i].y = sorted[i - 1].y + sorted[i - 1].height + options.swimlaneGap;
-    }
   }
 
   final lanes = lanesByIndex.values.toList()..sort((left, right) => left.index.compareTo(right.index));
+  for (var i = 1; i < lanes.length; i++) {
+    lanes[i].y = lanes[i - 1].y + lanes[i - 1].height + options.swimlaneGap;
+  }
   final height = lanes.isEmpty ? 0.0 : lanes.last.y + lanes.last.height;
   return EventModelLayout(lanes: lanes, boxes: boxes, relations: relations, maxRight: maxRight, height: height);
 }
 
 ({int index, String label, String? namespace}) _laneIdentity(EventModelFrameAst frame, Map<int, EventModelLane> lanes) {
   final namespace = _entityNamespace(frame.entityIdentifier);
-  final (lower, upper, label, prefix) = switch (frame.entityType) {
-    EventModelEntityType.ui || EventModelEntityType.processor => (0, 100, 'UI/Automation', 'UI/A: '),
-    EventModelEntityType.readModel || EventModelEntityType.command => (100, 200, 'Command/Read Model', 'C/RM: '),
-    EventModelEntityType.event => (200, 300, 'Events', 'Stream: '),
-  };
+  final (:lower, :label, :prefix) = frame.entityType._lane;
+  final upper = lower + _eventModelLaneBandSize;
   if (namespace == null) return (index: lower, label: label, namespace: null);
   final occupied = lanes.keys.where((index) => index > lower && index < upper);
   final index = occupied.fold(lower, (maximum, value) => value > maximum ? value : maximum) + 1;
@@ -167,12 +171,12 @@ EventModelLayout layoutEventModel(
 
 String? _entityNamespace(String identifier) {
   final parts = identifier.split('.');
-  return parts.length == 2 ? parts.first : null;
+  return parts.length == _eventModelNamespaceSegmentCount ? parts.first : null;
 }
 
 String _entityName(String identifier) {
   final parts = identifier.split('.');
-  return parts.length == 2 ? parts.last : identifier;
+  return parts.length == _eventModelNamespaceSegmentCount ? parts.last : identifier;
 }
 
 String _frameText(EventModelFrameAst frame, List<EventModelDataEntityAst> dataEntities) {
@@ -195,3 +199,19 @@ String _frameText(EventModelFrameAst frame, List<EventModelDataEntityAst> dataEn
   EventModelEntityType.command => (theme.commandFill, theme.commandStroke),
   EventModelEntityType.event => (theme.eventFill, theme.eventStroke),
 };
+
+double _eventModelBoxDimension(
+  double measured, {
+  required double minimum,
+  required double maximum,
+  required double padding,
+}) => (measured + padding * 2).clamp(minimum, maximum) + padding * 2;
+
+extension on EventModelEntityType {
+  ({int lower, String label, String prefix}) get _lane => switch (this) {
+    EventModelEntityType.ui || EventModelEntityType.processor => (lower: 0, label: 'UI/Automation', prefix: 'UI/A: '),
+    EventModelEntityType.readModel ||
+    EventModelEntityType.command => (lower: _eventModelLaneBandSize, label: 'Command/Read Model', prefix: 'C/RM: '),
+    EventModelEntityType.event => (lower: _eventModelLaneBandSize * 2, label: 'Events', prefix: 'Stream: '),
+  };
+}

@@ -666,35 +666,6 @@ ScenePolygon _wardleyArrow(
   cssClasses: cssClasses,
 );
 
-ScenePolygon _triangleArrow(
-  _LayoutContext context, {
-  required Point tip,
-  required Point tail,
-  required double length,
-  required double halfWidth,
-  required Color color,
-  required String idPrefix,
-  required List<String> cssClasses,
-}) {
-  final dx = tip.x - tail.x;
-  final dy = tip.y - tail.y;
-  final distance = math.sqrt(dx * dx + dy * dy);
-  final unitX = distance == 0 ? 1.0 : dx / distance;
-  final unitY = distance == 0 ? 0.0 : dy / distance;
-  final base = Point(tip.x - unitX * length, tip.y - unitY * length);
-  return ScenePolygon(
-    id: context.id('$idPrefix-arrow'),
-    points: [
-      tip,
-      Point(base.x - unitY * halfWidth, base.y + unitX * halfWidth),
-      Point(base.x + unitY * halfWidth, base.y - unitX * halfWidth),
-    ],
-    fill: SolidFill(color),
-    role: SemanticRole.edge,
-    cssClasses: cssClasses,
-  );
-}
-
 void _addWardleyMarket(
   List<SceneElement> elements,
   _LayoutContext context,

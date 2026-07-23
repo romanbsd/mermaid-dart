@@ -1,5 +1,15 @@
 part of '../layout.dart';
 
+// Fixed geometry from Mermaid's event-modeling renderer. Typed options own
+// frame and lane sizing; these values describe its SVG decoration rules.
+const _eventModelingCornerRadius = 3.0;
+const _eventModelingLaneLabelInset = 30.0;
+const _eventModelingRelationAnchorDivisor = 3.0;
+const _eventModelingRelationSourceAnchor = 2.0;
+const _eventModelingRelationTargetAnchor = 1.0;
+const _eventModelingArrowLength = 10.0;
+const _eventModelingArrowHalfWidth = 3.5;
+
 _LayoutResult _layoutEventModeling(EventModelingAst ast, _LayoutContext context) {
   final config = context.options.optionsFor(const EventModelingRenderOptions());
   final theme = context.options.theme.eventModeling;
@@ -17,8 +27,8 @@ _LayoutResult _layoutEventModeling(EventModelingAst ast, _LayoutContext context)
       SceneRect(
         id: context.id('event-swimlane'),
         bounds: Bounds(left: 0, top: lane.y, width: layout.maxRight + config.swimlanePadding, height: lane.height),
-        radiusX: 3,
-        radiusY: 3,
+        radiusX: _eventModelingCornerRadius,
+        radiusY: _eventModelingCornerRadius,
         fill: SolidFill(theme.swimlaneBackgroundOdd),
         stroke: SceneStroke(color: theme.swimlaneBackgroundStroke),
         role: SemanticRole.group,
@@ -30,8 +40,8 @@ _LayoutResult _layoutEventModeling(EventModelingAst ast, _LayoutContext context)
       _text(
         context,
         lane.label,
-        30,
-        lane.y + 30,
+        _eventModelingLaneLabelInset,
+        lane.y + _eventModelingLaneLabelInset,
         baseline: TextBaseline.alphabetic,
         style: boxTextStyle,
         cssClasses: const ['em-swimlane-label'],
@@ -50,8 +60,8 @@ _LayoutResult _layoutEventModeling(EventModelingAst ast, _LayoutContext context)
       SceneRect(
         id: context.id('event-frame'),
         bounds: bounds,
-        radiusX: 3,
-        radiusY: 3,
+        radiusX: _eventModelingCornerRadius,
+        radiusY: _eventModelingCornerRadius,
         fill: SolidFill(box.fill),
         stroke: SceneStroke(color: box.stroke),
         role: SemanticRole.node,
@@ -77,11 +87,13 @@ _LayoutResult _layoutEventModeling(EventModelingAst ast, _LayoutContext context)
     final targetTop = relation.target.lane.y + config.swimlanePadding;
     final upwards = sourceTop > targetTop;
     final start = Point(
-      relation.source.bounds.left + relation.source.bounds.width * 2 / 3,
+      relation.source.bounds.left +
+          relation.source.bounds.width * _eventModelingRelationSourceAnchor / _eventModelingRelationAnchorDivisor,
       upwards ? sourceTop : sourceTop + relation.source.bounds.height,
     );
     final end = Point(
-      relation.target.bounds.left + relation.target.bounds.width / 3,
+      relation.target.bounds.left +
+          relation.target.bounds.width * _eventModelingRelationTargetAnchor / _eventModelingRelationAnchorDivisor,
       upwards ? targetTop + relation.target.bounds.height : targetTop,
     );
     elements.add(
@@ -94,23 +106,17 @@ _LayoutResult _layoutEventModeling(EventModelingAst ast, _LayoutContext context)
         cssClasses: const ['em-relation'],
       ),
     );
-    final dx = end.x - start.x;
-    final dy = end.y - start.y;
-    final length = math.sqrt(dx * dx + dy * dy);
-    if (length > 0) {
-      final unitX = dx / length;
-      final unitY = dy / length;
-      final base = Point(end.x - unitX * 10, end.y - unitY * 10);
+    if (start != end) {
       elements.add(
-        ScenePolygon(
-          id: context.id('event-arrowhead'),
-          points: [
-            end,
-            Point(base.x - unitY * 3.5, base.y + unitX * 3.5),
-            Point(base.x + unitY * 3.5, base.y - unitX * 3.5),
-          ],
-          fill: SolidFill(theme.arrowhead),
-          role: SemanticRole.edge,
+        _triangleArrow(
+          context,
+          tip: end,
+          tail: start,
+          length: _eventModelingArrowLength,
+          halfWidth: _eventModelingArrowHalfWidth,
+          color: theme.arrowhead,
+          idPrefix: 'event',
+          idSuffix: 'arrowhead',
           cssClasses: const ['em-arrowhead'],
         ),
       );
