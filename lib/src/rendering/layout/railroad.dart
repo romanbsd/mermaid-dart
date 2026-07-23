@@ -29,19 +29,21 @@ _RailBox _railNode(RailroadNodeAst node, _LayoutContext context) => switch (node
 
 SceneTextStyle _railTextStyle(_LayoutContext context, {FontWeight weight = FontWeight.normal, Color? color}) {
   final config = context.options.optionsFor(const RailroadRenderOptions());
+  final theme = config.resolveTheme(context.options.theme);
   return SceneTextStyle(
-    fontFamily: config.fontFamily,
-    fontSize: config.fontSize,
+    fontFamily: theme.fontFamily,
+    fontSize: theme.fontSize,
     weight: weight,
-    color: color ?? config.nonTerminalTextColor,
+    color: color ?? theme.nonTerminalTextColor,
   );
 }
 
 SceneStroke _railStroke(_LayoutContext context, {bool dashed = false, Color? color}) {
   final config = context.options.optionsFor(const RailroadRenderOptions());
+  final theme = config.resolveTheme(context.options.theme);
   return SceneStroke(
-    color: color ?? config.lineColor,
-    width: config.strokeWidth,
+    color: color ?? theme.lineColor,
+    width: theme.strokeWidth,
     dashes: dashed ? const [_railSpecialDashLength, _railSpecialGapLength] : const [],
   );
 }
@@ -57,17 +59,18 @@ ScenePath _railPath(_LayoutContext context, List<PathCommand> commands) => Scene
 
 _RailBox _railLeaf(String label, _LayoutContext context, bool terminal, {bool special = false}) {
   final config = context.options.optionsFor(const RailroadRenderOptions());
+  final theme = config.resolveTheme(context.options.theme);
   final fillColor = terminal
-      ? config.terminalFill
+      ? theme.terminalFill
       : special
-      ? config.specialFill
-      : config.nonTerminalFill;
+      ? theme.specialFill
+      : theme.nonTerminalFill;
   final borderColor = terminal
-      ? config.terminalStroke
+      ? theme.terminalStroke
       : special
-      ? config.specialStroke
-      : config.nonTerminalStroke;
-  final textColor = terminal ? config.terminalTextColor : config.nonTerminalTextColor;
+      ? theme.specialStroke
+      : theme.nonTerminalStroke;
+  final textColor = terminal ? theme.terminalTextColor : theme.nonTerminalTextColor;
   final style = _railTextStyle(context, color: textColor);
   final measured = context.measurer.measure(label, style);
   final width = measured.width + config.padding * 2;
@@ -263,9 +266,10 @@ _RailBox _railRepetition(RailroadNodeAst node, int min, num max, _LayoutContext 
 
 _LayoutResult _layoutRailroad(RailroadAst ast, _LayoutContext context) {
   final config = context.options.optionsFor(const RailroadRenderOptions());
+  final theme = config.resolveTheme(context.options.theme);
   if (ast.rules.isEmpty) return const _LayoutResult(200, 100, []);
   final style = _railTextStyle(context);
-  final ruleStyle = _railTextStyle(context, weight: FontWeight.bold, color: config.ruleNameColor);
+  final ruleStyle = _railTextStyle(context, weight: FontWeight.bold, color: theme.ruleNameColor);
   final elements = <SceneElement>[];
   var y = config.padding;
   var width = 0.0;
@@ -298,14 +302,14 @@ _LayoutResult _layoutRailroad(RailroadAst ast, _LayoutContext context) {
           id: context.id('railroad-start'),
           center: Point(nameWidth, baselineY),
           radius: config.markerRadius,
-          fill: SolidFill(config.markerFill),
+          fill: SolidFill(theme.markerFill),
           cssClasses: const ['railroad-start'],
         ),
         SceneCircle(
           id: context.id('railroad-end'),
           center: Point(endX, baselineY),
           radius: config.markerRadius,
-          fill: SolidFill(config.markerFill),
+          fill: SolidFill(theme.markerFill),
           cssClasses: const ['railroad-end'],
         ),
       ],

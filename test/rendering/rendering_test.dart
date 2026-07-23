@@ -670,6 +670,74 @@ rule <- "a" b? ;
           : leaves[1].top - leaves[0].bottom;
       expect(gap, closeTo(4, 1e-9));
     });
+
+    test('global Mermaid theme palettes feed pie, radar, and treemap colors', () {
+      const pieColors = [Color(17, 34, 51), Color(68, 85, 102)];
+      const categoricalColors = [Color(119, 136, 153), Color(170, 187, 204)];
+      const categoricalPeerColors = [Color(221, 238, 255), Color(18, 52, 86)];
+      const categoricalLabelColors = [Color(101, 67, 33), Color(171, 205, 239)];
+      const options = RenderOptions(
+        theme: MermaidTheme(
+          pieColors: pieColors,
+          categoricalColors: categoricalColors,
+          categoricalPeerColors: categoricalPeerColors,
+          categoricalLabelColors: categoricalLabelColors,
+        ),
+      );
+
+      final pie = layoutDiagram(parse(DiagramType.pie, 'pie\n"A": 2\n"B": 1\n'), options: options);
+      final pieSlices = _flatten(
+        pie.elements,
+      ).whereType<ScenePath>().where((element) => element.cssClasses.contains('pieCircle')).toList();
+      expect(pieSlices.map((slice) => (slice.fill! as SolidFill).color), [
+        const Color(17, 34, 51, 179),
+        const Color(68, 85, 102, 179),
+      ]);
+
+      final radar = layoutDiagram(
+        parse(DiagramType.radar, 'radar-beta\naxis speed, quality, cost\ncurve current { 3, 4, 2 }\n'),
+        options: options,
+      );
+      final radarCurve = _flatten(
+        radar.elements,
+      ).whereType<ScenePath>().singleWhere((element) => element.cssClasses.contains('radarCurve-0'));
+      expect(radarCurve.stroke?.color, categoricalColors.first);
+
+      final treemap = layoutDiagram(
+        parse(DiagramType.treemap, 'treemap\n"Products"\n  "Large": 3\n  "Small": 1\n'),
+        options: options,
+      );
+      final treemapSections = _flatten(
+        treemap.elements,
+      ).whereType<SceneRect>().where((element) => element.cssClasses.contains('treemapSection')).toList();
+      final treemapLabels = _flatten(
+        treemap.elements,
+      ).whereType<SceneText>().where((element) => element.cssClasses.contains('treemapSectionLabel')).toList();
+      expect((treemapSections.single.fill! as SolidFill).color, const Color(119, 136, 153, 153));
+      expect(treemapSections.single.stroke?.color, const Color(221, 238, 255, 102));
+      expect(treemapLabels.single.style.color, categoricalLabelColors.first);
+    });
+
+    test('explicit diagram palettes override themes and empty themes remain safe', () {
+      const theme = MermaidTheme(pieColors: [Color(17, 34, 51)], categoricalColors: [Color(68, 85, 102)]);
+      const explicitPie = [Color(119, 136, 153)];
+      const explicitRadar = [Color(170, 187, 204)];
+
+      expect(const PieRenderOptions(sectionColors: explicitPie).resolveSectionColors(theme), explicitPie);
+      expect(const RadarRenderOptions(seriesColors: explicitRadar).resolveSeriesColors(theme), explicitRadar);
+      expect(
+        const PieRenderOptions().resolveSectionColors(MermaidTheme(pieColors: [])),
+        const PieRenderOptions().sectionColors,
+      );
+      expect(
+        const RadarRenderOptions().resolveSeriesColors(MermaidTheme(categoricalColors: [])),
+        const RadarRenderOptions().seriesColors,
+      );
+      expect(
+        const TreemapRenderOptions().resolveSectionColors(MermaidTheme(categoricalColors: [])),
+        const TreemapRenderOptions().sectionColors,
+      );
+    });
   });
 }
 

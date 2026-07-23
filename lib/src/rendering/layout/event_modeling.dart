@@ -2,13 +2,14 @@ part of '../layout.dart';
 
 _LayoutResult _layoutEventModeling(EventModelingAst ast, _LayoutContext context) {
   final config = context.options.optionsFor(const EventModelingRenderOptions());
+  final theme = context.options.theme.eventModeling;
   final boxTextStyle = SceneTextStyle(
     fontFamily: context.options.theme.fontFamily,
     fontSize: context.options.theme.fontSize,
     weight: FontWeight.bold,
     color: context.options.theme.primaryText,
   );
-  final layout = layoutEventModel(ast, config, context.measurer, boxTextStyle);
+  final layout = layoutEventModel(ast, config, context.measurer, boxTextStyle, theme: theme);
   final elements = <SceneElement>[];
 
   for (final lane in layout.lanes) {
@@ -18,8 +19,8 @@ _LayoutResult _layoutEventModeling(EventModelingAst ast, _LayoutContext context)
         bounds: Bounds(left: 0, top: lane.y, width: layout.maxRight + config.swimlanePadding, height: lane.height),
         radiusX: 3,
         radiusY: 3,
-        fill: const SolidFill(Color(250, 250, 250)),
-        stroke: const SceneStroke(color: Color(240, 240, 240)),
+        fill: SolidFill(theme.swimlaneBackgroundOdd),
+        stroke: SceneStroke(color: theme.swimlaneBackgroundStroke),
         role: SemanticRole.group,
         cssClasses: const ['em-swimlane-background'],
         label: lane.label,
@@ -88,7 +89,7 @@ _LayoutResult _layoutEventModeling(EventModelingAst ast, _LayoutContext context)
         id: context.id('event-edge'),
         commands: [MoveTo(start), LineTo(end)],
         fill: const NoFill(),
-        stroke: SceneStroke(color: context.options.theme.line),
+        stroke: SceneStroke(color: theme.relationStroke),
         role: SemanticRole.edge,
         cssClasses: const ['em-relation'],
       ),
@@ -108,7 +109,7 @@ _LayoutResult _layoutEventModeling(EventModelingAst ast, _LayoutContext context)
             Point(base.x - unitY * 3.5, base.y + unitX * 3.5),
             Point(base.x + unitY * 3.5, base.y - unitX * 3.5),
           ],
-          fill: SolidFill(context.options.theme.line),
+          fill: SolidFill(theme.arrowhead),
           role: SemanticRole.edge,
           cssClasses: const ['em-arrowhead'],
         ),

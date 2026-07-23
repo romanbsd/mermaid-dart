@@ -4,16 +4,13 @@ part of '../layout.dart';
 // preserves its default seeded boundary geometry. The other values mirror the
 // renderer's typography, badge sizing, and boundary stroke rules.
 const _cynefinDefaultSvgId = 'my-svg';
-const _cynefinSubtitleFontSize = 11.0;
-const _cynefinItemFontSize = 12.0;
 const _cynefinBadgeHorizontalPadding = 16.0;
-const _cynefinBoundaryStrokeWidth = 2.0;
 const _cynefinConfusionStrokeWidth = 1.5;
-const _cynefinCliffStrokeWidth = 4.0;
 const _cynefinBadgeStrokeWidth = 1.0;
 
 _LayoutResult _layoutCynefin(CynefinAst ast, _LayoutContext context) {
   final config = context.options.optionsFor(const CynefinRenderOptions());
+  final theme = config.resolveTheme(context.options.theme);
   final width = config.width;
   final height = config.height;
   final padding = config.padding;
@@ -39,11 +36,11 @@ _LayoutResult _layoutCynefin(CynefinAst ast, _LayoutContext context) {
     ),
   };
   final colors = <CynefinDomain, Color>{
-    CynefinDomain.complex: config.complexColor,
-    CynefinDomain.complicated: config.complicatedColor,
-    CynefinDomain.chaotic: config.chaoticColor,
-    CynefinDomain.clear: config.clearColor,
-    CynefinDomain.confusion: config.confusionColor,
+    CynefinDomain.complex: theme.complexBackground,
+    CynefinDomain.complicated: theme.complicatedBackground,
+    CynefinDomain.chaotic: theme.chaoticBackground,
+    CynefinDomain.clear: theme.clearBackground,
+    CynefinDomain.confusion: theme.confusionBackground,
   };
   final byDomain = {for (final domain in ast.domains) domain.domain: domain};
   final elements = <SceneElement>[];
@@ -75,7 +72,7 @@ _LayoutResult _layoutCynefin(CynefinAst ast, _LayoutContext context) {
         offsetY: padding,
       ),
       fill: const NoFill(),
-      stroke: SceneStroke(color: config.strokeColor, width: _cynefinBoundaryStrokeWidth, dashes: config.boundaryDashes),
+      stroke: SceneStroke(color: theme.boundaryColor, width: theme.boundaryWidth, dashes: config.boundaryDashes),
       role: SemanticRole.edge,
       cssClasses: const ['cynefinBoundary'],
     ),
@@ -90,7 +87,7 @@ _LayoutResult _layoutCynefin(CynefinAst ast, _LayoutContext context) {
         offsetY: padding,
       ),
       fill: const NoFill(),
-      stroke: SceneStroke(color: config.strokeColor, width: _cynefinBoundaryStrokeWidth, dashes: config.boundaryDashes),
+      stroke: SceneStroke(color: theme.boundaryColor, width: theme.boundaryWidth, dashes: config.boundaryDashes),
       role: SemanticRole.edge,
       cssClasses: const ['cynefinBoundary'],
     ),
@@ -98,7 +95,7 @@ _LayoutResult _layoutCynefin(CynefinAst ast, _LayoutContext context) {
       id: context.id('cynefin-cliff'),
       commands: generateCynefinCliffPath(width, height, offsetX: padding, offsetY: padding),
       fill: const NoFill(),
-      stroke: SceneStroke(color: config.cliffColor, width: _cynefinCliffStrokeWidth),
+      stroke: SceneStroke(color: theme.cliffColor, width: theme.cliffWidth),
       role: SemanticRole.edge,
       cssClasses: const ['cynefinCliff'],
     ),
@@ -107,7 +104,7 @@ _LayoutResult _layoutCynefin(CynefinAst ast, _LayoutContext context) {
       commands: generateCynefinConfusionPath(padding + width / 2, padding + height / 2, width * .15, height * .15),
       fill: SolidFill(config.confusionColor),
       stroke: SceneStroke(
-        color: config.strokeColor,
+        color: theme.boundaryColor,
         width: _cynefinConfusionStrokeWidth,
         dashes: config.confusionDashes,
       ),
@@ -140,9 +137,9 @@ _LayoutResult _layoutCynefin(CynefinAst ast, _LayoutContext context) {
         role: SemanticRole.title,
         style: SceneTextStyle(
           fontFamily: context.options.theme.fontFamily,
-          fontSize: 16,
+          fontSize: theme.domainFontSize,
           weight: FontWeight.bold,
-          color: config.domainLabelColor,
+          color: theme.labelColor,
         ),
         cssClasses: const ['cynefinDomainLabel'],
       ),
@@ -151,8 +148,8 @@ _LayoutResult _layoutCynefin(CynefinAst ast, _LayoutContext context) {
   if (config.showDomainDescriptions) {
     final subtitleStyle = SceneTextStyle(
       fontFamily: context.options.theme.fontFamily,
-      fontSize: _cynefinSubtitleFontSize,
-      color: config.textColor,
+      fontSize: theme.itemFontSize - 1,
+      color: theme.textColor,
     );
     for (final domain in domainOrder) {
       final center = positions[domain]!.center;
@@ -189,8 +186,8 @@ _LayoutResult _layoutCynefin(CynefinAst ast, _LayoutContext context) {
 
   final itemStyle = SceneTextStyle(
     fontFamily: context.options.theme.fontFamily,
-    fontSize: _cynefinItemFontSize,
-    color: config.textColor,
+    fontSize: theme.itemFontSize,
+    color: theme.textColor,
   );
   for (final domain in domainOrder) {
     final items = byDomain[domain]?.items ?? const [];
@@ -209,7 +206,7 @@ _LayoutResult _layoutCynefin(CynefinAst ast, _LayoutContext context) {
         center.x,
         startY + i * 30,
         colors[domain]!,
-        config.strokeColor,
+        theme.boundaryColor,
         itemStyle,
         overflow: false,
       );
@@ -222,7 +219,7 @@ _LayoutResult _layoutCynefin(CynefinAst ast, _LayoutContext context) {
         center.x,
         startY + renderedItems.length * 30,
         colors[domain]!,
-        config.strokeColor,
+        theme.boundaryColor,
         itemStyle,
         overflow: true,
       );
@@ -244,7 +241,7 @@ _LayoutResult _layoutCynefin(CynefinAst ast, _LayoutContext context) {
         id: context.id('cynefin-arrow'),
         commands: [MoveTo(start), QuadraticTo(control, end)],
         fill: const NoFill(),
-        stroke: SceneStroke(color: config.strokeColor, width: _cynefinBoundaryStrokeWidth),
+        stroke: SceneStroke(color: theme.arrowColor, width: theme.arrowWidth),
         role: SemanticRole.edge,
         cssClasses: const ['cynefinArrowLine'],
       ),
@@ -259,7 +256,7 @@ _LayoutResult _layoutCynefin(CynefinAst ast, _LayoutContext context) {
       ScenePolygon(
         id: context.id('cynefin-arrow-head'),
         points: [end, Point(base.x - unitY * 4, base.y + unitX * 4), Point(base.x + unitY * 4, base.y - unitX * 4)],
-        fill: SolidFill(config.strokeColor),
+        fill: SolidFill(theme.arrowColor),
         role: SemanticRole.edge,
         cssClasses: const ['cynefinArrowHead'],
       ),

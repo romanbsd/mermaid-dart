@@ -11,8 +11,8 @@ void main() {
     final manifest = ParityManifest.load(File('tool/mermaid_parity/fixtures.json'));
 
     expect(manifest.mermaidVersion, '11.16.0');
-    expect(manifest.fixtures.map((fixture) => fixture.id), hasLength(60));
-    expect(manifest.fixtures.map((fixture) => fixture.id).toSet(), hasLength(60));
+    expect(manifest.fixtures.map((fixture) => fixture.id), hasLength(61));
+    expect(manifest.fixtures.map((fixture) => fixture.id).toSet(), hasLength(61));
     expect(
       manifest.fixtures.map((fixture) => fixture.id),
       containsAll([
@@ -50,6 +50,7 @@ void main() {
         'pie-bottom-legend',
         'pie-highlighted-slice',
         'pie-text-position',
+        'pie-theme-palette',
         'packet-complex-no-bits',
         'radar-custom-geometry',
         'railroad-abnf-sequence',
@@ -608,6 +609,37 @@ void main() {
         'type': 'pie',
         'source': 'pie\n"Dogs": 1',
         'pieOptions': {'legendPosition': 'diagonal'},
+      }),
+      throwsFormatException,
+    );
+  });
+
+  test('fixture global palette theme variables are typed and forwarded', () {
+    const themeVariables = {
+      'pie1': '#112233',
+      'pie2': '#445566',
+      'cScale0': '#778899',
+      'cScalePeer0': '#aabbcc',
+      'cScaleLabel0': '#ddeeff',
+    };
+    final configured = ParityFixture.fromJson({
+      'id': 'configured-theme',
+      'type': 'pie',
+      'source': 'pie\n"A": 2\n"B": 1\n',
+      'themeVariables': themeVariables,
+    });
+
+    expect(configured.renderOptions.theme.pieColors.take(2), const [Color(17, 34, 51), Color(68, 85, 102)]);
+    expect(configured.renderOptions.theme.categoricalColors.first, const Color(119, 136, 153));
+    expect(configured.renderOptions.theme.categoricalPeerColors.first, const Color(170, 187, 204));
+    expect(configured.renderOptions.theme.categoricalLabelColors.first, const Color(221, 238, 255));
+    expect(configured.mermaidConfig, {'themeVariables': themeVariables});
+    expect(
+      () => ParityFixture.fromJson({
+        'id': 'invalid-theme',
+        'type': 'pie',
+        'source': 'pie\n"A": 1\n',
+        'themeVariables': {'pie1': 'not a color'},
       }),
       throwsFormatException,
     );

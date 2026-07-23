@@ -91,17 +91,20 @@ _LayoutResult _layoutTreemap(TreemapAst ast, _LayoutContext context) {
       titleHeight / 2,
       anchor: TextAnchor.middle,
       role: SemanticRole.title,
+      style: SceneTextStyle(
+        fontFamily: context.options.theme.fontFamily,
+        fontSize: context.options.theme.fontSize,
+        color: context.options.theme.title,
+      ),
       cssClasses: const ['treemapTitle'],
     );
     elements.add(titleElement);
   }
 
   final container = <SceneElement>[];
-  final fillPalette = config.sectionColors.isEmpty ? const TreemapRenderOptions().sectionColors : config.sectionColors;
-  final borderPalette = config.sectionBorderColors.isEmpty
-      ? const TreemapRenderOptions().sectionBorderColors
-      : config.sectionBorderColors;
-  final labelPalette = config.labelColors.isEmpty ? const TreemapRenderOptions().labelColors : config.labelColors;
+  final fillPalette = config.resolveSectionColors(context.options.theme);
+  final borderPalette = config.resolveSectionBorderColors(context.options.theme);
+  final labelPalette = config.resolveLabelColors(context.options.theme);
   final sections = <_TreemapLayoutNode>[];
   final breadthFirst = <_TreemapLayoutNode>[...root.children];
   for (var index = 0; index < breadthFirst.length; index++) {
@@ -154,7 +157,7 @@ _LayoutResult _layoutTreemap(TreemapAst ast, _LayoutContext context) {
     final availableWidth = bounds.width - labelMetrics.padding * 2;
     final availableHeight = bounds.height - labelMetrics.padding * 2;
     var labelSize = labelMetrics.initialLabelSize;
-    final labelColor = customStyle?.text ?? labelColors[leaf] ?? context.options.theme.primaryText;
+    final labelColor = customStyle?.text ?? labelColors[leaf] ?? context.options.theme.text;
     SceneTextStyle labelStyle() =>
         SceneTextStyle(fontFamily: context.options.theme.fontFamily, fontSize: labelSize, color: labelColor);
     while (labelSize > labelMetrics.minimumLabelSize &&
@@ -251,7 +254,7 @@ _LayoutResult _layoutTreemap(TreemapAst ast, _LayoutContext context) {
       final customStyle = child.cssClass == null ? null : classStyles[child.cssClass];
       final fillColor = customStyle?.fill ?? color;
       final strokeColor = customStyle?.stroke ?? sectionBorderColors[child] ?? borderPalette.first;
-      final textColor = customStyle?.text ?? labelColors[child] ?? context.options.theme.primaryText;
+      final textColor = customStyle?.text ?? labelColors[child] ?? context.options.theme.text;
       container.add(
         SceneRect(
           id: context.id('treemap-section'),

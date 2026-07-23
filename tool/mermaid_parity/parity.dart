@@ -37,6 +37,7 @@ final class ParityFixture {
     required this.source,
     this.textMeasurements = const {},
     this.diagramConfig = const {},
+    this.themeVariables = const {},
   });
 
   factory ParityFixture.fromJson(Object? json) {
@@ -51,12 +52,14 @@ final class ParityFixture {
       };
       final diagramType = DiagramType.fromWireName(type);
       final diagramConfig = _diagramConfig(json, diagramType);
+      final themeVariables = _themeVariables(json['themeVariables']);
       return ParityFixture(
         id: id,
         type: diagramType,
         source: source,
         textMeasurements: textMeasurements,
         diagramConfig: diagramConfig,
+        themeVariables: themeVariables,
       );
     }
     throw const FormatException('Invalid parity fixture');
@@ -67,9 +70,12 @@ final class ParityFixture {
   final String source;
   final Map<String, Size> textMeasurements;
   final Map<String, Object> diagramConfig;
+  final Map<String, Object> themeVariables;
 
-  Map<String, Object> get mermaidConfig =>
-      diagramConfig.isEmpty ? const {} : {_mermaidConfigNames[type]!: diagramConfig};
+  Map<String, Object> get mermaidConfig => {
+    if (themeVariables.isNotEmpty) 'themeVariables': themeVariables,
+    if (diagramConfig.isNotEmpty) _mermaidConfigNames[type]!: diagramConfig,
+  };
 
   TextMeasurer get textMeasurer => _FixtureTextMeasurer(textMeasurements);
 
@@ -86,6 +92,7 @@ final class ParityFixture {
     const treemapDefaults = TreemapRenderOptions();
     const wardleyDefaults = WardleyRenderOptions();
     return RenderOptions(
+      theme: _themeOptions(themeVariables),
       padding: 0,
       architecture: ArchitectureRenderOptions(
         useWidth: _configuredUseWidth(diagramConfig, architectureDefaults),
@@ -244,6 +251,54 @@ final class ParityFixture {
       ),
     );
   }
+}
+
+const _themePaletteLength = 12;
+
+Map<String, Object> _themeVariables(Object? value) {
+  if (value == null) return const {};
+  if (value is! Map<String, Object?> || value.isEmpty) {
+    throw const FormatException('Invalid fixture themeVariables');
+  }
+  final result = <String, Object>{};
+  for (final MapEntry(:key, :value) in value.entries) {
+    final validKey =
+        RegExp(r'^pie(?:[1-9]|1[0-2])$').hasMatch(key) ||
+        RegExp(r'^cScale(?:Peer|Label)?(?:[0-9]|1[01])$').hasMatch(key);
+    if (!validKey || value is! String || !_fixtureHexColor.hasMatch(value.trim())) {
+      throw const FormatException('Invalid fixture themeVariables');
+    }
+    result[key] = value.trim();
+  }
+  return Map.unmodifiable(result);
+}
+
+MermaidTheme _themeOptions(Map<String, Object> variables) {
+  const defaults = MermaidTheme();
+  final pieColors = [...defaults.pieColors];
+  final categoricalColors = [...defaults.categoricalColors];
+  final categoricalPeerColors = [...defaults.categoricalPeerColors];
+  final categoricalLabelColors = [...defaults.categoricalLabelColors];
+  for (var index = 0; index < _themePaletteLength; index++) {
+    if (variables['pie${index + 1}'] case final String color) {
+      pieColors[index] = _fixtureColor(color);
+    }
+    if (variables['cScale$index'] case final String color) {
+      categoricalColors[index] = _fixtureColor(color);
+    }
+    if (variables['cScalePeer$index'] case final String color) {
+      categoricalPeerColors[index] = _fixtureColor(color);
+    }
+    if (variables['cScaleLabel$index'] case final String color) {
+      categoricalLabelColors[index] = _fixtureColor(color);
+    }
+  }
+  return MermaidTheme(
+    pieColors: List.unmodifiable(pieColors),
+    categoricalColors: List.unmodifiable(categoricalColors),
+    categoricalPeerColors: List.unmodifiable(categoricalPeerColors),
+    categoricalLabelColors: List.unmodifiable(categoricalLabelColors),
+  );
 }
 
 double? _configuredUseWidth(Map<String, Object> config, DiagramRenderOptions defaults) =>

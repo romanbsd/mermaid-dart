@@ -71,8 +71,9 @@ EventModelLayout layoutEventModel(
   EventModelingAst ast,
   EventModelingRenderOptions options,
   TextMeasurer measurer,
-  SceneTextStyle textStyle,
-) {
+  SceneTextStyle textStyle, {
+  EventModelingTheme theme = const EventModelingTheme(),
+}) {
   final lanesByIndex = <int, EventModelLane>{};
   final boxes = <EventModelBox>[];
   final relations = <EventModelRelation>[];
@@ -108,7 +109,7 @@ EventModelLayout layoutEventModel(
       (_, _, null) => options.contentStartX,
       (_, _, final box?) => box.bounds.right + options.boxPadding * 2 - options.boxOverlap,
     };
-    final visual = _visualFor(frame.entityType);
+    final visual = _visualFor(frame.entityType, theme);
     final box = EventModelBox(
       frame: frame,
       frameIndex: frameIndex,
@@ -187,10 +188,10 @@ String _frameText(EventModelFrameAst frame, List<EventModelDataEntityAst> dataEn
   return content.isEmpty ? name : '$name\n\n$content';
 }
 
-(Color, Color) _visualFor(EventModelEntityType type) => switch (type) {
-  EventModelEntityType.ui => (const Color(255, 255, 255), const Color(219, 218, 218)),
-  EventModelEntityType.processor => (const Color(237, 179, 246), const Color(184, 140, 191)),
-  EventModelEntityType.readModel => (const Color(211, 241, 162), const Color(163, 183, 50)),
-  EventModelEntityType.command => (const Color(188, 214, 254), const Color(103, 154, 195)),
-  EventModelEntityType.event => (const Color(255, 183, 120), const Color(193, 154, 15)),
+(Color, Color) _visualFor(EventModelEntityType type, EventModelingTheme theme) => switch (type) {
+  EventModelEntityType.ui => (theme.uiFill, theme.uiStroke),
+  EventModelEntityType.processor => (theme.processorFill, theme.processorStroke),
+  EventModelEntityType.readModel => (theme.readModelFill, theme.readModelStroke),
+  EventModelEntityType.command => (theme.commandFill, theme.commandStroke),
+  EventModelEntityType.event => (theme.eventFill, theme.eventStroke),
 };

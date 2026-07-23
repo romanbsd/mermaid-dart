@@ -2,9 +2,7 @@ part of '../layout.dart';
 
 // Mermaid draws architecture edges at three pixels and places arrow tips two
 // pixels inside their endpoint so the marker meets the service boundary cleanly.
-const _architectureEdgeStrokeWidth = 3.0;
 const _architectureArrowEndpointInset = 2.0;
-const _architectureGroupStrokeWidth = 2.0;
 const _architectureGroupStrokeDash = 8.0;
 
 // Mermaid's createText wrapper advances its tspan by one font-size line. Group
@@ -17,6 +15,7 @@ const _architecturePlainServiceCornerRadius = 5.0;
 
 _LayoutResult _layoutArchitecture(ArchitectureAst ast, _LayoutContext context) {
   final config = context.options.optionsFor(const ArchitectureRenderOptions());
+  final theme = config.resolveTheme(context.options.theme);
   final layout = layoutArchitectureModel(
     ast,
     config,
@@ -24,9 +23,9 @@ _LayoutResult _layoutArchitecture(ArchitectureAst ast, _LayoutContext context) {
     fontFamily: context.options.theme.fontFamily,
   );
   final elements = <SceneElement>[
-    for (final group in layout.groups) ..._architectureGroupElements(context, config, group),
-    for (final edge in layout.edges) ..._architectureEdgeElements(context, config, edge),
-    for (final node in layout.nodes) _architectureNodeElement(context, config, node),
+    for (final group in layout.groups) ..._architectureGroupElements(context, config, theme, group),
+    for (final edge in layout.edges) ..._architectureEdgeElements(context, config, theme, edge),
+    for (final node in layout.nodes) _architectureNodeElement(context, config, theme, node),
   ];
   return _LayoutResult(
     layout.bounds.width,
@@ -48,6 +47,7 @@ SceneTextStyle _architectureTextStyle(_LayoutContext context) => SceneTextStyle(
 List<SceneElement> _architectureGroupElements(
   _LayoutContext context,
   ArchitectureRenderOptions config,
+  ArchitectureTheme theme,
   ArchitectureGroupLayout group,
 ) {
   final iconSize = group.icon == null ? 0.0 : config.padding * .75;
@@ -57,8 +57,8 @@ List<SceneElement> _architectureGroupElements(
       bounds: group.bounds,
       fill: const NoFill(),
       stroke: SceneStroke(
-        color: config.groupBorderColor,
-        width: _architectureGroupStrokeWidth,
+        color: theme.groupBorderColor,
+        width: theme.groupBorderWidth,
         dashes: const [_architectureGroupStrokeDash],
       ),
       role: SemanticRole.group,
@@ -94,6 +94,7 @@ List<SceneElement> _architectureGroupElements(
 List<SceneElement> _architectureEdgeElements(
   _LayoutContext context,
   ArchitectureRenderOptions config,
+  ArchitectureTheme theme,
   ArchitectureEdgeLayout edge,
 ) {
   final data = edge.data;
@@ -102,13 +103,13 @@ List<SceneElement> _architectureEdgeElements(
       id: context.id('architecture-edge'),
       commands: [MoveTo(edge.start), LineTo(edge.bend), LineTo(edge.end)],
       fill: const NoFill(),
-      stroke: SceneStroke(color: config.edgeColor, width: _architectureEdgeStrokeWidth),
+      stroke: SceneStroke(color: theme.edgeColor, width: theme.edgeWidth),
       role: SemanticRole.edge,
       label: data.title,
       cssClasses: const ['architecture-edge', 'edge'],
     ),
-    if (data.leftArrow) _architectureArrow(context, edge.start, data.leftDirection, config),
-    if (data.rightArrow) _architectureArrow(context, edge.end, data.rightDirection, config),
+    if (data.leftArrow) _architectureArrow(context, edge.start, data.leftDirection, config, theme),
+    if (data.rightArrow) _architectureArrow(context, edge.end, data.rightDirection, config, theme),
   ];
   if (data.title case final title?) {
     elements.add(_architectureEdgeLabel(context, edge, title));
@@ -180,6 +181,7 @@ SceneElement _architectureEdgeLabel(_LayoutContext context, ArchitectureEdgeLayo
 SceneElement _architectureNodeElement(
   _LayoutContext context,
   ArchitectureRenderOptions config,
+  ArchitectureTheme theme,
   ArchitectureNodeLayout node,
 ) {
   if (node.kind == ArchitectureNodeKind.junction) {
@@ -205,7 +207,7 @@ SceneElement _architectureNodeElement(
         cssClasses: const ['architecture-service-icon'],
       )
     else
-      _architecturePlainServiceOutline(context, config, localBounds),
+      _architecturePlainServiceOutline(context, theme, localBounds),
     if (node.iconText case final iconText?)
       _text(
         context,
@@ -238,39 +240,36 @@ SceneElement _architectureNodeElement(
   );
 }
 
-ScenePath _architecturePlainServiceOutline(_LayoutContext context, ArchitectureRenderOptions config, Bounds bounds) =>
-    ScenePath(
-      id: context.id('architecture-node-background'),
-      commands: [
-        MoveTo(Point(bounds.left, bounds.bottom)),
-        LineTo(Point(bounds.left, bounds.top + _architecturePlainServiceCornerRadius)),
-        QuadraticTo(
-          Point(bounds.left, bounds.top),
-          Point(bounds.left + _architecturePlainServiceCornerRadius, bounds.top),
-        ),
-        LineTo(Point(bounds.right - _architecturePlainServiceCornerRadius, bounds.top)),
-        QuadraticTo(
-          Point(bounds.right, bounds.top),
-          Point(bounds.right, bounds.top + _architecturePlainServiceCornerRadius),
-        ),
-        LineTo(Point(bounds.right, bounds.bottom)),
-        const ClosePath(),
-      ],
-      fill: const NoFill(),
-      stroke: SceneStroke(
-        color: config.groupBorderColor,
-        width: _architectureGroupStrokeWidth,
-        dashes: const [_architectureGroupStrokeDash],
-      ),
-      role: SemanticRole.background,
-      cssClasses: const ['architecture-node-background', 'node-bkg'],
-    );
+ScenePath _architecturePlainServiceOutline(_LayoutContext context, ArchitectureTheme theme, Bounds bounds) => ScenePath(
+  id: context.id('architecture-node-background'),
+  commands: [
+    MoveTo(Point(bounds.left, bounds.bottom)),
+    LineTo(Point(bounds.left, bounds.top + _architecturePlainServiceCornerRadius)),
+    QuadraticTo(Point(bounds.left, bounds.top), Point(bounds.left + _architecturePlainServiceCornerRadius, bounds.top)),
+    LineTo(Point(bounds.right - _architecturePlainServiceCornerRadius, bounds.top)),
+    QuadraticTo(
+      Point(bounds.right, bounds.top),
+      Point(bounds.right, bounds.top + _architecturePlainServiceCornerRadius),
+    ),
+    LineTo(Point(bounds.right, bounds.bottom)),
+    const ClosePath(),
+  ],
+  fill: const NoFill(),
+  stroke: SceneStroke(
+    color: theme.groupBorderColor,
+    width: theme.groupBorderWidth,
+    dashes: const [_architectureGroupStrokeDash],
+  ),
+  role: SemanticRole.background,
+  cssClasses: const ['architecture-node-background', 'node-bkg'],
+);
 
 ScenePolygon _architectureArrow(
   _LayoutContext context,
   Point tip,
   ArchitectureDirection direction,
   ArchitectureRenderOptions config,
+  ArchitectureTheme theme,
 ) {
   final delta = direction.axisSign.toDouble();
   final adjustedTip = direction.isVertical
@@ -284,7 +283,7 @@ ScenePolygon _architectureArrow(
     tail: tail,
     length: size,
     halfWidth: size / 2,
-    color: config.edgeColor,
+    color: theme.edgeArrowColor,
     idPrefix: 'architecture',
     cssClasses: const ['architecture-arrow', 'arrow'],
   );

@@ -1,15 +1,12 @@
 part of '../layout.dart';
 
 // Mermaid pie renderer typography, filtering, geometry, and stroke defaults.
-const _pieLabelFontSize = 17.0;
-const _pieTitleFontSize = 25.0;
 const _pieMinimumVisiblePercentage = 1.0;
 const _percentageScale = 100.0;
 const _pieLegendRectSize = 18.0;
 const _pieLegendSpacing = 4.0;
 const _pieLegendRightOffsetInRects = 12.0;
 const _pieOuterRadiusOffset = 1.0;
-const _pieStrokeWidth = 2.0;
 const _pieMaximumDonutRatio = .9;
 const _pieTitleY = 25.0;
 const _fullCircleTolerance = 1e-9;
@@ -20,17 +17,23 @@ const _pieHighlightScale = 1.05;
 
 _LayoutResult _layoutPie(PieAst ast, _LayoutContext context) {
   final config = context.options.optionsFor(const PieRenderOptions());
-  final textStyle = _mermaidTextStyle(context, _pieLabelFontSize);
+  final theme = config.resolveTheme(context.options.theme);
+  final sectionColors = config.resolveSectionColors(context.options.theme);
+  final textStyle = SceneTextStyle(
+    fontFamily: context.options.theme.resolveFontFamily(fallback: _mermaidFontFamily),
+    fontSize: theme.sectionTextSize,
+    color: theme.sectionTextColor,
+  );
   final legendTextStyle = SceneTextStyle(
     fontFamily: textStyle.fontFamily,
     fontSize: textStyle.fontSize,
-    color: config.legendText,
+    color: theme.legendTextColor,
   );
-  final inheritedTitleStyle = _mermaidTextStyle(context, _pieTitleFontSize);
+  final inheritedTitleStyle = _mermaidTextStyle(context, theme.titleTextSize);
   final titleStyle = SceneTextStyle(
     fontFamily: inheritedTitleStyle.fontFamily,
     fontSize: inheritedTitleStyle.fontSize,
-    color: config.titleText,
+    color: theme.titleTextColor,
   );
   final radius = config.radius ?? config.size / 2 - config.margin;
   final total = ast.sections.fold<double>(0, (sum, section) => sum + math.max(0, section.value.toDouble()));
@@ -83,7 +86,7 @@ _LayoutResult _layoutPie(PieAst ast, _LayoutContext context) {
       center: center,
       radius: radius + _pieOuterRadiusOffset,
       fill: const NoFill(),
-      stroke: SceneStroke(color: config.outerStroke, width: _pieStrokeWidth),
+      stroke: SceneStroke(color: theme.outerStrokeColor, width: theme.outerStrokeWidth),
       cssClasses: const ['pieOuterCircle'],
     ),
   );
@@ -102,12 +105,12 @@ _LayoutResult _layoutPie(PieAst ast, _LayoutContext context) {
     } else if (isHighlighted) {
       classes.add('highlighted');
     }
-    final sectionOpacity = isHighlighted ? 1.0 : config.sectionOpacity;
+    final sectionOpacity = isHighlighted ? 1.0 : theme.opacity;
     final path = ScenePath(
       id: context.id('pie-section'),
       commands: _pieArcCommands(isHighlighted ? const Point(0, 0) : center, radius, innerRadius, angle, end),
-      fill: SolidFill(_colorWithOpacity(_pieSectionColor(config, entry.index), sectionOpacity)),
-      stroke: SceneStroke(color: _colorWithOpacity(config.sectionStroke, sectionOpacity), width: _pieStrokeWidth),
+      fill: SolidFill(_colorWithOpacity(_pieSectionColor(sectionColors, entry.index), sectionOpacity)),
+      stroke: SceneStroke(color: _colorWithOpacity(theme.strokeColor, sectionOpacity), width: theme.strokeWidth),
       role: SemanticRole.node,
       cssClasses: classes,
       label: section.label,
@@ -149,8 +152,8 @@ _LayoutResult _layoutPie(PieAst ast, _LayoutContext context) {
             width: _pieLegendRectSize,
             height: _pieLegendRectSize,
           ),
-          fill: SolidFill(_pieSectionColor(config, i)),
-          stroke: SceneStroke(color: _pieSectionColor(config, i)),
+          fill: SolidFill(_pieSectionColor(sectionColors, i)),
+          stroke: SceneStroke(color: _pieSectionColor(sectionColors, i)),
           role: SemanticRole.legend,
           cssClasses: const ['legend'],
         ),
@@ -187,8 +190,7 @@ _LayoutResult _layoutPie(PieAst ast, _LayoutContext context) {
   return _LayoutResult(width, height, elements);
 }
 
-Color _pieSectionColor(PieRenderOptions config, int index) {
-  final colors = config.sectionColors.isEmpty ? const PieRenderOptions().sectionColors : config.sectionColors;
+Color _pieSectionColor(List<Color> colors, int index) {
   return colors[index % colors.length];
 }
 
