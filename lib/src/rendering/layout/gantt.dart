@@ -3,6 +3,8 @@ part of '../layout.dart';
 const _ganttDefaultWidth = 1200.0;
 const _ganttAxisBottomOffset = 50.0;
 const _ganttAxisFontSize = 10.0;
+// Mermaid's bottom D3 axis applies `dy="1em"` after positioning a tick label.
+const _ganttBottomAxisLabelDy = _ganttAxisFontSize;
 const _ganttTaskRadius = 3.0;
 const _ganttTaskStrokeWidth = 2.0;
 const _ganttMilestoneScale = 0.8;
@@ -334,7 +336,7 @@ Iterable<SceneElement> _ganttAxes(
         context,
         _formatD3Date(tick, format),
         x,
-        axisY + (top ? -3 : 3),
+        axisY + (top ? -3 : 3 + _ganttBottomAxisLabelDy),
         fontSize: _ganttAxisFontSize,
         color: const Color(51, 51, 51, 204),
         anchor: TextAnchor.middle,

@@ -1923,7 +1923,7 @@ List<String> _textGeometryValues(
   final localX = _svgLength(span?.getAttribute('x') ?? attribute('x', '0'), fontSize);
   final localY =
       _svgLength(span?.getAttribute('y') ?? attribute('y', '0'), fontSize) +
-      _svgLength(span?.getAttribute('dy') ?? '0', fontSize);
+      _svgLength(span?.getAttribute('dy') ?? attribute('dy', '0'), fontSize);
   final anchor =
       attribute('text-anchor', '').nullIfEmpty ??
       _inheritedAttribute(element, 'text-anchor') ??

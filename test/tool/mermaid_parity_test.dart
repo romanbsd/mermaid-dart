@@ -363,6 +363,17 @@ void main() {
     expect(comparison.exact, isFalse);
   });
 
+  test('applies dy declared directly on SVG text', () {
+    final mermaid = SvgSnapshot.fromSvg(
+      '<svg><g transform="translate(75 146)">'
+      '<text x=".5" y="3" dy="1em" font-size="10">Jan 01</text>'
+      '</g></svg>',
+    );
+    final dart = SvgSnapshot.fromSvg('<svg><text x="75.5" y="159" font-size="10">Jan 01</text></svg>');
+
+    expect(SvgComparison.compare(dart, mermaid).sameGeometry, isTrue);
+  });
+
   test('computes inherited font sizes for SVG and foreignObject text', () {
     final inheritedSvg = SvgSnapshot.fromSvg(
       '<svg style="font-size: 20px"><g style="font-size: 150%">'
