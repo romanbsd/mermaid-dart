@@ -331,6 +331,35 @@ void main() {
     expect(comparison.exact, isFalse);
   });
 
+  test('computes inherited font sizes for SVG and foreignObject text', () {
+    final inheritedSvg = SvgSnapshot.fromSvg(
+      '<svg style="font-size: 20px"><g style="font-size: 150%">'
+      '<text x="1" y="2"><tspan style="font-size: .5em">Label</tspan></text>'
+      '</g></svg>',
+    );
+    final inheritedHtml = SvgSnapshot.fromSvg(
+      '<svg style="font-size: 20px">'
+      '<foreignObject x="0" y="0" width="2" height="4">'
+      '<div style="font-size: 75%"><span>Label</span></div>'
+      '</foreignObject></svg>',
+    );
+    final explicitSvg = SvgSnapshot.fromSvg('<svg><text x="1" y="2" font-size="15">Label</text></svg>');
+    final explicitHtml = SvgSnapshot.fromSvg(
+      '<svg><text x="1" y="2" font-size="15" text-anchor="middle" '
+      'dominant-baseline="central">Label</text></svg>',
+    );
+    final differentSvg = SvgSnapshot.fromSvg('<svg><text x="1" y="2" font-size="16">Label</text></svg>');
+    final differentHtml = SvgSnapshot.fromSvg(
+      '<svg><text x="1" y="2" font-size="16" text-anchor="middle" '
+      'dominant-baseline="central">Label</text></svg>',
+    );
+
+    expect(SvgComparison.compare(inheritedSvg, explicitSvg).sameGeometry, isTrue);
+    expect(SvgComparison.compare(inheritedSvg, differentSvg).sameGeometry, isFalse);
+    expect(SvgComparison.compare(inheritedHtml, explicitHtml).sameGeometry, isTrue);
+    expect(SvgComparison.compare(inheritedHtml, differentHtml).sameGeometry, isFalse);
+  });
+
   test('compares normalized inherited font families as visual text geometry', () {
     final inherited = SvgSnapshot.fromSvg(
       '<svg style="font-family: &quot;Trebuchet MS&quot;,verdana, sans-serif">'

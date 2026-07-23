@@ -216,6 +216,7 @@
       "type": "eventmodeling",
       "source": "eventmodeling\ntimeframe 01 command Cart.Update\ntimeframe 02 event Cart.Updated\n",
       "themeVariables": {
+        "fontSize": 22,
         "emCommandFill": "#123456",
         "emCommandStroke": "#345678",
         "emEventFill": "#56789a",

@@ -1702,10 +1702,11 @@ List<String> _foreignObjectGeometryValues(XmlElement element, _Translation? tran
   final top = _numberAttribute(element, 'y') ?? 0;
   final width = _numberAttribute(element, 'width') ?? 0;
   final height = _numberAttribute(element, 'height') ?? 0;
+  final textElement = _firstVisibleTextElement(element) ?? element;
   return [
     _formatNumber(left + width / 2 + (translation?.dx ?? 0)),
     _formatNumber(top + height / 2 + (translation?.dy ?? 0)),
-    '16',
+    _formatNumber(_computedFontSize(textElement, styleSheets)),
     'middle',
     'central',
     ..._typographyGeometryValues(element, styleSheets),
@@ -1745,7 +1746,8 @@ List<String> _textGeometryValues(
   String styleSheets,
   String Function(String name, [String fallback]) attribute,
 ) {
-  final fontSize = _svgLength(attribute('font-size', _stylesheetFontSize(element, styleSheets) ?? '16'), 16);
+  final textElement = _firstVisibleTextElement(element) ?? element;
+  final fontSize = _computedFontSize(textElement, styleSheets);
   final span = element.descendants.whereType<XmlElement>().where((child) => child.name.local == 'tspan').firstOrNull;
   final localX = _svgLength(span?.getAttribute('x') ?? attribute('x', '0'), fontSize);
   final localY =
@@ -1782,6 +1784,7 @@ List<String> _textGeometryValues(
 const _normalFontWeight = '400';
 const _boldFontWeight = '700';
 const _normalFontStyle = 'normal';
+const _defaultSvgFontSize = 16.0;
 
 List<String> _typographyGeometryValues(XmlElement element, String styleSheets) {
   final textElement = _firstVisibleTextElement(element) ?? element;
@@ -1798,6 +1801,32 @@ List<String> _typographyGeometryValues(XmlElement element, String styleSheets) {
 
 XmlElement? _firstVisibleTextElement(XmlElement element) =>
     element.descendants.whereType<XmlText>().where((node) => node.value.trim().isNotEmpty).firstOrNull?.parentElement;
+
+double _computedFontSize(XmlElement element, String styleSheets) {
+  final ancestors = <XmlElement>[];
+  for (XmlElement? current = element; current != null; current = current.parentElement) {
+    ancestors.add(current);
+  }
+
+  var fontSize = _defaultSvgFontSize;
+  for (final current in ancestors.reversed) {
+    final rawValue = _localPresentationValue(current, 'font-size', styleSheets);
+    if (rawValue == null || rawValue.trim().toLowerCase() == 'inherit') continue;
+    final value = rawValue.replaceFirst(RegExp(r'\s*!important\s*$', caseSensitive: false), '').trim().toLowerCase();
+    if (value.endsWith('rem')) {
+      fontSize = _defaultSvgFontSize * double.parse(value.substring(0, value.length - 3));
+    } else if (value.endsWith('em')) {
+      fontSize *= double.parse(value.substring(0, value.length - 2));
+    } else if (value.endsWith('%')) {
+      fontSize *= double.parse(value.substring(0, value.length - 1)) / _fullPercentage;
+    } else if (value.endsWith('px')) {
+      fontSize = double.parse(value.substring(0, value.length - 2));
+    } else if (double.tryParse(value) case final number?) {
+      fontSize = number;
+    }
+  }
+  return fontSize;
+}
 
 String _normalizedFontWeight(XmlElement element, String styleSheets) {
   for (XmlElement? current = element; current != null; current = current.parentElement) {
@@ -1905,20 +1934,6 @@ const _numericComparisonTieEpsilon = 1e-9;
 // half of one millipixel covers the serializers' maximum rounding delta.
 const _scaledPathRoundingBias = .0005;
 
-String? _stylesheetFontSize(XmlElement element, String styleSheets) {
-  String? fontSize;
-  for (final rule in _cssRule.allMatches(styleSheets)) {
-    final declaration = _cssFontSize.firstMatch(rule[2]!);
-    if (declaration == null) continue;
-    for (final selector in rule[1]!.split(',')) {
-      if (_matchesSimpleSelector(element, selector.trim())) {
-        fontSize = _formatNumber(double.parse(declaration[1]!));
-      }
-    }
-  }
-  return fontSize;
-}
-
 String? _stylesheetBaseline(XmlElement element, String styleSheets) =>
     _stylesheetValue(element, styleSheets, _cssBaseline);
 
@@ -1978,7 +1993,6 @@ bool _matchesSelectorPart(XmlElement element, String selector) {
 
 final _cssRule = RegExp(r'([^{}]+)\{([^{}]*)\}');
 final _simpleSelectorToken = RegExp(r'([.#]?)([A-Za-z_][\w-]*)');
-final _cssFontSize = RegExp(r'font-size\s*:\s*(-?(?:\d+\.?\d*|\.\d+))px', caseSensitive: false);
 final _cssBaseline = RegExp(r'dominant-baseline\s*:\s*([\w-]+)', caseSensitive: false);
 final _cssTextAnchor = RegExp(r'text-anchor\s*:\s*([\w-]+)', caseSensitive: false);
 
