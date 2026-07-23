@@ -45,6 +45,23 @@ const _gitVerticalTagShapeTranslation = 12.0;
 const _gitVerticalTagTextTranslation = 14.0;
 const _gitVerticalTagTextInset = 5.0;
 const _gitVerticalTagTextBaselineOffset = 3.0;
+const _gitVerticalTagRotation = 45.0;
+
+// Fixed commit-decoration geometry from Mermaid's gitGraph SVG renderer.
+// These glyphs deliberately do not scale with the configurable outer commit
+// radius: they remain legible at Mermaid's canonical 10px marker size.
+const _gitInnerCommitMarkerRadius = 6.0;
+const _gitInnerCommitMarkerSize = Size(_gitInnerCommitMarkerRadius * 2, _gitInnerCommitMarkerRadius * 2);
+const _gitReverseMarkHalfExtent = 5.0;
+const _gitReverseMarkStrokeWidth = 3.0;
+const _gitCherryDotHorizontalOffset = 3.0;
+const _gitCherryDotVerticalOffset = 2.0;
+const _gitCherryDotRadius = 2.75;
+const _gitCherryStemStartVerticalOffset = 1.0;
+const _gitCherryStemEndVerticalOffset = -5.0;
+const _gitCherryDecorationColor = Color(255, 255, 255);
+const _gitTagHoleRadius = 1.5;
+const _gitBranchLabelCornerRadius = 4.0;
 
 _LayoutResult _layoutGitGraph(GitGraphAst ast, _LayoutContext context) {
   final config = context.options.optionsFor(const GitGraphRenderOptions());
@@ -187,8 +204,8 @@ _LayoutResult _layoutGitGraph(GitGraphAst ast, _LayoutContext context) {
         SceneRect(
           id: context.id('git-branch-label-background'),
           bounds: labelBounds,
-          radiusX: 4,
-          radiusY: 4,
+          radiusX: _gitBranchLabelCornerRadius,
+          radiusY: _gitBranchLabelCornerRadius,
           fill: SolidFill(color),
           role: SemanticRole.legend,
           cssClasses: const ['git-branch-label-background'],
@@ -452,12 +469,7 @@ void _addGitCommit(
     elements.addAll([
       SceneRect(
         id: context.id('git-highlight'),
-        bounds: Bounds(
-          left: point.x - config.commitRadius,
-          top: point.y - config.commitRadius,
-          width: config.commitRadius * 2,
-          height: config.commitRadius * 2,
-        ),
+        bounds: Bounds.fromCenter(point, Size(config.commitRadius * 2, config.commitRadius * 2)),
         fill: SolidFill(highlightColor),
         stroke: highlightStroke,
         role: SemanticRole.node,
@@ -466,7 +478,7 @@ void _addGitCommit(
       ),
       SceneRect(
         id: context.id('git-highlight-inner'),
-        bounds: Bounds(left: point.x - 6, top: point.y - 6, width: 12, height: 12),
+        bounds: Bounds.fromCenter(point, _gitInnerCommitMarkerSize),
         fill: SolidFill(theme.specialColor),
         stroke: SceneStroke(color: theme.specialColor, width: config.commitStrokeWidth),
         role: SemanticRole.node,
@@ -488,28 +500,7 @@ void _addGitCommit(
         label: commit.id,
       ),
     );
-    for (final offset in const [-3.0, 3.0]) {
-      elements.add(
-        SceneCircle(
-          id: context.id('git-cherry-dot'),
-          center: Point(point.x + offset, point.y + 2),
-          radius: 2.75,
-          fill: const SolidFill(Color(255, 255, 255)),
-          role: SemanticRole.node,
-          cssClasses: const ['git-commit-cherry-dot'],
-        ),
-      );
-      elements.add(
-        SceneLine(
-          id: context.id('git-cherry-stem'),
-          start: Point(point.x + offset, point.y + 1),
-          end: Point(point.x, point.y - 5),
-          stroke: const SceneStroke(color: Color(255, 255, 255)),
-          role: SemanticRole.node,
-          cssClasses: const ['git-commit-cherry-stem'],
-        ),
-      );
-    }
+    elements.addAll(_gitCherryDecoration(context, point));
     return;
   }
 
@@ -530,7 +521,7 @@ void _addGitCommit(
       SceneCircle(
         id: context.id('git-merge-inner'),
         center: point,
-        radius: 6,
+        radius: _gitInnerCommitMarkerRadius,
         fill: SolidFill(theme.specialColor),
         stroke: SceneStroke(color: theme.specialColor, width: config.commitStrokeWidth),
         role: SemanticRole.node,
@@ -542,14 +533,9 @@ void _addGitCommit(
     elements.add(
       ScenePath(
         id: context.id('git-reverse'),
-        commands: [
-          MoveTo(Point(point.x - 5, point.y - 5)),
-          LineTo(Point(point.x + 5, point.y + 5)),
-          MoveTo(Point(point.x - 5, point.y + 5)),
-          LineTo(Point(point.x + 5, point.y - 5)),
-        ],
+        commands: _gitReverseMarkCommands(point),
         fill: SolidFill(theme.specialColor),
-        stroke: SceneStroke(color: theme.specialColor, width: 3),
+        stroke: SceneStroke(color: theme.specialColor, width: _gitReverseMarkStrokeWidth),
         role: SemanticRole.node,
         cssClasses: const ['git-commit-reverse-mark'],
       ),
@@ -653,7 +639,7 @@ void _addGitTags(
     if (direction != GitGraphDirection.leftToRight) {
       final position = commit.y - _gitLayoutOffset;
       final originY = position + offset;
-      final rotation = Rotate(45, center: Point(commit.x, position));
+      final rotation = Rotate(_gitVerticalTagRotation, center: Point(commit.x, position));
       final shapeTransforms = <SceneTransform>[
         const Translate(_gitVerticalTagShapeTranslation, _gitVerticalTagShapeTranslation),
         rotation,
@@ -686,14 +672,7 @@ void _addGitTags(
               cssClasses: const ['git-tag-background'],
               label: tag,
             ),
-            SceneCircle(
-              id: context.id('git-tag-hole'),
-              center: Point(commit.x + _gitTagHorizontalPadding / 2, originY),
-              radius: 1.5,
-              fill: SolidFill(theme.tagHoleColor),
-              role: SemanticRole.annotation,
-              cssClasses: const ['git-tag-hole'],
-            ),
+            _gitTagHole(context, Point(commit.x + _gitTagHorizontalPadding / 2, originY), theme),
           ],
         ),
       );
@@ -741,14 +720,7 @@ void _addGitTags(
     );
     elements.addAll([
       polygon,
-      SceneCircle(
-        id: context.id('git-tag-hole'),
-        center: Point(axisPosition - maximumWidth / 2 + _gitTagPointHalfHeight, centerY),
-        radius: 1.5,
-        fill: SolidFill(theme.tagHoleColor),
-        role: SemanticRole.annotation,
-        cssClasses: const ['git-tag-hole'],
-      ),
+      _gitTagHole(context, Point(axisPosition - maximumWidth / 2 + _gitTagPointHalfHeight, centerY), theme),
       _text(
         context,
         tag,
@@ -762,21 +734,39 @@ void _addGitTags(
   }
 }
 
-final class _TreemapLayoutNode {
-  _TreemapLayoutNode(this.label, {this.ownValue, this.cssClass});
+List<SceneElement> _gitCherryDecoration(_LayoutContext context, Point center) => [
+  for (final horizontalOffset in const [-_gitCherryDotHorizontalOffset, _gitCherryDotHorizontalOffset]) ...[
+    SceneCircle(
+      id: context.id('git-cherry-dot'),
+      center: center.translated(horizontalOffset, _gitCherryDotVerticalOffset),
+      radius: _gitCherryDotRadius,
+      fill: const SolidFill(_gitCherryDecorationColor),
+      role: SemanticRole.node,
+      cssClasses: const ['git-commit-cherry-dot'],
+    ),
+    SceneLine(
+      id: context.id('git-cherry-stem'),
+      start: center.translated(horizontalOffset, _gitCherryStemStartVerticalOffset),
+      end: center.translated(0, _gitCherryStemEndVerticalOffset),
+      stroke: const SceneStroke(color: _gitCherryDecorationColor),
+      role: SemanticRole.node,
+      cssClasses: const ['git-commit-cherry-stem'],
+    ),
+  ],
+];
 
-  final String label;
-  final double? ownValue;
-  final String? cssClass;
-  final children = <_TreemapLayoutNode>[];
+List<PathCommand> _gitReverseMarkCommands(Point center) => [
+  MoveTo(center.translated(-_gitReverseMarkHalfExtent, -_gitReverseMarkHalfExtent)),
+  LineTo(center.translated(_gitReverseMarkHalfExtent, _gitReverseMarkHalfExtent)),
+  MoveTo(center.translated(-_gitReverseMarkHalfExtent, _gitReverseMarkHalfExtent)),
+  LineTo(center.translated(_gitReverseMarkHalfExtent, -_gitReverseMarkHalfExtent)),
+];
 
-  double get value => ownValue ?? children.fold(0, (sum, child) => sum + child.value);
-}
-
-final class _TreemapClassStyle {
-  const _TreemapClassStyle({this.fill, this.stroke, this.text});
-
-  final Color? fill;
-  final Color? stroke;
-  final Color? text;
-}
+SceneCircle _gitTagHole(_LayoutContext context, Point center, GitGraphTheme theme) => SceneCircle(
+  id: context.id('git-tag-hole'),
+  center: center,
+  radius: _gitTagHoleRadius,
+  fill: SolidFill(theme.tagHoleColor),
+  role: SemanticRole.annotation,
+  cssClasses: const ['git-tag-hole'],
+);

@@ -431,3 +431,22 @@ Color? _parseCssColor(String value) {
     _ => null,
   };
 }
+
+final class _TreemapLayoutNode {
+  _TreemapLayoutNode(this.label, {this.ownValue, this.cssClass});
+
+  final String label;
+  final double? ownValue;
+  final String? cssClass;
+  final children = <_TreemapLayoutNode>[];
+
+  double get value => ownValue ?? children.fold(0, (sum, child) => sum + child.value);
+}
+
+final class _TreemapClassStyle {
+  const _TreemapClassStyle({this.fill, this.stroke, this.text});
+
+  final Color? fill;
+  final Color? stroke;
+  final Color? text;
+}

@@ -675,6 +675,27 @@ void main() {
                 element.cssClasses.contains('git-commit-cherry-outer'),
           )
           .toList();
+      final highlightInner = elements.whereType<SceneRect>().singleWhere(
+        (element) => element.cssClasses.contains('git-commit-highlight-inner'),
+      );
+      final mergeInner = elements.whereType<SceneCircle>().singleWhere(
+        (element) => element.cssClasses.contains('git-commit-merge-inner'),
+      );
+      final reverseMark = elements.whereType<ScenePath>().singleWhere(
+        (element) => element.cssClasses.contains('git-commit-reverse-mark'),
+      );
+      final cherryDots = elements
+          .whereType<SceneCircle>()
+          .where((element) => element.cssClasses.contains('git-commit-cherry-dot'))
+          .toList();
+      final cherryStems = elements
+          .whereType<SceneLine>()
+          .where((element) => element.cssClasses.contains('git-commit-cherry-stem'))
+          .toList();
+      final tagHoles = elements
+          .whereType<SceneCircle>()
+          .where((element) => element.cssClasses.contains('git-tag-hole'))
+          .toList();
 
       expect(
         elements
@@ -712,27 +733,23 @@ void main() {
         const [Point(10, -2), Point(60, 48), Point(110, -2), Point(160, -2), Point(210, -2)],
       );
       expect(highlight.fill, const SolidFill(Color(19, 19, 0)));
-      expect(
-        elements
-            .whereType<SceneRect>()
-            .singleWhere((element) => element.cssClasses.contains('git-commit-highlight-inner'))
-            .fill,
-        const SolidFill(Color(236, 236, 255)),
-      );
-      expect(
-        elements
-            .whereType<ScenePath>()
-            .singleWhere((element) => element.cssClasses.contains('git-commit-reverse-mark'))
-            .stroke,
-        const SceneStroke(color: Color(236, 236, 255), width: 3),
-      );
-      expect(
-        elements
-            .whereType<SceneCircle>()
-            .singleWhere((element) => element.cssClasses.contains('git-commit-merge-inner'))
-            .fill,
-        const SolidFill(Color(236, 236, 255)),
-      );
+      expect(highlightInner.bounds, const Bounds(left: 4, top: -8, width: 12, height: 12));
+      expect(mergeInner.radius, 6);
+      expect(reverseMark.commands, const [
+        MoveTo(Point(55, 43)),
+        LineTo(Point(65, 53)),
+        MoveTo(Point(55, 53)),
+        LineTo(Point(65, 43)),
+      ]);
+      expect(cherryDots.map((dot) => (dot.center, dot.radius)), const [(Point(207, 0), 2.75), (Point(213, 0), 2.75)]);
+      expect(cherryStems.map((stem) => (stem.start, stem.end)), const [
+        (Point(207, -1), Point(210, -7)),
+        (Point(213, -1), Point(210, -7)),
+      ]);
+      expect(tagHoles.map((hole) => hole.radius), everyElement(1.5));
+      expect(highlightInner.fill, const SolidFill(Color(236, 236, 255)));
+      expect(reverseMark.stroke, const SceneStroke(color: Color(236, 236, 255), width: 3));
+      expect(mergeInner.fill, const SolidFill(Color(236, 236, 255)));
       expect(
         elements
             .whereType<SceneCircle>()
