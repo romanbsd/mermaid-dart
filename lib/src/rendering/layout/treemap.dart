@@ -7,6 +7,7 @@ part of '../layout.dart';
 const _treemapSectionInnerPadding = 10.0;
 const _treemapSectionHeaderHeight = 25.0;
 const _treemapTitleHeight = 30.0;
+const _treemapTitleFontSize = 14.0;
 const _treemapSectionLabelInset = 6.0;
 const _treemapSectionValueInset = 10.0;
 const _treemapSectionStrokeWidth = 2.0;
@@ -93,7 +94,9 @@ _LayoutResult _layoutTreemap(TreemapAst ast, _LayoutContext context) {
       role: SemanticRole.title,
       style: SceneTextStyle(
         fontFamily: context.options.theme.fontFamily,
-        fontSize: context.options.theme.fontSize,
+        // Mermaid's treemap stylesheet fixes titles at 14px; the global
+        // fontSize applies to the document but does not override this rule.
+        fontSize: _treemapTitleFontSize,
         color: context.options.theme.title,
       ),
       cssClasses: const ['treemapTitle'],

@@ -26,8 +26,8 @@ void main() {
     final manifest = ParityManifest.load(File('tool/mermaid_parity/fixtures.json'));
 
     expect(manifest.mermaidVersion, '11.16.0');
-    expect(manifest.fixtures.map((fixture) => fixture.id), hasLength(65));
-    expect(manifest.fixtures.map((fixture) => fixture.id).toSet(), hasLength(65));
+    expect(manifest.fixtures.map((fixture) => fixture.id), hasLength(70));
+    expect(manifest.fixtures.map((fixture) => fixture.id).toSet(), hasLength(70));
     expect(
       manifest.fixtures.map((fixture) => fixture.id),
       containsAll([
@@ -50,8 +50,13 @@ void main() {
         'architecture-no-icon-edge-lengths',
         'architecture-edge-length-3',
         'architecture-reasonable-height',
+        'cynefin-theme-variables',
         'event-modeling-theme-variables',
+        'git-theme-variables',
+        'pie-theme-variables',
         'radar-theme-variables',
+        'railroad-theme-variables',
+        'treemap-theme-variables',
         'wardley-theme-variables',
         'architecture-deeply-nested',
         'cynefin-custom-config',
@@ -940,7 +945,7 @@ void main() {
     expect(theme.gitGraph.commitLabelBackground, const Color(86, 120, 154));
     expect(theme.gitGraph.commitLabelColor, const Color(120, 154, 188));
     expect(theme.gitGraph.tagHoleColor, const Color(154, 188, 222));
-    expect(theme.gitGraph.specialColor, const Color(171, 205, 239));
+    expect(theme.gitGraph.specialColor, const Color(35, 69, 103));
     expect(theme.pie.sectionTextColor, const Color(154, 188, 222));
     expect(theme.radar.axisColor, const Color(137, 171, 205));
     expect(theme.wardley.backgroundColor, const Color(18, 52, 86));

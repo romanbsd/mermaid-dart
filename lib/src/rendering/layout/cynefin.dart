@@ -7,6 +7,13 @@ const _cynefinDefaultSvgId = 'my-svg';
 const _cynefinBadgeHorizontalPadding = 16.0;
 const _cynefinConfusionStrokeWidth = 1.5;
 const _cynefinBadgeStrokeWidth = 1.0;
+// Mermaid applies these opacities in renderer CSS, independently of the
+// configured theme color. Keeping them here preserves that behavior for every
+// scene backend instead of baking alpha into only the default theme values.
+const _cynefinDomainOpacity = .4;
+const _cynefinConfusionOpacity = .5;
+const _cynefinItemOpacity = .95;
+const _cynefinOverflowOpacity = .6;
 
 _LayoutResult _layoutCynefin(CynefinAst ast, _LayoutContext context) {
   final config = context.options.optionsFor(const CynefinRenderOptions());
@@ -51,7 +58,7 @@ _LayoutResult _layoutCynefin(CynefinAst ast, _LayoutContext context) {
       SceneRect(
         id: context.id('cynefin-domain'),
         bounds: bounds,
-        fill: SolidFill(colors[domain]!),
+        fill: SolidFill(_colorWithOpacity(colors[domain]!, _cynefinDomainOpacity)),
         role: SemanticRole.group,
         cssClasses: const ['cynefinDomain'],
         label: domain.name,
@@ -102,7 +109,7 @@ _LayoutResult _layoutCynefin(CynefinAst ast, _LayoutContext context) {
     ScenePath(
       id: context.id('cynefin-confusion'),
       commands: generateCynefinConfusionPath(padding + width / 2, padding + height / 2, width * .15, height * .15),
-      fill: SolidFill(config.confusionColor),
+      fill: SolidFill(_colorWithOpacity(colors[CynefinDomain.confusion]!, _cynefinConfusionOpacity)),
       stroke: SceneStroke(
         color: theme.boundaryColor,
         width: _cynefinConfusionStrokeWidth,
@@ -312,9 +319,7 @@ void _addCynefinBadge(
       bounds: bounds,
       radiusX: 4,
       radiusY: 4,
-      fill: SolidFill(
-        overflow ? Color(fill.red, fill.green, fill.blue, 153) : Color(fill.red, fill.green, fill.blue, 242),
-      ),
+      fill: SolidFill(_colorWithOpacity(fill, overflow ? _cynefinOverflowOpacity : _cynefinItemOpacity)),
       stroke: SceneStroke(color: strokeColor, width: _cynefinBadgeStrokeWidth),
       role: SemanticRole.node,
       cssClasses: [overflow ? 'cynefinItemOverflow' : 'cynefinItem'],

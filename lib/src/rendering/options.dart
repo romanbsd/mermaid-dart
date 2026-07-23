@@ -96,11 +96,11 @@ final class CynefinTheme {
     this.cliffWidth = 4,
     this.arrowColor = const Color(51, 51, 51),
     this.arrowWidth = 2,
-    this.complexBackground = const Color(232, 245, 233, 102),
-    this.complicatedBackground = const Color(227, 242, 253, 102),
-    this.chaoticBackground = const Color(251, 233, 231, 102),
-    this.clearBackground = const Color(255, 248, 225, 102),
-    this.confusionBackground = const Color(243, 229, 245, 128),
+    this.complexBackground = const Color(232, 245, 233),
+    this.complicatedBackground = const Color(227, 242, 253),
+    this.chaoticBackground = const Color(251, 233, 231),
+    this.clearBackground = const Color(255, 248, 225),
+    this.confusionBackground = const Color(243, 229, 245),
     this.textColor = const Color(51, 51, 51),
     this.labelColor = const Color(19, 19, 0),
   });
@@ -178,7 +178,7 @@ final class GitGraphTheme {
     this.tagLabelBorder = const Color(199, 199, 241),
     this.tagLabelFontSize = 10,
     this.commitLabelColor = const Color(0, 0, 33),
-    this.commitLabelBackground = const Color(255, 255, 222, 128),
+    this.commitLabelBackground = const Color(255, 255, 222),
     this.commitLabelFontSize = 10,
     this.commitLineColor,
     this.tagHoleColor = const Color(51, 51, 51),
@@ -348,7 +348,7 @@ final class MermaidTheme {
   const MermaidTheme({
     this.background = const Color(255, 255, 255, 0),
     this.primary = const Color(236, 236, 255),
-    this.primaryBorder = const Color(147, 112, 219),
+    Color? primaryBorder,
     Color? primaryText,
     Color? line,
     this.secondary = const Color(255, 255, 222),
@@ -380,6 +380,7 @@ final class MermaidTheme {
   }) : _fontFamilyOverride = fontFamily,
        _railroadCommonOverrides = (
          primaryText: primaryText,
+         primaryBorder: primaryBorder,
          line: line,
          tertiary: tertiary,
          secondaryBorder: secondaryBorder,
@@ -396,11 +397,11 @@ final class MermaidTheme {
 
   final Color background;
   final Color primary;
-  final Color primaryBorder;
   final Color secondary;
   final Color text;
   final ({
     Color? primaryText,
+    Color? primaryBorder,
     Color? line,
     Color? tertiary,
     Color? secondaryBorder,
@@ -416,6 +417,7 @@ final class MermaidTheme {
   })
   _railroadCommonOverrides;
   Color get primaryText => _railroadCommonOverrides.primaryText ?? const Color(51, 51, 51);
+  Color get primaryBorder => _railroadCommonOverrides.primaryBorder ?? const Color(147, 112, 219);
   Color get line => _railroadCommonOverrides.line ?? const Color(51, 51, 51);
   Color get tertiary => _railroadCommonOverrides.tertiary ?? const Color(238, 238, 238);
   Color get secondaryBorder => _railroadCommonOverrides.secondaryBorder ?? const Color(170, 170, 51);
@@ -1309,7 +1311,10 @@ final class RailroadRenderOptions extends DiagramRenderOptions {
   RailroadTheme resolveTheme(MermaidTheme theme) => RailroadTheme(
     fontSize: _themeOverrides.fontSize ?? theme.fontSize,
     fontFamily: _themeOverrides.fontFamily ?? theme.resolveFontFamily(fallback: _defaults.fontFamily),
-    strokeWidth: _themeOverrides.strokeWidth ?? theme._railroadCommonOverrides.strokeWidth ?? _defaults.strokeWidth,
+    // Mermaid's railroad rules fix their strokes at 2px and override the
+    // generic theme strokeWidth. Explicit typed diagram options remain useful
+    // for backend-specific customization.
+    strokeWidth: _themeOverrides.strokeWidth ?? _defaults.strokeWidth,
     terminalFill:
         _themeOverrides.terminalFill ?? theme._railroadCommonOverrides.secondBackground ?? _defaults.terminalFill,
     terminalStroke:
@@ -1321,7 +1326,9 @@ final class RailroadRenderOptions extends DiagramRenderOptions {
     nonTerminalFill:
         _themeOverrides.nonTerminalFill ?? theme._railroadCommonOverrides.mainBackground ?? _defaults.nonTerminalFill,
     nonTerminalStroke:
-        _themeOverrides.nonTerminalStroke ?? theme._railroadCommonOverrides.nodeBorder ?? _defaults.nonTerminalStroke,
+        _themeOverrides.nonTerminalStroke ??
+        theme._railroadCommonOverrides.primaryBorder ??
+        _defaults.nonTerminalStroke,
     nonTerminalTextColor:
         _themeOverrides.nonTerminalTextColor ??
         theme._railroadCommonOverrides.primaryText ??

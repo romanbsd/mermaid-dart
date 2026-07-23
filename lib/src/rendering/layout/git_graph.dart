@@ -1,5 +1,9 @@
 part of '../layout.dart';
 
+// Mermaid applies this opacity in `.commit-label-bkg` regardless of the
+// configured background color.
+const _gitCommitLabelBackgroundOpacity = .5;
+
 // Mermaid gitGraph renderer constants. The names document which upstream
 // coordinate or spacing rule each otherwise non-obvious value represents.
 const _gitLayoutOffset = 10.0;
@@ -590,7 +594,7 @@ void _addGitCommitLabel(
     SceneRect(
       id: context.id('git-commit-label-background'),
       bounds: bounds,
-      fill: SolidFill(theme.commitLabelBackground),
+      fill: SolidFill(_colorWithOpacity(theme.commitLabelBackground, _gitCommitLabelBackgroundOpacity)),
       role: SemanticRole.label,
       cssClasses: const ['git-commit-label-background'],
     ),

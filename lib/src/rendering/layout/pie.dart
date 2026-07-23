@@ -6,7 +6,6 @@ const _percentageScale = 100.0;
 const _pieLegendRectSize = 18.0;
 const _pieLegendSpacing = 4.0;
 const _pieLegendRightOffsetInRects = 12.0;
-const _pieOuterRadiusOffset = 1.0;
 const _pieMaximumDonutRatio = .9;
 const _pieTitleY = 25.0;
 const _fullCircleTolerance = 1e-9;
@@ -26,7 +25,7 @@ _LayoutResult _layoutPie(PieAst ast, _LayoutContext context) {
   );
   final legendTextStyle = SceneTextStyle(
     fontFamily: textStyle.fontFamily,
-    fontSize: textStyle.fontSize,
+    fontSize: theme.legendTextSize,
     color: theme.legendTextColor,
   );
   final inheritedTitleStyle = _mermaidTextStyle(context, theme.titleTextSize);
@@ -84,7 +83,10 @@ _LayoutResult _layoutPie(PieAst ast, _LayoutContext context) {
     SceneCircle(
       id: context.id('pie-outer-circle'),
       center: center,
-      radius: radius + _pieOuterRadiusOffset,
+      // The SVG renderer centers the outer stroke on this radius. Mermaid
+      // expands it by half the configured stroke width so its inner edge stays
+      // aligned with the pie's radius for every custom width.
+      radius: radius + theme.outerStrokeWidth / 2,
       fill: const NoFill(),
       stroke: SceneStroke(color: theme.outerStrokeColor, width: theme.outerStrokeWidth),
       cssClasses: const ['pieOuterCircle'],

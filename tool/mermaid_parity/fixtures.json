@@ -151,6 +151,37 @@
       }
     },
     {
+      "id": "cynefin-theme-variables",
+      "type": "cynefin",
+      "source": "cynefin-beta\ncomplex \"Probe\"\ncomplicated \"Analyze\"\nclear \"Sense\"\nchaotic \"Act\"\nconfusion \"Collect\"\n",
+      "themeVariables": {
+        "cynefin": {
+          "domainFontSize": 18,
+          "itemFontSize": 14,
+          "boundaryColor": "#123456",
+          "boundaryWidth": 5,
+          "cliffColor": "#234567",
+          "cliffWidth": 6,
+          "arrowColor": "#345678",
+          "arrowWidth": 4,
+          "complexBg": "#456789",
+          "complicatedBg": "#56789a",
+          "chaoticBg": "#6789ab",
+          "clearBg": "#789abc",
+          "confusionBg": "#89abcd",
+          "textColor": "#9abcde",
+          "labelColor": "#abcdef"
+        }
+      },
+      "textMeasurements": {
+        "Probe": { "width": 39.533, "height": 16 },
+        "Analyze": { "width": 52.581, "height": 16 },
+        "Sense": { "width": 39.322, "height": 16 },
+        "Act": { "width": 24.748, "height": 16 },
+        "Collect": { "width": 48.267, "height": 16 }
+      }
+    },
+    {
       "id": "cynefin-custom-config",
       "type": "cynefin",
       "source": "cynefin-beta\ncomplex \"Probe\"\ncomplicated \"Analyze\"\nclear \"Sense\"\nchaotic \"Act\"\nconfusion \"Collect\"\n",
@@ -231,6 +262,38 @@
         "develop": { "width": 56.421875, "height": 19 },
         "A": { "width": 5.90625, "height": 11 },
         "B": { "width": 5.671875, "height": 11 }
+      }
+    },
+    {
+      "id": "git-theme-variables",
+      "type": "gitGraph",
+      "source": "gitGraph\ncommit id: \"A\" tag: \"v1\"\nbranch develop\ncheckout develop\ncommit id: \"B\" type: HIGHLIGHT\n",
+      "themeVariables": {
+        "git0": "#123456",
+        "git1": "#234567",
+        "gitInv0": "#345678",
+        "gitInv1": "#456789",
+        "gitBranchLabel0": "#56789a",
+        "gitBranchLabel1": "#6789ab",
+        "tagLabelColor": "#789abc",
+        "tagLabelBackground": "#89abcd",
+        "tagLabelBorder": "#9abcde",
+        "tagLabelFontSize": "12px",
+        "commitLabelColor": "#abcdef",
+        "commitLabelBackground": "#bcdef0",
+        "commitLabelFontSize": "13px",
+        "commitLineColor": "#cdef01",
+        "textColor": "#def012",
+        "primaryColor": "#ef0123",
+        "mainBkg": "#f01234",
+        "THEME_COLOR_LIMIT": 8
+      },
+      "textMeasurements": {
+        "main": { "width": 35, "height": 19 },
+        "develop": { "width": 56.421875, "height": 19 },
+        "A": { "width": 7.671875, "height": 15 },
+        "B": { "width": 7.359375, "height": 15 },
+        "v1": { "width": 12.171875, "height": 14 }
       }
     },
     {
@@ -395,6 +458,31 @@
       }
     },
     {
+      "id": "pie-theme-variables",
+      "type": "pie",
+      "source": "pie title Custom Pie\n\"Dogs\": 50\n\"Cats\": 25\n",
+      "themeVariables": {
+        "pie1": "#123456",
+        "pie2": "#234567",
+        "pieTitleTextSize": "28px",
+        "pieTitleTextColor": "#345678",
+        "pieSectionTextSize": "19px",
+        "pieSectionTextColor": "#456789",
+        "pieLegendTextSize": "20px",
+        "pieLegendTextColor": "#56789a",
+        "pieStrokeColor": "#6789ab",
+        "pieStrokeWidth": 4,
+        "pieOuterStrokeWidth": "5px",
+        "pieOuterStrokeColor": "#789abc",
+        "pieOpacity": 0.55
+      },
+      "textMeasurements": {
+        "Dogs": { "width": 41.140625, "height": 23 },
+        "Cats": { "width": 38.515625, "height": 23 },
+        "Custom Pie": { "width": 153.03125, "height": 32 }
+      }
+    },
+    {
       "id": "radar-comparison",
       "type": "radar",
       "source": "radar-beta\naxis speed[\"Speed\"], quality, cost[\"Cost\"]\ncurve current[\"Current\"] { 3, 4, 2 }\n"
@@ -442,6 +530,33 @@
         "a": { "width": 8.40625, "height": 19 },
         "b": { "width": 8.921875, "height": 19 },
         "rule =": { "width": 41.625, "height": 19 }
+      }
+    },
+    {
+      "id": "railroad-theme-variables",
+      "type": "railroad",
+      "source": "railroad-beta\nrule = sequence(terminal(\"a\"), nonterminal(\"b\"), special(\"c\")) ;\n",
+      "themeVariables": {
+        "fontFamily": "monospace",
+        "fontSize": "18px",
+        "strokeWidth": 3,
+        "secondBkg": "#123456",
+        "secondaryBorderColor": "#234567",
+        "secondaryTextColor": "#345678",
+        "mainBkg": "#456789",
+        "primaryBorderColor": "#56789a",
+        "primaryTextColor": "#6789ab",
+        "lineColor": "#789abc",
+        "tertiaryColor": "#89abcd",
+        "tertiaryBorderColor": "#9abcde",
+        "tertiaryTextColor": "#abcdef",
+        "titleColor": "#bcdef0"
+      },
+      "textMeasurements": {
+        "a": { "width": 10.84375, "height": 21 },
+        "b": { "width": 10.84375, "height": 21 },
+        "? c ?": { "width": 54.1875, "height": 21 },
+        "rule =": { "width": 65.03125, "height": 21 }
       }
     },
     {
@@ -610,6 +725,23 @@
       "id": "treemap-products",
       "type": "treemap",
       "source": "treemap\n\"Products\"\n  \"Large\": 3\n  \"Small\": 1\n"
+    },
+    {
+      "id": "treemap-theme-variables",
+      "type": "treemap",
+      "source": "treemap\ntitle Portfolio\n\"Products\"\n  \"Large\": 3\n  \"Small\": 1\n",
+      "themeVariables": {
+        "titleColor": "#123456",
+        "textColor": "#234567",
+        "fontFamily": "monospace",
+        "fontSize": "18px",
+        "cScale0": "#345678",
+        "cScalePeer0": "#456789",
+        "cScaleLabel0": "#56789a"
+      },
+      "textMeasurements": {
+        "Portfolio": { "width": 75.90625, "height": 17.858 }
+      }
     },
     {
       "id": "treemap-custom-config",

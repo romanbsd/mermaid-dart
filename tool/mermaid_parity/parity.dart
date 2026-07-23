@@ -185,29 +185,25 @@ final class ParityFixture {
         horizontalSeparation:
             (diagramConfig['horizontalSeparation'] as num?)?.toDouble() ?? railroadDefaults.horizontalSeparation,
         arcRadius: (diagramConfig['arcRadius'] as num?)?.toDouble() ?? railroadDefaults.arcRadius,
-        fontSize: (diagramConfig['fontSize'] as num?)?.toDouble() ?? railroadDefaults.fontSize,
-        fontFamily: diagramConfig['fontFamily'] as String? ?? railroadDefaults.fontFamily,
-        strokeWidth: (diagramConfig['strokeWidth'] as num?)?.toDouble() ?? railroadDefaults.strokeWidth,
+        fontSize: (diagramConfig['fontSize'] as num?)?.toDouble(),
+        fontFamily: diagramConfig['fontFamily'] as String?,
+        strokeWidth: (diagramConfig['strokeWidth'] as num?)?.toDouble(),
         showMarkers: diagramConfig['showMarkers'] as bool? ?? railroadDefaults.showMarkers,
         markerRadius: (diagramConfig['markerRadius'] as num?)?.toDouble() ?? railroadDefaults.markerRadius,
-        terminalFill: _configuredColor(diagramConfig, 'terminalFill', railroadDefaults.terminalFill),
-        terminalStroke: _configuredColor(diagramConfig, 'terminalStroke', railroadDefaults.terminalStroke),
-        terminalTextColor: _configuredColor(diagramConfig, 'terminalTextColor', railroadDefaults.terminalTextColor),
-        nonTerminalFill: _configuredColor(diagramConfig, 'nonTerminalFill', railroadDefaults.nonTerminalFill),
-        nonTerminalStroke: _configuredColor(diagramConfig, 'nonTerminalStroke', railroadDefaults.nonTerminalStroke),
-        nonTerminalTextColor: _configuredColor(
-          diagramConfig,
-          'nonTerminalTextColor',
-          railroadDefaults.nonTerminalTextColor,
-        ),
-        lineColor: _configuredColor(diagramConfig, 'lineColor', railroadDefaults.lineColor),
-        markerFill: _configuredColor(diagramConfig, 'markerFill', railroadDefaults.markerFill),
-        commentFill: _configuredColor(diagramConfig, 'commentFill', railroadDefaults.commentFill),
-        commentStroke: _configuredColor(diagramConfig, 'commentStroke', railroadDefaults.commentStroke),
-        commentTextColor: _configuredColor(diagramConfig, 'commentTextColor', railroadDefaults.commentTextColor),
-        specialFill: _configuredColor(diagramConfig, 'specialFill', railroadDefaults.specialFill),
-        specialStroke: _configuredColor(diagramConfig, 'specialStroke', railroadDefaults.specialStroke),
-        ruleNameColor: _configuredColor(diagramConfig, 'ruleNameColor', railroadDefaults.ruleNameColor),
+        terminalFill: _configuredOptionalColor(diagramConfig, 'terminalFill'),
+        terminalStroke: _configuredOptionalColor(diagramConfig, 'terminalStroke'),
+        terminalTextColor: _configuredOptionalColor(diagramConfig, 'terminalTextColor'),
+        nonTerminalFill: _configuredOptionalColor(diagramConfig, 'nonTerminalFill'),
+        nonTerminalStroke: _configuredOptionalColor(diagramConfig, 'nonTerminalStroke'),
+        nonTerminalTextColor: _configuredOptionalColor(diagramConfig, 'nonTerminalTextColor'),
+        lineColor: _configuredOptionalColor(diagramConfig, 'lineColor'),
+        markerFill: _configuredOptionalColor(diagramConfig, 'markerFill'),
+        commentFill: _configuredOptionalColor(diagramConfig, 'commentFill'),
+        commentStroke: _configuredOptionalColor(diagramConfig, 'commentStroke'),
+        commentTextColor: _configuredOptionalColor(diagramConfig, 'commentTextColor'),
+        specialFill: _configuredOptionalColor(diagramConfig, 'specialFill'),
+        specialStroke: _configuredOptionalColor(diagramConfig, 'specialStroke'),
+        ruleNameColor: _configuredOptionalColor(diagramConfig, 'ruleNameColor'),
       ),
       treeView: TreeViewRenderOptions(
         useWidth: _configuredUseWidth(diagramConfig, treeViewDefaults),
@@ -428,14 +424,8 @@ MermaidTheme _themeOptions(Map<String, Object> variables) {
   final wardley = _nestedTheme(variables, 'wardley');
   final background = _themeColor(variables, 'background', defaults.background);
   final primary = _themeColor(variables, 'primaryColor', defaults.primary);
-  final primaryBorder = _themeColor(variables, 'primaryBorderColor', defaults.primaryBorder);
-  final primaryText = _themeColor(variables, 'primaryTextColor', defaults.primaryText);
-  final line = _themeColor(variables, 'lineColor', defaults.line);
   final secondary = _themeColor(variables, 'secondaryColor', defaults.secondary);
-  final secondaryBorder = _themeColor(variables, 'secondaryBorderColor', defaults.secondaryBorder);
-  final secondaryText = _themeColor(variables, 'secondaryTextColor', defaults.secondaryText);
   final text = _themeColor(variables, 'textColor', defaults.text);
-  final mainBackground = _themeColor(variables, 'mainBkg', defaults.mainBackground);
   final backgroundOverride = _themeOptionalColor(variables, 'background');
   final primaryOverride = _themeOptionalColor(variables, 'primaryColor');
   final primaryBorderOverride = _themeOptionalColor(variables, 'primaryBorderColor');
@@ -445,26 +435,25 @@ MermaidTheme _themeOptions(Map<String, Object> variables) {
   final secondaryBorderOverride = _themeOptionalColor(variables, 'secondaryBorderColor');
   final secondaryTextOverride = _themeOptionalColor(variables, 'secondaryTextColor');
   final textOverride = _themeOptionalColor(variables, 'textColor');
-  final mainBackgroundOverride = _themeOptionalColor(variables, 'mainBkg');
   return MermaidTheme(
     background: background,
     primary: primary,
-    primaryBorder: primaryBorder,
-    primaryText: primaryText,
-    line: line,
+    primaryBorder: primaryBorderOverride,
+    primaryText: primaryTextOverride,
+    line: lineOverride,
     secondary: secondary,
-    tertiary: _themeColor(variables, 'tertiaryColor', defaults.tertiary),
-    secondaryBorder: secondaryBorder,
-    tertiaryBorder: _themeColor(variables, 'tertiaryBorderColor', defaults.tertiaryBorder),
-    secondaryText: secondaryText,
-    tertiaryText: _themeColor(variables, 'tertiaryTextColor', defaults.tertiaryText),
+    tertiary: _themeOptionalColor(variables, 'tertiaryColor'),
+    secondaryBorder: secondaryBorderOverride,
+    tertiaryBorder: _themeOptionalColor(variables, 'tertiaryBorderColor'),
+    secondaryText: secondaryTextOverride,
+    tertiaryText: _themeOptionalColor(variables, 'tertiaryTextColor'),
     text: text,
-    title: _themeColor(variables, 'titleColor', defaults.title),
-    mainBackground: mainBackground,
-    secondBackground: _themeColor(variables, 'secondBkg', defaults.secondBackground),
-    labelBackground: _themeColor(variables, 'labelBackground', defaults.labelBackground),
-    nodeBorder: _themeColor(variables, 'nodeBorder', defaults.nodeBorder),
-    strokeWidth: _themeDouble(variables, 'strokeWidth', defaults.strokeWidth),
+    title: _themeOptionalColor(variables, 'titleColor'),
+    mainBackground: _themeOptionalColor(variables, 'mainBkg'),
+    secondBackground: _themeOptionalColor(variables, 'secondBkg'),
+    labelBackground: _themeOptionalColor(variables, 'labelBackground'),
+    nodeBorder: _themeOptionalColor(variables, 'nodeBorder'),
+    strokeWidth: variables.containsKey('strokeWidth') ? _themeDouble(variables, 'strokeWidth', defaults.strokeWidth) : null,
     fontFamily: variables['fontFamily'] as String?,
     fontSize: _themeDouble(variables, 'fontSize', defaults.fontSize),
     pieColors: List.unmodifiable(pieColors),
@@ -557,7 +546,7 @@ MermaidTheme _themeOptions(Map<String, Object> variables) {
       commitLineColor: _themeOptionalColor(variables, 'commitLineColor') ?? defaults.gitGraph.commitLineColor,
       tagHoleColor: textOverride ?? defaults.gitGraph.tagHoleColor,
       primaryColor: primaryOverride ?? defaults.gitGraph.primaryColor,
-      specialColor: mainBackgroundOverride ?? defaults.gitGraph.specialColor,
+      specialColor: primaryOverride ?? defaults.gitGraph.specialColor,
       themeColorLimit: _themeInt(variables, 'THEME_COLOR_LIMIT', defaults.gitGraph.themeColorLimit),
       useGradient: variables['useGradient'] as bool? ?? defaults.gitGraph.useGradient,
       gradientStart: _themeColor(variables, 'gradientStart', primaryBorderOverride ?? defaults.gitGraph.gradientStart),
@@ -859,9 +848,9 @@ Map<String, Object> _railroadConfig(Object? value) {
   return Map.unmodifiable(result);
 }
 
-Color _configuredColor(Map<String, Object> config, String key, Color fallback) => switch (config[key]) {
+Color? _configuredOptionalColor(Map<String, Object> config, String key) => switch (config[key]) {
   final String value => _fixtureColor(value),
-  _ => fallback,
+  _ => null,
 };
 
 Color _fixtureColor(String value) {
