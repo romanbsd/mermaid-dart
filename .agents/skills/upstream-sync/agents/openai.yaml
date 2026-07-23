@@ -1,0 +1,4 @@
+interface:
+  display_name: "Sync Mermaid Upstream"
+  short_description: "Port and tag a Mermaid release in Dart"
+  default_prompt: "Use $upstream-sync to update mermaid-dart to the latest stable Mermaid tag and prepare its matching release tag."
