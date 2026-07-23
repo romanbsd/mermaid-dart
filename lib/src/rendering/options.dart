@@ -295,6 +295,10 @@ final class TreeViewRenderOptions extends DiagramRenderOptions {
     this.paddingX = 5,
     this.paddingY = 5,
     this.lineThickness = 1,
+    this.showIcons = false,
+    this.defaultIconPack = '',
+    this.filenameIcons = const {},
+    this.extensionIcons = const {},
     this.labelColor = defaultLabelColor,
     this.lineColor = defaultLineColor,
     this.iconColor = defaultIconColor,
@@ -309,6 +313,11 @@ final class TreeViewRenderOptions extends DiagramRenderOptions {
   static const defaultIconColor = Color(84, 110, 122);
   static const defaultDescriptionColor = Color(106, 153, 85);
 
+  /// Namespace used by Mermaid's small built-in file and folder icon pack.
+  static const builtInIconPack = 'mermaid-treeview';
+  static const builtInFileIcon = '$builtInIconPack:file';
+  static const builtInFolderIcon = '$builtInIconPack:folder';
+
   /// Mermaid's 15%-opaque amber highlight background.
   static const defaultHighlightBackground = Color(255, 193, 7, 38);
 
@@ -318,6 +327,21 @@ final class TreeViewRenderOptions extends DiagramRenderOptions {
   final double paddingX;
   final double paddingY;
   final double lineThickness;
+
+  /// Whether nodes without explicit `icon(...)` annotations receive icons.
+  final bool showIcons;
+
+  /// Pack used to qualify mapped or explicit unprefixed icon names.
+  ///
+  /// Empty values preserve Mermaid's behavior of selecting its built-in pack.
+  final String defaultIconPack;
+
+  /// Exact filename-to-icon overrides used when [showIcons] is enabled.
+  final Map<String, String> filenameIcons;
+
+  /// Case-insensitive extension-to-icon overrides used when [showIcons] is
+  /// enabled. Keys may include or omit the leading period.
+  final Map<String, String> extensionIcons;
 
   /// Primary node-label color.
   final Color labelColor;

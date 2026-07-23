@@ -11,8 +11,8 @@ void main() {
     final manifest = ParityManifest.load(File('tool/mermaid_parity/fixtures.json'));
 
     expect(manifest.mermaidVersion, '11.16.0');
-    expect(manifest.fixtures.map((fixture) => fixture.id), hasLength(53));
-    expect(manifest.fixtures.map((fixture) => fixture.id).toSet(), hasLength(53));
+    expect(manifest.fixtures.map((fixture) => fixture.id), hasLength(54));
+    expect(manifest.fixtures.map((fixture) => fixture.id).toSet(), hasLength(54));
     expect(
       manifest.fixtures.map((fixture) => fixture.id),
       containsAll([
@@ -41,6 +41,7 @@ void main() {
         'git-special-commits-bt',
         'tree-highlighted-styles',
         'tree-custom-layout',
+        'tree-automatic-icons',
         'tree-unicode-invalid-icon',
         'pie-donut',
         'pie-bottom-legend',
@@ -664,15 +665,37 @@ void main() {
       'id': 'configured',
       'type': 'treeView',
       'source': 'treeView-beta\nsrc/\n',
-      'treeViewOptions': {'rowIndent': 24, 'paddingX': 8, 'paddingY': 7, 'lineThickness': 3},
+      'treeViewOptions': {
+        'rowIndent': 24,
+        'paddingX': 8,
+        'paddingY': 7,
+        'lineThickness': 3,
+        'showIcons': true,
+        'defaultIconPack': 'devicons',
+        'filenameIcons': {'Dockerfile': 'docker'},
+        'extensionIcons': {'.dart': 'dart'},
+      },
     });
 
     expect(configured.renderOptions.treeView.rowIndent, 24);
     expect(configured.renderOptions.treeView.paddingX, 8);
     expect(configured.renderOptions.treeView.paddingY, 7);
     expect(configured.renderOptions.treeView.lineThickness, 3);
+    expect(configured.renderOptions.treeView.showIcons, isTrue);
+    expect(configured.renderOptions.treeView.defaultIconPack, 'devicons');
+    expect(configured.renderOptions.treeView.filenameIcons, {'Dockerfile': 'docker'});
+    expect(configured.renderOptions.treeView.extensionIcons, {'.dart': 'dart'});
     expect(configured.mermaidConfig, {
-      'treeView': {'rowIndent': 24, 'paddingX': 8, 'paddingY': 7, 'lineThickness': 3},
+      'treeView': {
+        'rowIndent': 24,
+        'paddingX': 8,
+        'paddingY': 7,
+        'lineThickness': 3,
+        'showIcons': true,
+        'defaultIconPack': 'devicons',
+        'filenameIcons': {'Dockerfile': 'docker'},
+        'extensionIcons': {'.dart': 'dart'},
+      },
     });
     expect(
       () => ParityFixture.fromJson({
@@ -698,6 +721,17 @@ void main() {
         'type': 'treeView',
         'source': 'treeView-beta\nsrc/\n',
         'treeViewOptions': {'lineThickness': 0},
+      }),
+      throwsFormatException,
+    );
+    expect(
+      () => ParityFixture.fromJson({
+        'id': 'configured',
+        'type': 'treeView',
+        'source': 'treeView-beta\nsrc/\n',
+        'treeViewOptions': {
+          'filenameIcons': {'Dockerfile': 42},
+        },
       }),
       throwsFormatException,
     );

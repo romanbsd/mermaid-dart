@@ -3,7 +3,9 @@ part of '../layout.dart';
 // Mermaid treeView renders a synthetic filesystem root. The remaining values
 // describe its icon, description, and hover-highlight geometry.
 const _treeRootName = '/';
-const _treeIconExtent = 18.0;
+const _treeIconSize = 14.0;
+const _treeIconGap = 4.0;
+const _treeIconLabelOffset = _treeIconSize + _treeIconGap;
 const _treeDescriptionGap = 16.0;
 const _treeHighlightVerticalInset = 1.0;
 const _treeHighlightRightOverflow = 8.0;
@@ -16,6 +18,44 @@ SceneTextStyle _treeTextStyle(_LayoutContext context, Color color) => SceneTextS
 );
 
 SceneStroke _treeStroke(Color color, double width) => SceneStroke(color: color, width: width);
+
+String _treeQualifyIcon(String icon, TreeViewRenderOptions config) {
+  if (icon.contains(':')) return icon;
+  if (icon == 'file' || icon == 'folder' || config.defaultIconPack.isEmpty) {
+    return '${TreeViewRenderOptions.builtInIconPack}:$icon';
+  }
+  return '${config.defaultIconPack}:$icon';
+}
+
+String? _treeIconReference({
+  required String name,
+  required bool directory,
+  required String? explicitIcon,
+  required TreeViewRenderOptions config,
+}) {
+  if (explicitIcon == 'none') return null;
+  if (explicitIcon != null && explicitIcon.isNotEmpty) {
+    return _treeQualifyIcon(explicitIcon, config);
+  }
+  if (!config.showIcons) return null;
+
+  String? detected;
+  if (!directory) {
+    detected = config.filenameIcons[name];
+    if (detected == null || detected.isEmpty) {
+      final dotIndex = name.lastIndexOf('.');
+      if (dotIndex > 0) {
+        final extension = name.substring(dotIndex).toLowerCase();
+        detected = config.extensionIcons[extension] ?? config.extensionIcons[extension.substring(1)];
+      }
+    }
+    if (detected == 'none') return null;
+    if (detected != null && detected.isNotEmpty) {
+      return _treeQualifyIcon(detected, config);
+    }
+  }
+  return directory ? TreeViewRenderOptions.builtInFolderIcon : TreeViewRenderOptions.builtInFileIcon;
+}
 
 _LayoutResult _layoutTree(TreeViewAst ast, _LayoutContext context) {
   final config = context.options.optionsFor(const TreeViewRenderOptions());
@@ -58,15 +98,21 @@ _LayoutResult _layoutTree(TreeViewAst ast, _LayoutContext context) {
     final height = measured.height + config.paddingY * 2;
     final centerY = totalHeight + height / 2;
     final children = <SceneElement>[];
-    final hasIcon = node.ast?.icon != null;
-    final labelX = x + config.paddingX + (hasIcon ? _treeIconExtent : 0);
-    if (node.ast?.icon case final icon?) {
+    final icon = _treeIconReference(
+      name: node.name,
+      directory: node.directory,
+      explicitIcon: node.ast?.icon,
+      config: config,
+    );
+    final hasIcon = icon != null;
+    final labelX = x + config.paddingX + (hasIcon ? _treeIconLabelOffset : 0);
+    if (icon != null) {
       children.add(
         _scaledIcon(
           context,
           icon,
           Point(x + config.paddingX, totalHeight + config.paddingY),
-          _treeIconExtent,
+          _treeIconSize,
           idPrefix: 'tree',
           fill: SolidFill(config.iconColor),
           stroke: _treeStroke(config.iconColor, config.lineThickness),
@@ -93,7 +139,7 @@ _LayoutResult _layoutTree(TreeViewAst ast, _LayoutContext context) {
     labelRightEdges.add(labelX + measured.width);
     rowTops.add(totalHeight);
     rowHeights.add(height);
-    totalWidth = math.max(totalWidth, x + measured.width + config.paddingX * 2 + (hasIcon ? _treeIconExtent : 0));
+    totalWidth = math.max(totalWidth, x + measured.width + config.paddingX * 2 + (hasIcon ? _treeIconLabelOffset : 0));
     totalHeight += height;
   }
 

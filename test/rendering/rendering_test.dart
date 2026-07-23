@@ -304,6 +304,36 @@ rule <- "a" b? ;
       );
     });
 
+    test('tree icons follow Mermaid selection and pack qualification rules', () {
+      final scene = layoutDiagram(
+        const TreeViewAst(
+          nodes: [
+            TreeViewNodeAst(name: 'src/'),
+            TreeViewNodeAst(name: 'Dockerfile', indent: 2),
+            TreeViewNodeAst(name: 'APP.DART', indent: 2),
+            TreeViewNodeAst(name: 'notes.md', indent: 2, icon: 'star'),
+            TreeViewNodeAst(name: 'hidden.txt', indent: 2, icon: 'none'),
+          ],
+        ),
+        options: const RenderOptions(
+          treeView: TreeViewRenderOptions(
+            showIcons: true,
+            defaultIconPack: 'devicons',
+            filenameIcons: {'Dockerfile': 'docker'},
+            extensionIcons: {'.dart': 'dart'},
+          ),
+        ),
+      );
+
+      expect(_flatten(scene.elements).whereType<SceneIcon>().map((icon) => icon.label), [
+        TreeViewRenderOptions.builtInFolderIcon,
+        TreeViewRenderOptions.builtInFolderIcon,
+        'devicons:docker',
+        'devicons:dart',
+        'devicons:star',
+      ]);
+    });
+
     test('architecture icons use application geometry with a labeled placeholder fallback', () {
       final ast =
           parse(

@@ -116,6 +116,10 @@ final class ParityFixture {
         paddingX: (diagramConfig['paddingX'] as num?)?.toDouble() ?? treeViewDefaults.paddingX,
         paddingY: (diagramConfig['paddingY'] as num?)?.toDouble() ?? treeViewDefaults.paddingY,
         lineThickness: (diagramConfig['lineThickness'] as num?)?.toDouble() ?? treeViewDefaults.lineThickness,
+        showIcons: diagramConfig['showIcons'] as bool? ?? treeViewDefaults.showIcons,
+        defaultIconPack: diagramConfig['defaultIconPack'] as String? ?? treeViewDefaults.defaultIconPack,
+        filenameIcons: diagramConfig['filenameIcons'] as Map<String, String>? ?? treeViewDefaults.filenameIcons,
+        extensionIcons: diagramConfig['extensionIcons'] as Map<String, String>? ?? treeViewDefaults.extensionIcons,
       ),
     );
   }
@@ -155,7 +159,16 @@ Map<String, Object> _diagramConfig(Map<Object?, Object?> json, DiagramType type)
   };
 }
 
-const _treeViewConfigKeys = {'rowIndent', 'paddingX', 'paddingY', 'lineThickness'};
+const _treeViewConfigKeys = {
+  'rowIndent',
+  'paddingX',
+  'paddingY',
+  'lineThickness',
+  'showIcons',
+  'defaultIconPack',
+  'filenameIcons',
+  'extensionIcons',
+};
 
 Map<String, Object> _treeViewConfig(Object? value) {
   if (value is! Map<String, Object?> || value.isEmpty || value.keys.any((key) => !_treeViewConfigKeys.contains(key))) {
@@ -166,12 +179,28 @@ Map<String, Object> _treeViewConfig(Object? value) {
     final valid = switch ((key, value)) {
       ('rowIndent' || 'paddingX' || 'paddingY', final num option) when option >= 0 => option,
       ('lineThickness', final num option) when option > 0 => option,
+      ('showIcons', final bool option) => option,
+      ('defaultIconPack', final String option) => option,
+      ('filenameIcons' || 'extensionIcons', final Map<String, Object?> option) => _treeViewIconMap(option),
       _ => null,
     };
     if (valid == null) {
       throw const FormatException('Invalid fixture treeViewOptions');
     }
     result[key] = valid;
+  }
+  return Map.unmodifiable(result);
+}
+
+Map<String, String>? _treeViewIconMap(Map<String, Object?> value) {
+  final result = <String, String>{};
+  for (final MapEntry(:key, :value) in value.entries) {
+    switch (value) {
+      case final String icon when key.isNotEmpty && icon.isNotEmpty:
+        result[key] = icon;
+      default:
+        return null;
+    }
   }
   return Map.unmodifiable(result);
 }
