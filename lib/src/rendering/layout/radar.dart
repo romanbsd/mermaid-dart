@@ -235,7 +235,7 @@ SceneElement _radarCurve(
   return switch (graticule) {
     RadarGraticule.circle => ScenePath(
       id: id,
-      commands: _closedRoundCurve(points, tension),
+      commands: closedCubicSplinePath(points, tension: tension),
       fill: fill,
       stroke: stroke,
       role: SemanticRole.node,
@@ -252,24 +252,4 @@ SceneElement _radarCurve(
       label: label,
     ),
   };
-}
-
-List<PathCommand> _closedRoundCurve(List<Point> points, double tension) {
-  if (points.isEmpty) return const [];
-  final commands = <PathCommand>[MoveTo(points.first)];
-  for (var i = 0; i < points.length; i++) {
-    final p0 = points[(i - 1 + points.length) % points.length];
-    final p1 = points[i];
-    final p2 = points[(i + 1) % points.length];
-    final p3 = points[(i + 2) % points.length];
-    commands.add(
-      CubicTo(
-        Point(p1.x + (p2.x - p0.x) * tension, p1.y + (p2.y - p0.y) * tension),
-        Point(p2.x - (p3.x - p1.x) * tension, p2.y - (p3.y - p1.y) * tension),
-        p2,
-      ),
-    );
-  }
-  commands.add(const ClosePath());
-  return commands;
 }

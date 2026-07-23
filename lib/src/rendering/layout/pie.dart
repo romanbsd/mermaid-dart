@@ -8,7 +8,6 @@ const _pieLegendSpacing = 4.0;
 const _pieLegendRightOffsetInRects = 12.0;
 const _pieMaximumDonutRatio = .9;
 const _pieTitleY = 25.0;
-const _fullCircleTolerance = 1e-9;
 
 /// Mermaid's `.pieCircle.highlighted` stylesheet enlarges the selected slice
 /// by five percent. The scene records that visual state as explicit geometry.
@@ -110,7 +109,13 @@ _LayoutResult _layoutPie(PieAst ast, _LayoutContext context) {
     final sectionOpacity = isHighlighted ? 1.0 : theme.opacity;
     final path = ScenePath(
       id: context.id('pie-section'),
-      commands: _pieArcCommands(isHighlighted ? const Point(0, 0) : center, radius, innerRadius, angle, end),
+      commands: annularSectorPath(
+        center: isHighlighted ? const Point(0, 0) : center,
+        outerRadius: radius,
+        innerRadius: innerRadius,
+        startAngle: angle,
+        endAngle: end,
+      ),
       fill: SolidFill(_colorWithOpacity(_pieSectionColor(sectionColors, entry.index), sectionOpacity)),
       stroke: SceneStroke(color: _colorWithOpacity(theme.strokeColor, sectionOpacity), width: theme.strokeWidth),
       role: SemanticRole.node,
@@ -195,48 +200,4 @@ _LayoutResult _layoutPie(PieAst ast, _LayoutContext context) {
 
 Color _pieSectionColor(List<Color> colors, int index) {
   return colors[index % colors.length];
-}
-
-List<PathCommand> _pieArcCommands(Point center, double outer, double inner, double start, double end) {
-  final sweep = end - start;
-  final full = sweep >= fullTurnRadians - _fullCircleTolerance;
-  final commands = <PathCommand>[MoveTo(polarPoint(center, outer, start))];
-  if (full) {
-    commands
-      ..add(ArcTo(radiusX: outer, radiusY: outer, end: polarPoint(center, outer, start + halfTurnRadians)))
-      ..add(ArcTo(radiusX: outer, radiusY: outer, end: polarPoint(center, outer, end)));
-  } else {
-    commands.add(
-      ArcTo(radiusX: outer, radiusY: outer, largeArc: sweep > halfTurnRadians, end: polarPoint(center, outer, end)),
-    );
-  }
-  if (inner == 0) {
-    commands.add(LineTo(center));
-  } else {
-    commands.add(LineTo(polarPoint(center, inner, end)));
-    if (full) {
-      commands
-        ..add(
-          ArcTo(
-            radiusX: inner,
-            radiusY: inner,
-            clockwise: false,
-            end: polarPoint(center, inner, start + halfTurnRadians),
-          ),
-        )
-        ..add(ArcTo(radiusX: inner, radiusY: inner, clockwise: false, end: polarPoint(center, inner, start)));
-    } else {
-      commands.add(
-        ArcTo(
-          radiusX: inner,
-          radiusY: inner,
-          largeArc: sweep > halfTurnRadians,
-          clockwise: false,
-          end: polarPoint(center, inner, start),
-        ),
-      );
-    }
-  }
-  commands.add(const ClosePath());
-  return commands;
 }
