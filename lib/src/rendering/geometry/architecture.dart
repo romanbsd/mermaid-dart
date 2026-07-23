@@ -1,10 +1,9 @@
 import 'dart:math' as math;
 
-import 'package:fcose/fcose.dart' as fcose;
-
 import '../../parser/ast.dart';
 import '../options.dart';
 import '../scene.dart';
+import 'architecture_fcose.dart';
 
 // Cytoscape's compound-node bounding box includes half of its rendered border
 // on the top and horizontal sides. The bottom uses the service-label extent and
@@ -112,7 +111,7 @@ ArchitectureLayout layoutArchitectureModel(
   }
   final textStyle = SceneTextStyle(fontFamily: fontFamily, fontSize: options.fontSize);
 
-  final centers = _layoutArchitectureWithFcose(ast, nodes, options);
+  final centers = layoutArchitectureWithFcose(ast, options);
   var laidOutNodes = _layoutArchitectureNodes(nodes, centers, options.iconSize);
   var laidOutGroups = _layoutArchitectureGroups(
     ast.groups,
@@ -151,70 +150,6 @@ ArchitectureLayout layoutArchitectureModel(
     edges: _routeArchitectureEdges(ast.edges, laidOutNodes, options),
     bounds: contentBounds.translated(offsetX, offsetY),
   );
-}
-
-fcose.MermaidArchitectureDirection _fcoseDirection(ArchitectureDirection direction) => switch (direction) {
-  ArchitectureDirection.left => fcose.MermaidArchitectureDirection.left,
-  ArchitectureDirection.right => fcose.MermaidArchitectureDirection.right,
-  ArchitectureDirection.top => fcose.MermaidArchitectureDirection.top,
-  ArchitectureDirection.bottom => fcose.MermaidArchitectureDirection.bottom,
-};
-
-Map<String, Point> _layoutArchitectureWithFcose(
-  ArchitectureAst ast,
-  List<_NodeSeed> nodes,
-  ArchitectureRenderOptions options,
-) {
-  final graph = fcose.FcoseGraph(
-    nodes: [
-      for (final group in ast.groups)
-        fcose.FcoseNode(id: group.id, parentId: group.parent, position: fcose.Offset.zero),
-      for (final node in nodes)
-        fcose.FcoseNode(
-          id: node.id,
-          width: options.iconSize,
-          height: options.iconSize,
-          parentId: node.parent,
-          position: fcose.Offset.zero,
-        ),
-    ],
-    edges: [
-      for (final (index, edge) in ast.edges.indexed)
-        fcose.FcoseEdge(id: 'architecture-edge-$index', source: edge.leftId, target: edge.rightId),
-    ],
-  );
-  final result =
-      fcose.MermaidFcoseAdapter(
-            iconSize: options.iconSize,
-            idealEdgeLengthMultiplier: options.idealEdgeLengthMultiplier,
-            edgeElasticity: options.edgeElasticity,
-            padding: options.padding,
-            nodeSeparation: math.max(options.nodeSeparation, double.minPositive),
-            numIter: options.numIter,
-            randomize: options.randomize,
-            seed: options.seed,
-          )
-          .configureArchitecture(
-            graph,
-            directionalEdges: [
-              for (final edge in ast.edges)
-                fcose.MermaidDirectionalEdge(
-                  source: edge.leftId,
-                  sourceDirection: _fcoseDirection(edge.leftDirection),
-                  target: edge.rightId,
-                  targetDirection: _fcoseDirection(edge.rightDirection),
-                ),
-            ],
-            layoutHints: [
-              for (final alignment in ast.alignments)
-                fcose.MermaidAlignmentHint(switch (alignment.direction) {
-                  ArchitectureAlignmentDirection.row => fcose.MermaidAlignmentDirection.row,
-                  ArchitectureAlignmentDirection.column => fcose.MermaidAlignmentDirection.column,
-                }, alignment.members),
-            ],
-          )
-          .runMermaidArchitecture();
-  return {for (final node in nodes) node.id: Point(result.positionOf(node.id).x, result.positionOf(node.id).y)};
 }
 
 List<_NodeSeed> _architectureNodes(ArchitectureAst ast) => [
