@@ -10,6 +10,9 @@ const _radarAxisLabelOffset = 4.0;
 const _radarLegendTextOffset = 16.0;
 const _radarLegendRowHeight = 20.0;
 const _radarLegendPositionRatio = 3 / 4;
+const _radarAxisDirectionTolerance = .01;
+const _radarMinimumNormalizedValue = 0.0;
+const _radarMaximumNormalizedValue = 1.0;
 // Mermaid 11.16 exposes radar.legendBoxSize but still draws 12px swatches.
 const _radarLegendBoxSize = 12.0;
 
@@ -28,38 +31,31 @@ _LayoutResult _layoutRadar(RadarAst ast, _LayoutContext context) {
   final graticule = ast.options.whereType<RadarGraticuleOptionAst>().lastOrNull?.value ?? RadarGraticule.circle;
   final showLegend = ast.options.whereType<RadarShowLegendOptionAst>().lastOrNull?.value ?? true;
   final elements = <SceneElement>[];
-  Point polar(int index, double scale) {
-    final angle = -math.pi / 2 + math.pi * 2 * index / count;
-    return Point(center.x + math.cos(angle) * radius * scale, center.y + math.sin(angle) * radius * scale);
-  }
+  Point radialPoint(int index, double scale) => polarPoint(center, radius * scale, evenlySpacedAngle(index, count));
 
   if (count > 0) {
     for (var ring = 1; ring <= ticks; ring++) {
       final scale = ring / ticks;
-      elements.add(switch (graticule) {
-        RadarGraticule.circle => SceneCircle(
-          id: context.id('radar-graticule'),
+      elements.add(
+        _radarGraticule(
+          context,
+          graticule: graticule,
           center: center,
           radius: radius * scale,
-          fill: SolidFill(_colorWithOpacity(theme.graticuleColor, theme.graticuleOpacity)),
-          stroke: SceneStroke(color: theme.graticuleColor, width: theme.graticuleStrokeWidth),
-          cssClasses: const ['radarGraticule'],
+          points: switch (graticule) {
+            RadarGraticule.circle => const [],
+            RadarGraticule.polygon => [for (var i = 0; i < count; i++) radialPoint(i, scale)],
+          },
+          theme: theme,
         ),
-        RadarGraticule.polygon => ScenePolygon(
-          id: context.id('radar-graticule'),
-          points: [for (var i = 0; i < count; i++) polar(i, scale)],
-          fill: SolidFill(_colorWithOpacity(theme.graticuleColor, theme.graticuleOpacity)),
-          stroke: SceneStroke(color: theme.graticuleColor, width: theme.graticuleStrokeWidth),
-          cssClasses: const ['radarGraticule'],
-        ),
-      });
+      );
     }
   }
   for (var i = 0; i < ast.axes.length; i++) {
-    final angle = -math.pi / 2 + math.pi * 2 * i / count;
+    final angle = evenlySpacedAngle(i, count);
     final cosine = math.cos(angle);
     final sine = math.sin(angle);
-    final end = polar(i, config.axisScaleFactor);
+    final end = radialPoint(i, config.axisScaleFactor);
     elements.add(
       SceneLine(
         id: context.id('radar-axis'),
@@ -70,18 +66,19 @@ _LayoutResult _layoutRadar(RadarAst ast, _LayoutContext context) {
         cssClasses: const ['radarAxisLine'],
       ),
     );
-    final labelPoint = Point(
-      center.x + radius * config.axisLabelFactor * cosine + _radarAxisLabelOffset * cosine,
-      center.y + radius * config.axisLabelFactor * sine + _radarAxisLabelOffset * sine,
-    );
+    final labelPoint = polarPoint(center, radius * config.axisLabelFactor + _radarAxisLabelOffset, angle);
     elements.add(
       _text(
         context,
         ast.axes[i].label ?? ast.axes[i].name,
         labelPoint.x,
         labelPoint.y,
-        anchor: cosine > .01 ? TextAnchor.start : (cosine < -.01 ? TextAnchor.end : TextAnchor.middle),
-        baseline: sine > .01 ? TextBaseline.hanging : (sine < -.01 ? TextBaseline.alphabetic : TextBaseline.middle),
+        anchor: cosine > _radarAxisDirectionTolerance
+            ? TextAnchor.start
+            : (cosine < -_radarAxisDirectionTolerance ? TextAnchor.end : TextAnchor.middle),
+        baseline: sine > _radarAxisDirectionTolerance
+            ? TextBaseline.hanging
+            : (sine < -_radarAxisDirectionTolerance ? TextBaseline.alphabetic : TextBaseline.middle),
         style: labelStyle,
         cssClasses: const ['radarAxisLabel'],
       ),
@@ -98,40 +95,37 @@ _LayoutResult _layoutRadar(RadarAst ast, _LayoutContext context) {
   for (var curveIndex = 0; curveIndex < ast.curves.length; curveIndex++) {
     final curve = ast.curves[curveIndex];
     if (curve.entries.length != count || count == 0) continue;
+    final entriesByAxis = <String, RadarEntryAst>{};
+    for (final entry in curve.entries) {
+      if (entry.axis case final axis?) {
+        entriesByAxis[axis] ??= entry;
+      }
+    }
     final points = <Point>[];
     for (var i = 0; i < ast.axes.length; i++) {
-      final axis = ast.axes[i];
-      final entry =
-          curve.entries.where((entry) => entry.axis == axis.name).firstOrNull ??
-          (i < curve.entries.length ? curve.entries[i] : null);
-      final normalized = entry == null || maxValue == minValue
-          ? 0.0
-          : ((entry.value.toDouble() - minValue) / (maxValue - minValue)).clamp(0, 1).toDouble();
-      points.add(polar(i, normalized));
+      final entry = entriesByAxis[ast.axes[i].name] ?? curve.entries[i];
+      final normalized = maxValue == minValue
+          ? _radarMinimumNormalizedValue
+          : ((entry.value.toDouble() - minValue) / (maxValue - minValue))
+                .clamp(_radarMinimumNormalizedValue, _radarMaximumNormalizedValue)
+                .toDouble();
+      points.add(radialPoint(i, normalized));
     }
     final color = _radarSeriesColor(seriesColors, curveIndex);
     final fill = SolidFill(_colorWithOpacity(color, theme.curveOpacity));
     final stroke = SceneStroke(color: color, width: theme.curveStrokeWidth);
-    elements.add(switch (graticule) {
-      RadarGraticule.circle => ScenePath(
-        id: context.id('radar-curve'),
-        commands: _closedRoundCurve(points, config.curveTension),
-        fill: fill,
-        stroke: stroke,
-        role: SemanticRole.node,
-        cssClasses: ['radarCurve-$curveIndex'],
-        label: curve.label ?? curve.name,
-      ),
-      RadarGraticule.polygon => ScenePolygon(
-        id: context.id('radar-curve'),
+    elements.add(
+      _radarCurve(
+        context,
+        graticule: graticule,
         points: points,
+        tension: config.curveTension,
         fill: fill,
         stroke: stroke,
-        role: SemanticRole.node,
-        cssClasses: ['radarCurve-$curveIndex'],
+        curveIndex: curveIndex,
         label: curve.label ?? curve.name,
       ),
-    });
+    );
   }
   if (showLegend) {
     final legendX = center.x + (config.width / 2 + config.marginRight) * _radarLegendPositionRatio;
@@ -195,6 +189,69 @@ _LayoutResult _layoutRadar(RadarAst ast, _LayoutContext context) {
 
 Color _radarSeriesColor(List<Color> colors, int index) {
   return colors[index % colors.length];
+}
+
+SceneElement _radarGraticule(
+  _LayoutContext context, {
+  required RadarGraticule graticule,
+  required Point center,
+  required double radius,
+  required List<Point> points,
+  required RadarTheme theme,
+}) {
+  final fill = SolidFill(_colorWithOpacity(theme.graticuleColor, theme.graticuleOpacity));
+  final stroke = SceneStroke(color: theme.graticuleColor, width: theme.graticuleStrokeWidth);
+  return switch (graticule) {
+    RadarGraticule.circle => SceneCircle(
+      id: context.id('radar-graticule'),
+      center: center,
+      radius: radius,
+      fill: fill,
+      stroke: stroke,
+      cssClasses: const ['radarGraticule'],
+    ),
+    RadarGraticule.polygon => ScenePolygon(
+      id: context.id('radar-graticule'),
+      points: points,
+      fill: fill,
+      stroke: stroke,
+      cssClasses: const ['radarGraticule'],
+    ),
+  };
+}
+
+SceneElement _radarCurve(
+  _LayoutContext context, {
+  required RadarGraticule graticule,
+  required List<Point> points,
+  required double tension,
+  required SolidFill fill,
+  required SceneStroke stroke,
+  required int curveIndex,
+  required String label,
+}) {
+  final id = context.id('radar-curve');
+  final cssClasses = ['radarCurve-$curveIndex'];
+  return switch (graticule) {
+    RadarGraticule.circle => ScenePath(
+      id: id,
+      commands: _closedRoundCurve(points, tension),
+      fill: fill,
+      stroke: stroke,
+      role: SemanticRole.node,
+      cssClasses: cssClasses,
+      label: label,
+    ),
+    RadarGraticule.polygon => ScenePolygon(
+      id: id,
+      points: points,
+      fill: fill,
+      stroke: stroke,
+      role: SemanticRole.node,
+      cssClasses: cssClasses,
+      label: label,
+    ),
+  };
 }
 
 List<PathCommand> _closedRoundCurve(List<Point> points, double tension) {

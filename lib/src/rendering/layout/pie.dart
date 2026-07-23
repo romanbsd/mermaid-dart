@@ -92,13 +92,13 @@ _LayoutResult _layoutPie(PieAst ast, _LayoutContext context) {
       cssClasses: const ['pieOuterCircle'],
     ),
   );
-  var angle = -math.pi / 2;
+  var angle = topAngleRadians;
   final innerRadius = config.donutHole > 0 && config.donutHole <= _pieMaximumDonutRatio
       ? radius * config.donutHole
       : 0.0;
   for (final entry in rendered) {
     final section = entry.section;
-    final sweep = section.value.toDouble() / arcTotal * math.pi * 2;
+    final sweep = section.value.toDouble() / arcTotal * fullTurnRadians;
     final end = angle + sweep;
     final classes = <String>['pieCircle'];
     final isHighlighted = config.highlightSlice == section.label;
@@ -129,12 +129,13 @@ _LayoutResult _layoutPie(PieAst ast, _LayoutContext context) {
     );
     final middle = angle + sweep / 2;
     final labelRadius = radius * config.textPosition.clamp(0, 1);
+    final labelPosition = polarPoint(center, labelRadius, middle);
     elements.add(
       _text(
         context,
         '${(section.value.toDouble() / total * _percentageScale).round()}%',
-        center.x + math.cos(middle) * labelRadius,
-        center.y + math.sin(middle) * labelRadius,
+        labelPosition.x,
+        labelPosition.y,
         anchor: TextAnchor.middle,
         baseline: TextBaseline.alphabetic,
         style: textStyle,
@@ -197,29 +198,42 @@ Color _pieSectionColor(List<Color> colors, int index) {
 }
 
 List<PathCommand> _pieArcCommands(Point center, double outer, double inner, double start, double end) {
-  Point polar(double radius, double angle) =>
-      Point(center.x + radius * math.cos(angle), center.y + radius * math.sin(angle));
   final sweep = end - start;
-  final full = sweep >= math.pi * 2 - _fullCircleTolerance;
-  final commands = <PathCommand>[MoveTo(polar(outer, start))];
+  final full = sweep >= fullTurnRadians - _fullCircleTolerance;
+  final commands = <PathCommand>[MoveTo(polarPoint(center, outer, start))];
   if (full) {
     commands
-      ..add(ArcTo(radiusX: outer, radiusY: outer, end: polar(outer, start + math.pi)))
-      ..add(ArcTo(radiusX: outer, radiusY: outer, end: polar(outer, end)));
+      ..add(ArcTo(radiusX: outer, radiusY: outer, end: polarPoint(center, outer, start + halfTurnRadians)))
+      ..add(ArcTo(radiusX: outer, radiusY: outer, end: polarPoint(center, outer, end)));
   } else {
-    commands.add(ArcTo(radiusX: outer, radiusY: outer, largeArc: sweep > math.pi, end: polar(outer, end)));
+    commands.add(
+      ArcTo(radiusX: outer, radiusY: outer, largeArc: sweep > halfTurnRadians, end: polarPoint(center, outer, end)),
+    );
   }
   if (inner == 0) {
     commands.add(LineTo(center));
   } else {
-    commands.add(LineTo(polar(inner, end)));
+    commands.add(LineTo(polarPoint(center, inner, end)));
     if (full) {
       commands
-        ..add(ArcTo(radiusX: inner, radiusY: inner, clockwise: false, end: polar(inner, start + math.pi)))
-        ..add(ArcTo(radiusX: inner, radiusY: inner, clockwise: false, end: polar(inner, start)));
+        ..add(
+          ArcTo(
+            radiusX: inner,
+            radiusY: inner,
+            clockwise: false,
+            end: polarPoint(center, inner, start + halfTurnRadians),
+          ),
+        )
+        ..add(ArcTo(radiusX: inner, radiusY: inner, clockwise: false, end: polarPoint(center, inner, start)));
     } else {
       commands.add(
-        ArcTo(radiusX: inner, radiusY: inner, largeArc: sweep > math.pi, clockwise: false, end: polar(inner, start)),
+        ArcTo(
+          radiusX: inner,
+          radiusY: inner,
+          largeArc: sweep > halfTurnRadians,
+          clockwise: false,
+          end: polarPoint(center, inner, start),
+        ),
       );
     }
   }

@@ -1273,6 +1273,55 @@ void main() {
       expect(elements.whereType<SceneRect>().where((element) => element.role == SemanticRole.legend), isEmpty);
     });
 
+    test('radar keeps the first named entry and falls back by axis index', () {
+      final scene = layoutDiagram(
+        const RadarAst(
+          axes: [
+            RadarAxisAst(name: 'a'),
+            RadarAxisAst(name: 'b'),
+            RadarAxisAst(name: 'c'),
+          ],
+          curves: [
+            RadarCurveAst(
+              name: 'duplicates',
+              entries: [
+                RadarEntryAst(axis: 'a', value: 2),
+                RadarEntryAst(axis: 'a', value: 9),
+                RadarEntryAst(axis: 'b', value: 4),
+              ],
+            ),
+          ],
+          options: [
+            RadarMinOptionAst(0),
+            RadarMaxOptionAst(10),
+            RadarShowLegendOptionAst(false),
+            RadarGraticuleOptionAst(RadarGraticule.polygon),
+          ],
+        ),
+        textMeasurer: measurer,
+        options: const RenderOptions(
+          padding: 0,
+          radar: RadarRenderOptions(
+            width: 200,
+            height: 200,
+            marginTop: 0,
+            marginRight: 0,
+            marginBottom: 0,
+            marginLeft: 0,
+            radius: 100,
+          ),
+        ),
+      );
+      final curve = _flatten(
+        scene.elements,
+      ).whereType<ScenePolygon>().singleWhere((element) => element.cssClasses.contains('radarCurve-0'));
+
+      expect(curve.points.first.x, closeTo(100, 1e-9));
+      expect(curve.points.first.y, closeTo(80, 1e-9));
+      expect(curve.points[2].x, closeTo(65.35898384862246, 1e-9));
+      expect(curve.points[2].y, closeTo(120, 1e-9));
+    });
+
     test('radar owns its title position in the top margin', () {
       final scene = layoutDiagram(
         const RadarAst(title: 'Capabilities'),
