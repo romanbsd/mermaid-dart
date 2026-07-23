@@ -12,11 +12,13 @@ const _wardleyLinkLabelOffset = 8.0;
 const _wardleyQuarterTurnDegrees = 90.0;
 const _wardleyHalfTurnDegrees = 180.0;
 const _wardleyAnnotationBoxSafetyWidth = 105.0;
+const _wardleyXAxisLabelPaddingDivisor = 4.0;
+const _wardleyYAxisLabelPaddingDivisor = 3.0;
+const _wardleyStageLabelPaddingDivisor = 1.5;
 
 // Mermaid's fixed map primitives. Values in this group are renderer geometry,
 // not user configuration, and intentionally remain stable when nodeRadius or
 // typography options change.
-const _wardleyCoordinateMaximum = 100.0;
 const _wardleyGridDivisionCount = 4;
 const _wardleyStageLabelFontReduction = 2.0;
 const _wardleyStageBoundaryDashes = <double>[5, 5];
@@ -55,6 +57,106 @@ const _wardleyMarketDotRadiusScale = .7;
 const _wardleyMarketTriangleRadiusScale = 1.2;
 const _wardleyMarketTriangleAngleDivisor = 6.0;
 const _wardleyMarketDotStrokeWidth = 2.0;
+const _wardleyBuildStrategyFill = Color(238, 238, 238);
+const _wardleyBuyStrategyFill = Color(204, 204, 204);
+const _wardleyOutsourceStrategyFill = Color(102, 102, 102);
+
+final class _WardleyTextStyles {
+  factory _WardleyTextStyles(WardleyRenderOptions config, WardleyTheme theme) {
+    SceneTextStyle style({required double size, required Color color, FontWeight weight = FontWeight.normal}) =>
+        SceneTextStyle(fontFamily: _wardleyFontFamily, fontSize: size, weight: weight, color: color);
+
+    return _WardleyTextStyles._(
+      axisLabel: style(size: config.axisFontSize, color: theme.axisTextColor, weight: FontWeight.bold),
+      title: style(
+        size: config.axisFontSize * _wardleyTitleFontScale,
+        color: theme.axisTextColor,
+        weight: FontWeight.bold,
+      ),
+      componentLabel: style(size: config.labelFontSize, color: theme.componentLabelColor),
+      anchorLabel: style(size: config.labelFontSize, color: config.anchorLabelColor, weight: FontWeight.bold),
+      stageLabel: style(size: config.axisFontSize - _wardleyStageLabelFontReduction, color: theme.axisTextColor),
+      annotationNumber: style(
+        size: _wardleyAnnotationNumberFontSize,
+        color: theme.annotationTextColor,
+        weight: FontWeight.bold,
+      ),
+      annotationText: style(size: _wardleyAnnotationTextFontSize, color: theme.annotationTextColor),
+      note: style(size: _wardleyNoteFontSize, color: theme.axisTextColor, weight: FontWeight.bold),
+      markerLabel: style(size: _wardleyMarkerLabelFontSize, color: theme.axisTextColor, weight: FontWeight.bold),
+    );
+  }
+
+  const _WardleyTextStyles._({
+    required this.axisLabel,
+    required this.title,
+    required this.componentLabel,
+    required this.anchorLabel,
+    required this.stageLabel,
+    required this.annotationNumber,
+    required this.annotationText,
+    required this.note,
+    required this.markerLabel,
+  });
+
+  final SceneTextStyle axisLabel;
+  final SceneTextStyle title;
+  final SceneTextStyle componentLabel;
+  final SceneTextStyle anchorLabel;
+  final SceneTextStyle stageLabel;
+  final SceneTextStyle annotationNumber;
+  final SceneTextStyle annotationText;
+  final SceneTextStyle note;
+  final SceneTextStyle markerLabel;
+}
+
+final class _WardleyStrokes {
+  factory _WardleyStrokes(WardleyRenderOptions config, WardleyTheme theme) => _WardleyStrokes._(
+    axis: SceneStroke(color: theme.axisColor),
+    component: SceneStroke(color: theme.componentStroke),
+    stageBoundary: SceneStroke(color: config.stageBoundaryColor, dashes: _wardleyStageBoundaryDashes),
+    grid: SceneStroke(color: theme.gridColor, dashes: _wardleyGridDashes),
+    evolution: SceneStroke(color: theme.evolutionStroke, dashes: _wardleyEvolutionDashes),
+    pipelineEvolution: SceneStroke(color: theme.linkStroke, dashes: _wardleyEvolutionDashes),
+    pipelineBox: SceneStroke(color: theme.componentStroke, width: _wardleyOutlineStrokeWidth),
+    link: SceneStroke(color: theme.linkStroke),
+    dependency: SceneStroke(color: theme.linkStroke, dashes: _wardleyDependencyDashes),
+    buildStrategy: SceneStroke(color: config.buildStrategyStroke),
+    inertia: SceneStroke(color: theme.componentStroke, width: _wardleyInertiaStrokeWidth),
+    annotation: SceneStroke(color: theme.annotationStroke, width: _wardleyOutlineStrokeWidth),
+    marketDot: SceneStroke(color: theme.componentStroke, width: _wardleyMarketDotStrokeWidth),
+  );
+
+  const _WardleyStrokes._({
+    required this.axis,
+    required this.component,
+    required this.stageBoundary,
+    required this.grid,
+    required this.evolution,
+    required this.pipelineEvolution,
+    required this.pipelineBox,
+    required this.link,
+    required this.dependency,
+    required this.buildStrategy,
+    required this.inertia,
+    required this.annotation,
+    required this.marketDot,
+  });
+
+  final SceneStroke axis;
+  final SceneStroke component;
+  final SceneStroke stageBoundary;
+  final SceneStroke grid;
+  final SceneStroke evolution;
+  final SceneStroke pipelineEvolution;
+  final SceneStroke pipelineBox;
+  final SceneStroke link;
+  final SceneStroke dependency;
+  final SceneStroke buildStrategy;
+  final SceneStroke inertia;
+  final SceneStroke annotation;
+  final SceneStroke marketDot;
+}
 
 _LayoutResult _layoutWardley(WardleyAst ast, _LayoutContext context) {
   final config = context.options.optionsFor(const WardleyRenderOptions());
@@ -65,24 +167,17 @@ _LayoutResult _layoutWardley(WardleyAst ast, _LayoutContext context) {
   final chartHeight = height - config.padding * 2;
   final model = buildWardleyModel(ast);
   final elements = <SceneElement>[];
-  final axisStroke = SceneStroke(color: theme.axisColor);
-  final componentStroke = SceneStroke(color: theme.componentStroke);
-  final axisStyle = SceneTextStyle(
-    fontFamily: _wardleyFontFamily,
-    fontSize: config.axisFontSize,
-    color: theme.axisTextColor,
-  );
-  final labelStyle = SceneTextStyle(
-    fontFamily: _wardleyFontFamily,
-    fontSize: config.labelFontSize,
-    color: theme.componentLabelColor,
-  );
-  Point project(double x, double y) => Point(
-    config.padding + x.clamp(0, _wardleyCoordinateMaximum) / _wardleyCoordinateMaximum * chartWidth,
-    height - config.padding - y.clamp(0, _wardleyCoordinateMaximum) / _wardleyCoordinateMaximum * chartHeight,
-  );
+  final textStyles = _WardleyTextStyles(config, theme);
+  final strokes = _WardleyStrokes(config, theme);
+  Point project(double x, double y) =>
+      projectWardleyPoint(x: x, y: y, width: width, height: height, padding: config.padding);
   Point positioned(WardleyPositionAst value) => project(value.x.toDouble(), value.y.toDouble());
-  final positions = <String, Point>{for (final node in model.nodes) node.id: project(node.x, node.y)};
+  final positions = <String, Point>{};
+  final nodesById = <String, WardleyNodeModel>{};
+  for (final node in model.nodes) {
+    positions.putIfAbsent(node.id, () => project(node.x, node.y));
+    nodesById.putIfAbsent(node.id, () => node);
+  }
 
   elements.add(
     SceneRect(
@@ -103,12 +198,7 @@ _LayoutResult _layoutWardley(WardleyAst ast, _LayoutContext context) {
         anchor: TextAnchor.middle,
         baseline: TextBaseline.central,
         role: SemanticRole.title,
-        style: SceneTextStyle(
-          fontFamily: _wardleyFontFamily,
-          fontSize: config.axisFontSize * _wardleyTitleFontScale,
-          weight: FontWeight.bold,
-          color: theme.axisTextColor,
-        ),
+        style: textStyles.title,
         cssClasses: const ['wardley-title'],
       ),
     );
@@ -119,7 +209,7 @@ _LayoutResult _layoutWardley(WardleyAst ast, _LayoutContext context) {
       id: context.id('wardley-axis'),
       start: Point(config.padding, height - config.padding),
       end: Point(width - config.padding, height - config.padding),
-      stroke: axisStroke,
+      stroke: strokes.axis,
       role: SemanticRole.edge,
       cssClasses: const ['wardley-axis'],
     ),
@@ -127,7 +217,7 @@ _LayoutResult _layoutWardley(WardleyAst ast, _LayoutContext context) {
       id: context.id('wardley-axis'),
       start: Point(config.padding, config.padding),
       end: Point(config.padding, height - config.padding),
-      stroke: axisStroke,
+      stroke: strokes.axis,
       role: SemanticRole.edge,
       cssClasses: const ['wardley-axis'],
     ),
@@ -135,19 +225,14 @@ _LayoutResult _layoutWardley(WardleyAst ast, _LayoutContext context) {
       context,
       'Evolution',
       config.padding + chartWidth / 2,
-      height - config.padding / 4,
+      height - config.padding / _wardleyXAxisLabelPaddingDivisor,
       anchor: TextAnchor.middle,
       baseline: TextBaseline.alphabetic,
-      style: SceneTextStyle(
-        fontFamily: axisStyle.fontFamily,
-        fontSize: axisStyle.fontSize,
-        weight: FontWeight.bold,
-        color: axisStyle.color,
-      ),
+      style: textStyles.axisLabel,
       cssClasses: const ['wardley-axis-label', 'wardley-axis-label-x'],
     ),
   ]);
-  final yLabelCenter = Point(config.padding / 3, config.padding + chartHeight / 2);
+  final yLabelCenter = Point(config.padding / _wardleyYAxisLabelPaddingDivisor, config.padding + chartHeight / 2);
   elements.add(
     SceneGroup(
       id: context.id('wardley-y-label'),
@@ -161,12 +246,7 @@ _LayoutResult _layoutWardley(WardleyAst ast, _LayoutContext context) {
           yLabelCenter.y,
           anchor: TextAnchor.middle,
           baseline: TextBaseline.alphabetic,
-          style: SceneTextStyle(
-            fontFamily: axisStyle.fontFamily,
-            fontSize: axisStyle.fontSize,
-            weight: FontWeight.bold,
-            color: axisStyle.color,
-          ),
+          style: textStyles.axisLabel,
           cssClasses: const ['wardley-axis-label', 'wardley-axis-label-y'],
         ),
       ],
@@ -194,7 +274,7 @@ _LayoutResult _layoutWardley(WardleyAst ast, _LayoutContext context) {
           id: context.id('wardley-stage-boundary'),
           start: Point(startX, config.padding),
           end: Point(startX, height - config.padding),
-          stroke: SceneStroke(color: config.stageBoundaryColor, dashes: _wardleyStageBoundaryDashes),
+          stroke: strokes.stageBoundary,
           role: SemanticRole.edge,
           cssClasses: const ['wardley-stage-boundary'],
         ),
@@ -205,14 +285,10 @@ _LayoutResult _layoutWardley(WardleyAst ast, _LayoutContext context) {
         context,
         stage.secondName == null ? stage.name : '${stage.name} / ${stage.secondName}',
         (startX + endX) / 2,
-        height - config.padding / 1.5,
+        height - config.padding / _wardleyStageLabelPaddingDivisor,
         anchor: TextAnchor.middle,
         baseline: TextBaseline.alphabetic,
-        style: SceneTextStyle(
-          fontFamily: axisStyle.fontFamily,
-          fontSize: config.axisFontSize - _wardleyStageLabelFontReduction,
-          color: theme.axisTextColor,
-        ),
+        style: textStyles.stageLabel,
         cssClasses: const ['wardley-stage-label'],
       ),
     );
@@ -227,7 +303,7 @@ _LayoutResult _layoutWardley(WardleyAst ast, _LayoutContext context) {
           id: context.id('wardley-grid'),
           start: Point(config.padding + chartWidth * ratio, config.padding),
           end: Point(config.padding + chartWidth * ratio, height - config.padding),
-          stroke: SceneStroke(color: theme.gridColor, dashes: _wardleyGridDashes),
+          stroke: strokes.grid,
           role: SemanticRole.edge,
           cssClasses: const ['wardley-grid-line'],
         ),
@@ -235,7 +311,7 @@ _LayoutResult _layoutWardley(WardleyAst ast, _LayoutContext context) {
           id: context.id('wardley-grid'),
           start: Point(config.padding, height - config.padding - chartHeight * ratio),
           end: Point(width - config.padding, height - config.padding - chartHeight * ratio),
-          stroke: SceneStroke(color: theme.gridColor, dashes: _wardleyGridDashes),
+          stroke: strokes.grid,
           role: SemanticRole.edge,
           cssClasses: const ['wardley-grid-line'],
         ),
@@ -245,19 +321,15 @@ _LayoutResult _layoutWardley(WardleyAst ast, _LayoutContext context) {
 
   final squareSize = config.nodeRadius * _wardleyPipelineParentSizeScale;
   for (final pipeline in model.pipelines) {
-    final components =
-        pipeline.componentIds
-            .map((id) => model.nodes.firstWhereOrNull((node) => node.id == id))
-            .whereType<WardleyNodeModel>()
-            .toList()
-          ..sort((left, right) => left.x.compareTo(right.x));
+    final components = pipeline.componentIds.map((id) => nodesById[id]).whereType<WardleyNodeModel>().toList()
+      ..sort((left, right) => left.x.compareTo(right.x));
     for (var i = 0; i < components.length - 1; i++) {
       elements.add(
         SceneLine(
           id: context.id('wardley-pipeline-link'),
           start: positions[components[i].id]!,
           end: positions[components[i + 1].id]!,
-          stroke: SceneStroke(color: theme.linkStroke, dashes: _wardleyEvolutionDashes),
+          stroke: strokes.pipelineEvolution,
           role: SemanticRole.edge,
           cssClasses: const ['wardley-pipeline-evolution-link'],
         ),
@@ -286,7 +358,7 @@ _LayoutResult _layoutWardley(WardleyAst ast, _LayoutContext context) {
         radiusX: _wardleyRoundedBoxRadius,
         radiusY: _wardleyRoundedBoxRadius,
         fill: const NoFill(),
-        stroke: SceneStroke(color: theme.componentStroke, width: _wardleyOutlineStrokeWidth),
+        stroke: strokes.pipelineBox,
         role: SemanticRole.group,
         cssClasses: const ['wardley-pipeline-box'],
       ),
@@ -305,8 +377,8 @@ _LayoutResult _layoutWardley(WardleyAst ast, _LayoutContext context) {
     final dy = target.y - source.y;
     final distance = math.sqrt(dx * dx + dy * dy);
     if (distance == 0) continue;
-    final sourceNode = model.nodes.firstWhere((node) => node.id == link.sourceId);
-    final targetNode = model.nodes.firstWhere((node) => node.id == link.targetId);
+    final sourceNode = nodesById[link.sourceId]!;
+    final targetNode = nodesById[link.targetId]!;
     final sourceRadius = sourceNode.isPipelineParent ? squareSize / math.sqrt2 : config.nodeRadius;
     final targetRadius = targetNode.isPipelineParent ? squareSize / math.sqrt2 : config.nodeRadius;
     final start = Point(source.x + dx / distance * sourceRadius, source.y + dy / distance * sourceRadius);
@@ -316,10 +388,7 @@ _LayoutResult _layoutWardley(WardleyAst ast, _LayoutContext context) {
         id: context.id('wardley-link'),
         start: start,
         end: end,
-        stroke: SceneStroke(
-          color: theme.linkStroke,
-          dashes: link.style == WardleyLinkStyle.dashed ? _wardleyDependencyDashes : const [],
-        ),
+        stroke: link.style == WardleyLinkStyle.dashed ? strokes.dependency : strokes.link,
         role: SemanticRole.edge,
         cssClasses: const ['wardley-link'],
         label: link.label,
@@ -370,7 +439,7 @@ _LayoutResult _layoutWardley(WardleyAst ast, _LayoutContext context) {
               labelPoint.y,
               anchor: TextAnchor.middle,
               baseline: TextBaseline.central,
-              style: labelStyle,
+              style: textStyles.componentLabel,
               cssClasses: const ['wardley-link-label'],
             ),
           ],
@@ -395,7 +464,7 @@ _LayoutResult _layoutWardley(WardleyAst ast, _LayoutContext context) {
         id: context.id('wardley-trend'),
         start: origin,
         end: end,
-        stroke: SceneStroke(color: theme.evolutionStroke, dashes: _wardleyEvolutionDashes),
+        stroke: strokes.evolution,
         role: SemanticRole.edge,
         cssClasses: const ['wardley-trend'],
       ),
@@ -419,14 +488,12 @@ _LayoutResult _layoutWardley(WardleyAst ast, _LayoutContext context) {
       switch (strategy) {
         case WardleyStrategy.build || WardleyStrategy.buy || WardleyStrategy.outsource:
           final fill = switch (strategy) {
-            WardleyStrategy.build => const Color(238, 238, 238),
-            WardleyStrategy.buy => const Color(204, 204, 204),
-            WardleyStrategy.outsource => const Color(102, 102, 102),
+            WardleyStrategy.build => _wardleyBuildStrategyFill,
+            WardleyStrategy.buy => _wardleyBuyStrategyFill,
+            WardleyStrategy.outsource => _wardleyOutsourceStrategyFill,
             WardleyStrategy.market => throw StateError('handled separately'),
           };
-          final strategyStroke = strategy == WardleyStrategy.build
-              ? SceneStroke(color: config.buildStrategyStroke)
-              : componentStroke;
+          final strategyStroke = strategy == WardleyStrategy.build ? strokes.buildStrategy : strokes.component;
           elements.add(
             SceneCircle(
               id: context.id('wardley-strategy'),
@@ -439,7 +506,7 @@ _LayoutResult _layoutWardley(WardleyAst ast, _LayoutContext context) {
             ),
           );
         case WardleyStrategy.market:
-          _addWardleyMarket(elements, context, point, config, theme);
+          _addWardleyMarket(elements, context, point, config, theme, strokes);
       }
     }
     if (node.isPipelineParent) {
@@ -448,7 +515,7 @@ _LayoutResult _layoutWardley(WardleyAst ast, _LayoutContext context) {
           id: context.id('wardley-pipeline-parent'),
           bounds: Bounds.fromCenter(point, Size(squareSize, squareSize)),
           fill: SolidFill(theme.componentFill),
-          stroke: componentStroke,
+          stroke: strokes.component,
           role: SemanticRole.node,
           cssClasses: const ['wardley-pipeline-parent'],
           label: node.label,
@@ -461,7 +528,7 @@ _LayoutResult _layoutWardley(WardleyAst ast, _LayoutContext context) {
           center: point,
           radius: config.nodeRadius,
           fill: SolidFill(theme.componentFill),
-          stroke: componentStroke,
+          stroke: strokes.component,
           role: SemanticRole.node,
           cssClasses: const ['wardley-component'],
           label: node.label,
@@ -479,7 +546,7 @@ _LayoutResult _layoutWardley(WardleyAst ast, _LayoutContext context) {
           id: context.id('wardley-inertia'),
           start: Point(point.x + offset, point.y - lineHeight / 2),
           end: Point(point.x + offset, point.y + lineHeight / 2),
-          stroke: SceneStroke(color: theme.componentStroke, width: _wardleyInertiaStrokeWidth),
+          stroke: strokes.inertia,
           role: SemanticRole.annotation,
           cssClasses: const ['wardley-inertia'],
         ),
@@ -500,12 +567,7 @@ _LayoutResult _layoutWardley(WardleyAst ast, _LayoutContext context) {
         labelY,
         anchor: isAnchor ? TextAnchor.middle : TextAnchor.start,
         baseline: isAnchor ? TextBaseline.central : TextBaseline.alphabetic,
-        style: SceneTextStyle(
-          fontFamily: labelStyle.fontFamily,
-          fontSize: labelStyle.fontSize,
-          weight: isAnchor ? FontWeight.bold : FontWeight.normal,
-          color: isAnchor ? config.anchorLabelColor : theme.componentLabelColor,
-        ),
+        style: isAnchor ? textStyles.anchorLabel : textStyles.componentLabel,
         cssClasses: const ['wardley-node-label'],
       ),
     );
@@ -519,7 +581,7 @@ _LayoutResult _layoutWardley(WardleyAst ast, _LayoutContext context) {
         center: point,
         radius: _wardleyAnnotationRadius,
         fill: SolidFill(theme.annotationFill),
-        stroke: SceneStroke(color: theme.annotationStroke, width: _wardleyOutlineStrokeWidth),
+        stroke: strokes.annotation,
         role: SemanticRole.annotation,
         cssClasses: const ['wardley-annotation-circle'],
       ),
@@ -531,12 +593,7 @@ _LayoutResult _layoutWardley(WardleyAst ast, _LayoutContext context) {
         point.x,
         point.y,
         anchor: TextAnchor.middle,
-        style: SceneTextStyle(
-          fontFamily: _wardleyFontFamily,
-          fontSize: _wardleyAnnotationNumberFontSize,
-          weight: FontWeight.bold,
-          color: theme.annotationTextColor,
-        ),
+        style: textStyles.annotationNumber,
         cssClasses: const ['wardley-annotation-number'],
       ),
     );
@@ -545,11 +602,7 @@ _LayoutResult _layoutWardley(WardleyAst ast, _LayoutContext context) {
     final sorted = ast.annotations.where((annotation) => annotation.text.isNotEmpty).toList()
       ..sort((left, right) => left.number.compareTo(right.number));
     if (sorted.isNotEmpty) {
-      final annotationStyle = SceneTextStyle(
-        fontFamily: _wardleyFontFamily,
-        fontSize: _wardleyAnnotationTextFontSize,
-        color: theme.annotationTextColor,
-      );
+      final annotationStyle = textStyles.annotationText;
       final maxWidth = sorted
           .map(
             (annotation) => context.measurer.measure('${annotation.number}. ${annotation.text}', annotationStyle).width,
@@ -574,7 +627,7 @@ _LayoutResult _layoutWardley(WardleyAst ast, _LayoutContext context) {
           radiusX: _wardleyRoundedBoxRadius,
           radiusY: _wardleyRoundedBoxRadius,
           fill: SolidFill(theme.annotationFill),
-          stroke: SceneStroke(color: theme.annotationStroke, width: _wardleyOutlineStrokeWidth),
+          stroke: strokes.annotation,
           role: SemanticRole.annotation,
           cssClasses: const ['wardley-annotations-box'],
         ),
@@ -604,12 +657,7 @@ _LayoutResult _layoutWardley(WardleyAst ast, _LayoutContext context) {
         point.y,
         role: SemanticRole.annotation,
         baseline: TextBaseline.alphabetic,
-        style: SceneTextStyle(
-          fontFamily: _wardleyFontFamily,
-          fontSize: _wardleyNoteFontSize,
-          weight: FontWeight.bold,
-          color: theme.axisTextColor,
-        ),
+        style: textStyles.note,
         cssClasses: const ['wardley-note'],
       ),
     );
@@ -620,9 +668,16 @@ _LayoutResult _layoutWardley(WardleyAst ast, _LayoutContext context) {
     elements.add(
       ScenePath(
         id: context.id('wardley-marker'),
-        commands: _wardleyMarkerCommands(point, right: right),
+        commands: wardleyMarkerCommands(
+          point,
+          right: right,
+          width: _wardleyMarkerWidth,
+          height: _wardleyMarkerHeight,
+          headWidth: _wardleyMarkerHeadWidth,
+          notchDepth: _wardleyMarkerNotchDepth,
+        ),
         fill: const SolidFill(_wardleyMarkerFill),
-        stroke: componentStroke,
+        stroke: strokes.component,
         role: SemanticRole.annotation,
         cssClasses: const ['wardley-marker'],
         label: marker.name,
@@ -636,12 +691,7 @@ _LayoutResult _layoutWardley(WardleyAst ast, _LayoutContext context) {
         point.y + _wardleyMarkerLabelOffset,
         anchor: TextAnchor.middle,
         baseline: TextBaseline.alphabetic,
-        style: SceneTextStyle(
-          fontFamily: _wardleyFontFamily,
-          fontSize: _wardleyMarkerLabelFontSize,
-          weight: FontWeight.bold,
-          color: theme.axisTextColor,
-        ),
+        style: textStyles.markerLabel,
         cssClasses: const ['wardley-marker-label'],
       ),
     );
@@ -672,73 +722,51 @@ void _addWardleyMarket(
   Point center,
   WardleyRenderOptions config,
   WardleyTheme theme,
+  _WardleyStrokes strokes,
 ) {
   final outerRadius = config.nodeRadius * _wardleyStrategyRadiusScale;
   final dotRadius = config.nodeRadius * _wardleyMarketDotRadiusScale;
   final triangleRadius = config.nodeRadius * _wardleyMarketTriangleRadiusScale;
   final triangleAngle = math.pi / _wardleyMarketTriangleAngleDivisor;
-  final left = Point(
-    center.x - triangleRadius * math.cos(triangleAngle),
-    center.y + triangleRadius * math.sin(triangleAngle),
-  );
-  final right = Point(
-    center.x + triangleRadius * math.cos(triangleAngle),
-    center.y + triangleRadius * math.sin(triangleAngle),
-  );
-  final top = Point(center.x, center.y - triangleRadius);
-  final stroke = SceneStroke(color: theme.componentStroke);
+  final triangle = wardleyMarketTriangle(center: center, radius: triangleRadius, angle: triangleAngle);
   elements.add(
     SceneCircle(
       id: context.id('wardley-market'),
       center: center,
       radius: outerRadius,
       fill: SolidFill(theme.componentFill),
-      stroke: stroke,
+      stroke: strokes.component,
       role: SemanticRole.node,
       cssClasses: const ['wardley-market-overlay'],
     ),
   );
-  for (final (start, end) in [(top, left), (left, right), (right, top)]) {
+  for (final (start, end) in [
+    (triangle.top, triangle.left),
+    (triangle.left, triangle.right),
+    (triangle.right, triangle.top),
+  ]) {
     elements.add(
       SceneLine(
         id: context.id('wardley-market-line'),
         start: start,
         end: end,
-        stroke: stroke,
+        stroke: strokes.component,
         role: SemanticRole.node,
         cssClasses: const ['wardley-market-line'],
       ),
     );
   }
-  for (final point in [top, left, right]) {
+  for (final point in [triangle.top, triangle.left, triangle.right]) {
     elements.add(
       SceneCircle(
         id: context.id('wardley-market-dot'),
         center: point,
         radius: dotRadius,
         fill: SolidFill(theme.componentFill),
-        stroke: SceneStroke(color: theme.componentStroke, width: _wardleyMarketDotStrokeWidth),
+        stroke: strokes.marketDot,
         role: SemanticRole.node,
         cssClasses: const ['wardley-market-dot'],
       ),
     );
   }
-}
-
-List<PathCommand> _wardleyMarkerCommands(Point origin, {required bool right}) {
-  final tailX = origin.x + (right ? 0 : _wardleyMarkerWidth);
-  final neckX = origin.x + (right ? _wardleyMarkerWidth - _wardleyMarkerHeadWidth : _wardleyMarkerHeadWidth);
-  final tipX = origin.x + (right ? _wardleyMarkerWidth : 0);
-  final top = origin.y - _wardleyMarkerHeight / 2;
-  final bottom = origin.y + _wardleyMarkerHeight / 2;
-  return [
-    MoveTo(Point(tailX, top)),
-    LineTo(Point(neckX, top)),
-    LineTo(Point(neckX, top - _wardleyMarkerNotchDepth)),
-    LineTo(Point(tipX, origin.y)),
-    LineTo(Point(neckX, bottom + _wardleyMarkerNotchDepth)),
-    LineTo(Point(neckX, bottom)),
-    LineTo(Point(tailX, bottom)),
-    const ClosePath(),
-  ];
 }

@@ -1,6 +1,10 @@
-import 'package:collection/collection.dart';
+import 'dart:math' as math;
 
 import '../../parser/ast.dart';
+import '../scene.dart';
+
+/// Wardley map coordinates are percentages on both axes.
+const wardleyCoordinateMaximum = 100.0;
 
 enum WardleyNodeKind { anchor, component, pipelineComponent }
 
@@ -77,6 +81,59 @@ final class WardleyPipelineModel {
   final List<String> componentIds;
 }
 
+/// Projects Wardley percentage coordinates into a padded scene viewport.
+Point projectWardleyPoint({
+  required double x,
+  required double y,
+  required double width,
+  required double height,
+  required double padding,
+}) {
+  final chartWidth = width - padding * 2;
+  final chartHeight = height - padding * 2;
+  return Point(
+    padding + x.clamp(0, wardleyCoordinateMaximum) / wardleyCoordinateMaximum * chartWidth,
+    height - padding - y.clamp(0, wardleyCoordinateMaximum) / wardleyCoordinateMaximum * chartHeight,
+  );
+}
+
+/// Returns the three vertices used by Mermaid's market strategy symbol.
+({Point top, Point left, Point right}) wardleyMarketTriangle({
+  required Point center,
+  required double radius,
+  required double angle,
+}) => (
+  top: Point(center.x, center.y - radius),
+  left: Point(center.x - radius * math.cos(angle), center.y + radius * math.sin(angle)),
+  right: Point(center.x + radius * math.cos(angle), center.y + radius * math.sin(angle)),
+);
+
+/// Builds Mermaid's typed accelerator or deaccelerator marker path.
+List<PathCommand> wardleyMarkerCommands(
+  Point origin, {
+  required bool right,
+  required double width,
+  required double height,
+  required double headWidth,
+  required double notchDepth,
+}) {
+  final tailX = origin.x + (right ? 0 : width);
+  final neckX = origin.x + (right ? width - headWidth : headWidth);
+  final tipX = origin.x + (right ? width : 0);
+  final top = origin.y - height / 2;
+  final bottom = origin.y + height / 2;
+  return [
+    MoveTo(Point(tailX, top)),
+    LineTo(Point(neckX, top)),
+    LineTo(Point(neckX, top - notchDepth)),
+    LineTo(Point(tipX, origin.y)),
+    LineTo(Point(neckX, bottom + notchDepth)),
+    LineTo(Point(neckX, bottom)),
+    LineTo(Point(tailX, bottom)),
+    const ClosePath(),
+  ];
+}
+
 WardleyModel buildWardleyModel(WardleyAst ast) {
   final nodes = <WardleyNodeModel>[
     for (final anchor in ast.anchors)
@@ -101,15 +158,20 @@ WardleyModel buildWardleyModel(WardleyAst ast) {
       ),
   ];
   final pipelines = <WardleyPipelineModel>[];
+  final nodeIndexesById = <String, int>{};
+  for (final (index, node) in nodes.indexed) {
+    nodeIndexesById.putIfAbsent(node.id, () => index);
+  }
   for (final pipeline in ast.pipelines) {
-    final parentIndex = nodes.indexWhere((node) => node.id == pipeline.parent);
-    if (parentIndex < 0) continue;
+    final parentIndex = nodeIndexesById[pipeline.parent];
+    if (parentIndex == null) continue;
     final parent = nodes[parentIndex];
     nodes[parentIndex] = parent.asPipelineParent();
     final componentIds = <String>[];
     for (final component in pipeline.components) {
       final id = '${pipeline.parent}_${component.name}';
       componentIds.add(id);
+      nodeIndexesById.putIfAbsent(id, () => nodes.length);
       nodes.add(
         WardleyNodeModel(
           id: id,
@@ -125,10 +187,13 @@ WardleyModel buildWardleyModel(WardleyAst ast) {
     pipelines.add(WardleyPipelineModel(parentId: parent.id, componentIds: componentIds));
   }
 
-  String resolve(String name) =>
-      nodes.where((node) => node.id == name).firstOrNull?.id ??
-      nodes.where((node) => node.label == name).firstOrNull?.id ??
-      name;
+  final nodesById = <String, WardleyNodeModel>{};
+  final nodeIdsByLabel = <String, String>{};
+  for (final node in nodes) {
+    nodesById.putIfAbsent(node.id, () => node);
+    nodeIdsByLabel.putIfAbsent(node.label, () => node.id);
+  }
+  String resolve(String name) => nodesById[name]?.id ?? nodeIdsByLabel[name] ?? name;
   final links = [
     for (final link in ast.links)
       WardleyLinkModel(
@@ -141,7 +206,7 @@ WardleyModel buildWardleyModel(WardleyAst ast) {
   ];
   final trends = <WardleyTrendModel>[];
   for (final evolve in ast.evolves) {
-    final node = nodes.where((node) => node.id == resolve(evolve.component)).firstOrNull;
+    final node = nodesById[resolve(evolve.component)];
     if (node != null) {
       trends.add(WardleyTrendModel(nodeId: node.id, targetX: evolve.target.toDouble(), targetY: node.y));
     }
