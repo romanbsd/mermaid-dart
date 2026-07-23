@@ -12,6 +12,7 @@ import 'geometry/git_graph.dart';
 import 'geometry/packet.dart';
 import 'geometry/path_builders.dart';
 import 'geometry/polar.dart';
+import 'geometry/railroad.dart';
 import 'geometry/scene_bounds.dart';
 import 'geometry/treemap.dart';
 import 'geometry/wardley.dart';
