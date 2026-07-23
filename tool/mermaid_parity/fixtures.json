@@ -28,7 +28,12 @@
       "id": "architecture-seed-42",
       "type": "architecture",
       "source": "architecture-beta\ngroup sub1(cloud)[Subscription A]\ngroup vnet1(cloud)[VNet A] in sub1\nservice vm1(server)[VM] in vnet1\ngroup sub2(cloud)[Subscription B]\nservice web(server)[Web App] in sub2\nservice db(database)[Registry] in sub2\nvm1:R --> L:web\nweb:R --> L:db\n",
-      "architectureOptions": { "seed": 42 }
+      "architectureOptions": {
+        "useMaxWidth": false,
+        "useWidth": 900,
+        "fontSize": 14,
+        "seed": 42
+      }
     },
     {
       "id": "architecture-nested-routing",
@@ -191,6 +196,27 @@
       }
     },
     {
+      "id": "git-custom-config",
+      "type": "gitGraph",
+      "source": "gitGraph\ntitle Custom history\ncommit id: \"A\"\nbranch feature\ncommit id: \"B\"\n",
+      "gitGraphOptions": {
+        "useMaxWidth": false,
+        "titleTopMargin": 40,
+        "diagramPadding": 16,
+        "nodeLabel": { "width": 80, "height": 120, "x": -30, "y": 5 },
+        "mainBranchName": "trunk",
+        "mainBranchOrder": 2,
+        "showCommitLabel": false,
+        "showBranches": false,
+        "rotateCommitLabel": false,
+        "parallelCommits": true,
+        "arrowMarkerAbsolute": true
+      },
+      "textMeasurements": {
+        "Custom history": { "width": 119.984375, "height": 21 }
+      }
+    },
+    {
       "id": "git-special-commits",
       "type": "gitGraph",
       "source": "gitGraph\ncommit id: \"base\" type: HIGHLIGHT tag: \"v1\"\nbranch feature\ncheckout feature\ncommit id: \"rev\" type: REVERSE\ncheckout main\ncommit id: \"trunk\"\nmerge feature id: \"merge\" tag: \"release\"\ncherry-pick id: \"rev\"\n",
@@ -252,7 +278,16 @@
       "id": "packet-complex-no-bits",
       "type": "packet",
       "source": "---\ntitle: \"Packet Diagram\"\nconfig:\n  packet:\n    showBits: false\n---\npacket\n0-15: \"Source Port\"\n16-31: \"Destination Port\"\n32-63: \"Sequence Number\"\n64-95: \"Acknowledgment Number\"\n96-99: \"Data Offset\"\n100-105: \"Reserved\"\n106: \"URG\"\n107: \"ACK\"\n108: \"PSH\"\n109: \"RST\"\n110: \"SYN\"\n111: \"FIN\"\n112-127: \"Window\"\n128-143: \"Checksum\"\n144-159: \"Urgent Pointer\"\n160-191: \"(Options and Padding)\"\n192-223: \"data\"\n",
-      "packetOptions": { "showBits": false }
+      "packetOptions": {
+        "useMaxWidth": false,
+        "useWidth": 800,
+        "rowHeight": 40,
+        "bitWidth": 24,
+        "bitsPerRow": 16,
+        "showBits": false,
+        "paddingX": 8,
+        "paddingY": 10
+      }
     },
     {
       "id": "pie-usage",
@@ -505,6 +540,23 @@
       "id": "treemap-products",
       "type": "treemap",
       "source": "treemap\n\"Products\"\n  \"Large\": 3\n  \"Small\": 1\n"
+    },
+    {
+      "id": "treemap-custom-config",
+      "type": "treemap",
+      "source": "treemap\n\"Products\"\n  \"Large\": 3000\n  \"Small\": 1000\n",
+      "treemapOptions": {
+        "useMaxWidth": false,
+        "padding": 4,
+        "diagramPadding": 12,
+        "showValues": true,
+        "nodeWidth": 80,
+        "nodeHeight": 55,
+        "borderWidth": 2,
+        "valueFontSize": 16,
+        "labelFontSize": 18,
+        "valueFormat": "$0,0"
+      }
     },
     {
       "id": "treemap-nested-styled",

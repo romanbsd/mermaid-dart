@@ -2,6 +2,10 @@ part of '../layout.dart';
 
 // Mermaid treemap renderer constants from renderer.ts. These values describe
 // visible typography and spacing rather than the configurable D3 tile padding.
+// Mermaid also uses the section padding as a scale factor for nodeWidth and
+// nodeHeight when deriving the fixed layout canvas.
+const _treemapSectionInnerPadding = 10.0;
+const _treemapSectionHeaderHeight = 25.0;
 const _treemapTitleHeight = 30.0;
 const _treemapSectionLabelInset = 6.0;
 const _treemapSectionValueInset = 10.0;
@@ -75,8 +79,8 @@ _LayoutResult _layoutTreemap(TreemapAst ast, _LayoutContext context) {
       ? _complexTreemapLabels
       : _simpleTreemapLabels;
   final titleHeight = ast.title == null ? 0.0 : _treemapTitleHeight;
-  final width = config.width;
-  final height = config.height;
+  final width = config.nodeWidth * _treemapSectionInnerPadding;
+  final height = config.nodeHeight * _treemapSectionInnerPadding;
   final elements = <SceneElement>[];
   SceneText? titleElement;
   if (ast.title case final title?) {
@@ -225,15 +229,15 @@ _LayoutResult _layoutTreemap(TreemapAst ast, _LayoutContext context) {
   void layoutChildren(_TreemapLayoutNode parent, Bounds parentBounds, int depth) {
     if (parent.children.isEmpty) return;
     final inner = Bounds(
-      left: parentBounds.left + config.sectionPadding,
-      top: parentBounds.top + config.sectionHeaderHeight + config.sectionPadding,
-      width: math.max(0, parentBounds.width - config.sectionPadding * 2),
-      height: math.max(0, parentBounds.height - config.sectionHeaderHeight - config.sectionPadding * 2),
+      left: parentBounds.left + _treemapSectionInnerPadding,
+      top: parentBounds.top + _treemapSectionHeaderHeight + _treemapSectionInnerPadding,
+      width: math.max(0, parentBounds.width - _treemapSectionInnerPadding * 2),
+      height: math.max(0, parentBounds.height - _treemapSectionHeaderHeight - _treemapSectionInnerPadding * 2),
     );
     final tiles = squarifyTreemap(
       [for (final child in parent.children) TreemapItem(child.value, child)],
       inner,
-      innerPadding: config.innerPadding,
+      innerPadding: config.padding,
     );
     for (var i = 0; i < tiles.length; i++) {
       final tile = tiles[i];
@@ -271,7 +275,7 @@ _LayoutResult _layoutTreemap(TreemapAst ast, _LayoutContext context) {
           context,
           child.label,
           bounds.left + _treemapSectionLabelInset,
-          bounds.top + config.sectionHeaderHeight / 2,
+          bounds.top + _treemapSectionHeaderHeight / 2,
           style: SceneTextStyle(
             fontFamily: context.options.theme.fontFamily,
             fontSize: _treemapSectionLabelFontSize,
@@ -287,7 +291,7 @@ _LayoutResult _layoutTreemap(TreemapAst ast, _LayoutContext context) {
             context,
             _formatTreemapValue(child.value, config.valueFormat),
             bounds.right - _treemapSectionValueInset,
-            bounds.top + config.sectionHeaderHeight / 2,
+            bounds.top + _treemapSectionHeaderHeight / 2,
             anchor: TextAnchor.end,
             style: SceneTextStyle(
               fontFamily: context.options.theme.fontFamily,

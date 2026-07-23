@@ -13,6 +13,16 @@ void main() {
       expect(options.seed, 1);
     });
 
+    test('architecture config font size affects layout but rendered labels use the theme font size', () {
+      final scene = layoutDiagram(
+        parse(DiagramType.architecture, 'architecture-beta\nservice api(server)[API]\n'),
+        options: const RenderOptions(architecture: ArchitectureRenderOptions(fontSize: 14)),
+      );
+      final label = _flatten(scene.elements).whereType<SceneText>().singleWhere((element) => element.text == 'API');
+
+      expect(label.style.fontSize, const MermaidTheme().fontSize);
+    });
+
     test('event modeling config controls viewport padding while rowHeight remains compatibility-only', () {
       const ast = EventModelingAst(
         frames: [
@@ -306,6 +316,44 @@ cell:B --> T:rowspan
       expect(root.findAllElements('text').single.getAttribute('x'), '10');
     });
 
+    test('Mermaid useMaxWidth controls SVG sizing without changing scene geometry', () {
+      final ast = parse(DiagramType.packet, 'packet-beta\n0-7: "Header"\n');
+      final responsiveScene = layoutDiagram(ast);
+      final fixedScene = layoutDiagram(
+        ast,
+        options: const RenderOptions(packet: PacketRenderOptions(useMaxWidth: false)),
+      );
+
+      expect(responsiveScene.viewport, fixedScene.viewport);
+      expect(responsiveScene.widthPolicy, SceneWidthPolicy.fitContainer);
+      expect(fixedScene.widthPolicy, SceneWidthPolicy.fixed);
+
+      final responsiveRoot = XmlDocument.parse(renderSvg(responsiveScene)).rootElement;
+      expect(responsiveRoot.getAttribute('width'), '100%');
+      expect(responsiveRoot.getAttribute('height'), isNull);
+      expect(
+        responsiveRoot.getAttribute('style'),
+        'max-width: ${responsiveScene.viewport.width.toStringAsFixed(0)}px;',
+      );
+
+      final fixedRoot = XmlDocument.parse(renderSvg(fixedScene)).rootElement;
+      expect(fixedRoot.getAttribute('width'), fixedScene.viewport.width.toStringAsFixed(0));
+      expect(fixedRoot.getAttribute('height'), fixedScene.viewport.height.toStringAsFixed(0));
+    });
+
+    test('SVG width mode can override the scene sizing policy', () {
+      final scene = layoutDiagram(
+        const PacketAst(),
+        options: const RenderOptions(packet: PacketRenderOptions(useMaxWidth: false)),
+      );
+      final root = XmlDocument.parse(
+        renderSvg(scene, options: const SvgRenderOptions(widthMode: SvgWidthMode.fitContainer)),
+      ).rootElement;
+
+      expect(root.getAttribute('width'), '100%');
+      expect(root.getAttribute('height'), isNull);
+    });
+
     test('architecture titles preserve geometry and accessibility metadata', () {
       const source = '''architecture-beta
 title Simple Architecture Diagram
@@ -552,6 +600,52 @@ rule <- "a" b? ;
       expect(rectangles.where((element) => element.role == SemanticRole.group), hasLength(2));
       expect(rectangles.where((element) => element.role == SemanticRole.node), hasLength(2));
       expect(rectangles.every((element) => element.bounds.width >= 0 && element.bounds.height >= 0), isTrue);
+    });
+
+    test('treemap options follow Mermaid canvas, padding, and value configuration', () {
+      final scene = layoutDiagram(
+        const TreemapAst(
+          rows: [
+            TreemapNodeRowAst(indent: 0, item: TreemapSectionAst(name: 'Products')),
+            TreemapNodeRowAst(indent: 1, item: TreemapLeafAst(name: 'Large', value: 3000)),
+            TreemapNodeRowAst(indent: 1, item: TreemapLeafAst(name: 'Small', value: 1000)),
+          ],
+        ),
+        options: const RenderOptions(
+          padding: 0,
+          treemap: TreemapRenderOptions(
+            useMaxWidth: false,
+            padding: 4,
+            diagramPadding: 12,
+            nodeWidth: 80,
+            nodeHeight: 55,
+            borderWidth: 2,
+            valueFontSize: 16,
+            labelFontSize: 18,
+            valueFormat: TreemapValueFormat.currencyGrouped,
+          ),
+        ),
+      );
+      final elements = _flatten(scene.elements).toList();
+      final values = elements
+          .whereType<SceneText>()
+          .where((element) => element.cssClasses.any((name) => name.contains('Value')))
+          .map((element) => element.text)
+          .toSet();
+      final leaves = elements
+          .whereType<SceneRect>()
+          .where((element) => element.cssClasses.contains('treemapLeaf'))
+          .map((element) => element.bounds)
+          .toList();
+
+      expect(scene.bounds, const Bounds(left: 10, top: 35, width: 780, height: 505));
+      expect(scene.viewport, scene.bounds.expand(12));
+      expect(values, containsAll({'\$4,000', '\$3,000', '\$1,000'}));
+      expect(leaves, hasLength(2));
+      final gap = leaves[0].right <= leaves[1].left
+          ? leaves[1].left - leaves[0].right
+          : leaves[1].top - leaves[0].bottom;
+      expect(gap, closeTo(4, 1e-9));
     });
   });
 }

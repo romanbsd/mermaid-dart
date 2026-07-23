@@ -10,14 +10,24 @@ String renderSvg(DiagramScene scene, {SvgRenderOptions options = const SvgRender
   }
   final title = scene.accessibilityTitle ?? scene.title;
   final description = scene.accessibilityDescription ?? scene.description;
+  final widthPolicy = switch (options.widthMode) {
+    SvgWidthMode.scene => scene.widthPolicy,
+    SvgWidthMode.fixed => SceneWidthPolicy.fixed,
+    SvgWidthMode.fitContainer => SceneWidthPolicy.fitContainer,
+  };
   builder.element(
     'svg',
     namespaceUris: const {null: 'http://www.w3.org/2000/svg'},
     attributes: {
       if (options.rootId != null) 'id': options.rootId!,
       'viewBox': _bounds(scene.viewport),
-      'width': _number(scene.viewport.width),
-      'height': _number(scene.viewport.height),
+      if (widthPolicy == SceneWidthPolicy.fitContainer) ...{
+        'width': '100%',
+        'style': 'max-width: ${_number(scene.viewport.width)}px;',
+      } else ...{
+        'width': _number(scene.viewport.width),
+        'height': _number(scene.viewport.height),
+      },
       'role': 'img',
       if (title != null) 'aria-labelledby': 'diagram-title',
       if (description != null) 'aria-describedby': 'diagram-description',

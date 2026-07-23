@@ -77,16 +77,24 @@ final class ParityFixture {
     const architectureDefaults = ArchitectureRenderOptions();
     const cynefinDefaults = CynefinRenderOptions();
     const eventModelingDefaults = EventModelingRenderOptions();
+    const gitGraphDefaults = GitGraphRenderOptions();
     const packetDefaults = PacketRenderOptions();
     const pieDefaults = PieRenderOptions();
     const radarDefaults = RadarRenderOptions();
     const railroadDefaults = RailroadRenderOptions();
     const treeViewDefaults = TreeViewRenderOptions();
+    const treemapDefaults = TreemapRenderOptions();
     const wardleyDefaults = WardleyRenderOptions();
     return RenderOptions(
       padding: 0,
       architecture: ArchitectureRenderOptions(
+        useWidth: _configuredUseWidth(diagramConfig, architectureDefaults),
+        useMaxWidth: _configuredUseMaxWidth(diagramConfig, architectureDefaults),
+        padding: (diagramConfig['padding'] as num?)?.toDouble() ?? architectureDefaults.padding,
+        iconSize: (diagramConfig['iconSize'] as num?)?.toDouble() ?? architectureDefaults.iconSize,
+        fontSize: (diagramConfig['fontSize'] as num?)?.toDouble() ?? architectureDefaults.fontSize,
         randomize: diagramConfig['randomize'] as bool? ?? architectureDefaults.randomize,
+        nodeSeparation: (diagramConfig['nodeSeparation'] as num?)?.toDouble() ?? architectureDefaults.nodeSeparation,
         idealEdgeLengthMultiplier:
             (diagramConfig['idealEdgeLengthMultiplier'] as num?)?.toDouble() ??
             architectureDefaults.idealEdgeLengthMultiplier,
@@ -95,6 +103,8 @@ final class ParityFixture {
         seed: diagramConfig['seed'] as int? ?? architectureDefaults.seed,
       ),
       cynefin: CynefinRenderOptions(
+        useWidth: _configuredUseWidth(diagramConfig, cynefinDefaults),
+        useMaxWidth: _configuredUseMaxWidth(diagramConfig, cynefinDefaults),
         width: (diagramConfig['width'] as num?)?.toDouble() ?? cynefinDefaults.width,
         height: (diagramConfig['height'] as num?)?.toDouble() ?? cynefinDefaults.height,
         padding: (diagramConfig['padding'] as num?)?.toDouble() ?? cynefinDefaults.padding,
@@ -105,11 +115,38 @@ final class ParityFixture {
         seed: diagramConfig['seed'] as int? ?? cynefinDefaults.seed,
       ),
       eventModeling: EventModelingRenderOptions(
+        useWidth: _configuredUseWidth(diagramConfig, eventModelingDefaults),
+        useMaxWidth: _configuredUseMaxWidth(diagramConfig, eventModelingDefaults),
         padding: (diagramConfig['padding'] as num?)?.toDouble() ?? eventModelingDefaults.padding,
         rowHeight: (diagramConfig['rowHeight'] as num?)?.toDouble() ?? eventModelingDefaults.rowHeight,
       ),
-      packet: PacketRenderOptions(showBits: diagramConfig['showBits'] as bool? ?? packetDefaults.showBits),
+      gitGraph: GitGraphRenderOptions(
+        useWidth: _configuredUseWidth(diagramConfig, gitGraphDefaults),
+        useMaxWidth: _configuredUseMaxWidth(diagramConfig, gitGraphDefaults),
+        titleTopMargin: (diagramConfig['titleTopMargin'] as num?)?.toDouble() ?? gitGraphDefaults.titleTopMargin,
+        diagramPadding: (diagramConfig['diagramPadding'] as num?)?.toDouble() ?? gitGraphDefaults.diagramPadding,
+        nodeLabel: _gitGraphNodeLabelOptions(diagramConfig['nodeLabel'], gitGraphDefaults.nodeLabel),
+        mainBranchName: diagramConfig['mainBranchName'] as String? ?? gitGraphDefaults.mainBranchName,
+        mainBranchOrder: (diagramConfig['mainBranchOrder'] as num?)?.toDouble() ?? gitGraphDefaults.mainBranchOrder,
+        showCommitLabel: diagramConfig['showCommitLabel'] as bool? ?? gitGraphDefaults.showCommitLabel,
+        showBranches: diagramConfig['showBranches'] as bool? ?? gitGraphDefaults.showBranches,
+        rotateCommitLabel: diagramConfig['rotateCommitLabel'] as bool? ?? gitGraphDefaults.rotateCommitLabel,
+        parallelCommits: diagramConfig['parallelCommits'] as bool? ?? gitGraphDefaults.parallelCommits,
+        arrowMarkerAbsolute: diagramConfig['arrowMarkerAbsolute'] as bool? ?? gitGraphDefaults.arrowMarkerAbsolute,
+      ),
+      packet: PacketRenderOptions(
+        useWidth: _configuredUseWidth(diagramConfig, packetDefaults),
+        useMaxWidth: _configuredUseMaxWidth(diagramConfig, packetDefaults),
+        rowHeight: (diagramConfig['rowHeight'] as num?)?.toDouble() ?? packetDefaults.rowHeight,
+        bitWidth: (diagramConfig['bitWidth'] as num?)?.toDouble() ?? packetDefaults.bitWidth,
+        bitsPerRow: diagramConfig['bitsPerRow'] as int? ?? packetDefaults.bitsPerRow,
+        showBits: diagramConfig['showBits'] as bool? ?? packetDefaults.showBits,
+        paddingX: (diagramConfig['paddingX'] as num?)?.toDouble() ?? packetDefaults.paddingX,
+        paddingY: (diagramConfig['paddingY'] as num?)?.toDouble() ?? packetDefaults.paddingY,
+      ),
       pie: PieRenderOptions(
+        useWidth: _configuredUseWidth(diagramConfig, pieDefaults),
+        useMaxWidth: _configuredUseMaxWidth(diagramConfig, pieDefaults),
         donutHole: (diagramConfig['donutHole'] as num?)?.toDouble() ?? pieDefaults.donutHole,
         highlightSlice: diagramConfig['highlightSlice'] as String? ?? pieDefaults.highlightSlice,
         textPosition: (diagramConfig['textPosition'] as num?)?.toDouble() ?? pieDefaults.textPosition,
@@ -119,6 +156,8 @@ final class ParityFixture {
         },
       ),
       radar: RadarRenderOptions(
+        useWidth: _configuredUseWidth(diagramConfig, radarDefaults),
+        useMaxWidth: _configuredUseMaxWidth(diagramConfig, radarDefaults),
         width: (diagramConfig['width'] as num?)?.toDouble() ?? radarDefaults.width,
         height: (diagramConfig['height'] as num?)?.toDouble() ?? radarDefaults.height,
         marginTop: (diagramConfig['marginTop'] as num?)?.toDouble() ?? radarDefaults.marginTop,
@@ -130,6 +169,8 @@ final class ParityFixture {
         curveTension: (diagramConfig['curveTension'] as num?)?.toDouble() ?? radarDefaults.curveTension,
       ),
       railroad: RailroadRenderOptions(
+        useWidth: _configuredUseWidth(diagramConfig, railroadDefaults),
+        useMaxWidth: _configuredUseMaxWidth(diagramConfig, railroadDefaults),
         compactMode: diagramConfig['compactMode'] as bool? ?? railroadDefaults.compactMode,
         padding: (diagramConfig['padding'] as num?)?.toDouble() ?? railroadDefaults.padding,
         verticalSeparation:
@@ -162,6 +203,8 @@ final class ParityFixture {
         ruleNameColor: _configuredColor(diagramConfig, 'ruleNameColor', railroadDefaults.ruleNameColor),
       ),
       treeView: TreeViewRenderOptions(
+        useWidth: _configuredUseWidth(diagramConfig, treeViewDefaults),
+        useMaxWidth: _configuredUseMaxWidth(diagramConfig, treeViewDefaults),
         rowIndent: (diagramConfig['rowIndent'] as num?)?.toDouble() ?? treeViewDefaults.rowIndent,
         paddingX: (diagramConfig['paddingX'] as num?)?.toDouble() ?? treeViewDefaults.paddingX,
         paddingY: (diagramConfig['paddingY'] as num?)?.toDouble() ?? treeViewDefaults.paddingY,
@@ -171,7 +214,25 @@ final class ParityFixture {
         filenameIcons: diagramConfig['filenameIcons'] as Map<String, String>? ?? treeViewDefaults.filenameIcons,
         extensionIcons: diagramConfig['extensionIcons'] as Map<String, String>? ?? treeViewDefaults.extensionIcons,
       ),
+      treemap: TreemapRenderOptions(
+        useWidth: _configuredUseWidth(diagramConfig, treemapDefaults),
+        useMaxWidth: _configuredUseMaxWidth(diagramConfig, treemapDefaults),
+        padding: (diagramConfig['padding'] as num?)?.toDouble() ?? treemapDefaults.padding,
+        diagramPadding: (diagramConfig['diagramPadding'] as num?)?.toDouble() ?? treemapDefaults.diagramPadding,
+        showValues: diagramConfig['showValues'] as bool? ?? treemapDefaults.showValues,
+        nodeWidth: (diagramConfig['nodeWidth'] as num?)?.toDouble() ?? treemapDefaults.nodeWidth,
+        nodeHeight: (diagramConfig['nodeHeight'] as num?)?.toDouble() ?? treemapDefaults.nodeHeight,
+        borderWidth: (diagramConfig['borderWidth'] as num?)?.toDouble() ?? treemapDefaults.borderWidth,
+        valueFontSize: (diagramConfig['valueFontSize'] as num?)?.toDouble() ?? treemapDefaults.valueFontSize,
+        labelFontSize: (diagramConfig['labelFontSize'] as num?)?.toDouble() ?? treemapDefaults.labelFontSize,
+        valueFormat: switch (diagramConfig['valueFormat']) {
+          final String value => _treemapValueFormat(value),
+          _ => treemapDefaults.valueFormat,
+        },
+      ),
       wardley: WardleyRenderOptions(
+        useWidth: _configuredUseWidth(diagramConfig, wardleyDefaults),
+        useMaxWidth: _configuredUseMaxWidth(diagramConfig, wardleyDefaults),
         width: (diagramConfig['width'] as num?)?.toDouble() ?? wardleyDefaults.width,
         height: (diagramConfig['height'] as num?)?.toDouble() ?? wardleyDefaults.height,
         padding: (diagramConfig['padding'] as num?)?.toDouble() ?? wardleyDefaults.padding,
@@ -185,10 +246,17 @@ final class ParityFixture {
   }
 }
 
+double? _configuredUseWidth(Map<String, Object> config, DiagramRenderOptions defaults) =>
+    (config['useWidth'] as num?)?.toDouble() ?? defaults.useWidth;
+
+bool? _configuredUseMaxWidth(Map<String, Object> config, DiagramRenderOptions defaults) =>
+    config['useMaxWidth'] as bool? ?? defaults.useMaxWidth;
+
 const _fixtureOptionNames = {
   DiagramType.architecture: 'architectureOptions',
   DiagramType.cynefin: 'cynefinOptions',
   DiagramType.eventModeling: 'eventModelingOptions',
+  DiagramType.gitGraph: 'gitGraphOptions',
   DiagramType.packet: 'packetOptions',
   DiagramType.pie: 'pieOptions',
   DiagramType.radar: 'radarOptions',
@@ -197,6 +265,7 @@ const _fixtureOptionNames = {
   DiagramType.railroadEbnf: 'railroadOptions',
   DiagramType.railroadPeg: 'railroadOptions',
   DiagramType.treeView: 'treeViewOptions',
+  DiagramType.treemap: 'treemapOptions',
   DiagramType.wardley: 'wardleyOptions',
 };
 
@@ -204,6 +273,7 @@ const _mermaidConfigNames = {
   DiagramType.architecture: 'architecture',
   DiagramType.cynefin: 'cynefin',
   DiagramType.eventModeling: 'eventmodeling',
+  DiagramType.gitGraph: 'gitGraph',
   DiagramType.packet: 'packet',
   DiagramType.pie: 'pie',
   DiagramType.radar: 'radar',
@@ -212,7 +282,16 @@ const _mermaidConfigNames = {
   DiagramType.railroadEbnf: 'railroad',
   DiagramType.railroadPeg: 'railroad',
   DiagramType.treeView: 'treeView',
+  DiagramType.treemap: 'treemap',
   DiagramType.wardley: 'wardley-beta',
+};
+
+const _baseDiagramConfigKeys = {'useWidth', 'useMaxWidth'};
+
+Object? _baseDiagramConfigValue(String key, Object? value) => switch ((key, value)) {
+  ('useWidth', final num option) when option > 0 => option,
+  ('useMaxWidth', final bool option) => option,
+  _ => null,
 };
 
 Map<String, Object> _diagramConfig(Map<Object?, Object?> json, DiagramType type) {
@@ -227,6 +306,7 @@ Map<String, Object> _diagramConfig(Map<Object?, Object?> json, DiagramType type)
     DiagramType.architecture => _architectureConfig(value),
     DiagramType.cynefin => _cynefinConfig(value),
     DiagramType.eventModeling => _eventModelingConfig(value),
+    DiagramType.gitGraph => _gitGraphConfig(value),
     DiagramType.packet => _packetConfig(value),
     DiagramType.pie => _pieConfig(value),
     DiagramType.radar => _radarConfig(value),
@@ -235,12 +315,14 @@ Map<String, Object> _diagramConfig(Map<Object?, Object?> json, DiagramType type)
     DiagramType.railroadEbnf ||
     DiagramType.railroadPeg => _railroadConfig(value),
     DiagramType.treeView => _treeViewConfig(value),
+    DiagramType.treemap => _treemapConfig(value),
     DiagramType.wardley => _wardleyConfig(value),
     _ => throw FormatException('$expected are not supported for ${type.name} fixtures'),
   };
 }
 
 const _railroadConfigKeys = {
+  ..._baseDiagramConfigKeys,
   'compactMode',
   'padding',
   'verticalSeparation',
@@ -292,26 +374,28 @@ Map<String, Object> _railroadConfig(Object? value) {
   }
   final result = <String, Object>{};
   for (final MapEntry(:key, :value) in value.entries) {
-    final valid = switch ((key, value)) {
-      ('compactMode' || 'showMarkers', final bool option) => option,
-      (
-        'padding' ||
-            'verticalSeparation' ||
-            'horizontalSeparation' ||
-            'arcRadius' ||
-            'fontSize' ||
-            'strokeWidth' ||
-            'markerRadius',
-        final num option,
-      )
-          when option >= 0 =>
-        option,
-      ('fontFamily', final String option) when option.trim().isNotEmpty => option.trim(),
-      (final String colorKey, final String option)
-          when _railroadColorConfigKeys.contains(colorKey) && _fixtureHexColor.hasMatch(option.trim()) =>
-        option.trim(),
-      _ => null,
-    };
+    final valid = _baseDiagramConfigKeys.contains(key)
+        ? _baseDiagramConfigValue(key, value)
+        : switch ((key, value)) {
+            ('compactMode' || 'showMarkers', final bool option) => option,
+            (
+              'padding' ||
+                  'verticalSeparation' ||
+                  'horizontalSeparation' ||
+                  'arcRadius' ||
+                  'fontSize' ||
+                  'strokeWidth' ||
+                  'markerRadius',
+              final num option,
+            )
+                when option >= 0 =>
+              option,
+            ('fontFamily', final String option) when option.trim().isNotEmpty => option.trim(),
+            (final String colorKey, final String option)
+                when _railroadColorConfigKeys.contains(colorKey) && _fixtureHexColor.hasMatch(option.trim()) =>
+              option.trim(),
+            _ => null,
+          };
     if (valid == null) {
       throw const FormatException('Invalid fixture railroadOptions');
     }
@@ -331,7 +415,129 @@ Color _fixtureColor(String value) {
   return Color.fromHex(expanded);
 }
 
-const _cynefinConfigKeys = {'width', 'height', 'padding', 'showDomainDescriptions', 'boundaryAmplitude', 'seed'};
+const _treemapConfigKeys = {
+  ..._baseDiagramConfigKeys,
+  'padding',
+  'diagramPadding',
+  'showValues',
+  'nodeWidth',
+  'nodeHeight',
+  'borderWidth',
+  'valueFontSize',
+  'labelFontSize',
+  'valueFormat',
+};
+const _treemapValueFormatNames = {'', ',', r'$0,0'};
+
+Map<String, Object> _treemapConfig(Object? value) {
+  if (value is! Map<String, Object?> || value.isEmpty || value.keys.any((key) => !_treemapConfigKeys.contains(key))) {
+    throw const FormatException('Invalid fixture treemapOptions');
+  }
+  final result = <String, Object>{};
+  for (final MapEntry(:key, :value) in value.entries) {
+    final valid = _baseDiagramConfigKeys.contains(key)
+        ? _baseDiagramConfigValue(key, value)
+        : switch ((key, value)) {
+            ('showValues', final bool option) => option,
+            ('nodeWidth' || 'nodeHeight', final num option) when option > 0 => option,
+            ('padding' || 'diagramPadding' || 'borderWidth' || 'valueFontSize' || 'labelFontSize', final num option)
+                when option >= 0 =>
+              option,
+            ('valueFormat', final String option) when _treemapValueFormatNames.contains(option) => option,
+            _ => null,
+          };
+    if (valid == null) {
+      throw const FormatException('Invalid fixture treemapOptions');
+    }
+    result[key] = valid;
+  }
+  return Map.unmodifiable(result);
+}
+
+TreemapValueFormat _treemapValueFormat(String value) => switch (value) {
+  '' => TreemapValueFormat.plain,
+  ',' => TreemapValueFormat.grouped,
+  r'$0,0' => TreemapValueFormat.currencyGrouped,
+  _ => throw FormatException('Unknown treemap value format: $value'),
+};
+
+const _gitGraphConfigKeys = {
+  ..._baseDiagramConfigKeys,
+  'titleTopMargin',
+  'diagramPadding',
+  'nodeLabel',
+  'mainBranchName',
+  'mainBranchOrder',
+  'showCommitLabel',
+  'showBranches',
+  'rotateCommitLabel',
+  'parallelCommits',
+  'arrowMarkerAbsolute',
+};
+const _gitGraphNodeLabelKeys = {'width', 'height', 'x', 'y'};
+
+Map<String, Object> _gitGraphConfig(Object? value) {
+  if (value is! Map<String, Object?> || value.isEmpty || value.keys.any((key) => !_gitGraphConfigKeys.contains(key))) {
+    throw const FormatException('Invalid fixture gitGraphOptions');
+  }
+  final result = <String, Object>{};
+  for (final MapEntry(:key, :value) in value.entries) {
+    final valid = _baseDiagramConfigKeys.contains(key)
+        ? _baseDiagramConfigValue(key, value)
+        : switch ((key, value)) {
+            (
+              'showCommitLabel' || 'showBranches' || 'rotateCommitLabel' || 'parallelCommits' || 'arrowMarkerAbsolute',
+              final bool option,
+            ) =>
+              option,
+            ('titleTopMargin' || 'diagramPadding', final num option) when option >= 0 => option,
+            ('mainBranchOrder', final num option) => option,
+            ('mainBranchName', final String option) when option.trim().isNotEmpty => option.trim(),
+            ('nodeLabel', final Map<String, Object?> option) => _gitGraphNodeLabelConfig(option),
+            _ => null,
+          };
+    if (valid == null) {
+      throw const FormatException('Invalid fixture gitGraphOptions');
+    }
+    result[key] = valid;
+  }
+  return Map.unmodifiable(result);
+}
+
+Map<String, Object>? _gitGraphNodeLabelConfig(Map<String, Object?> value) {
+  if (value.isEmpty || value.keys.any((key) => !_gitGraphNodeLabelKeys.contains(key))) return null;
+  final result = <String, Object>{};
+  for (final MapEntry(:key, :value) in value.entries) {
+    final valid = switch ((key, value)) {
+      ('width' || 'height', final num option) when option > 0 => option,
+      ('x' || 'y', final num option) => option,
+      _ => null,
+    };
+    if (valid == null) return null;
+    result[key] = valid;
+  }
+  return Map.unmodifiable(result);
+}
+
+GitGraphNodeLabelOptions _gitGraphNodeLabelOptions(Object? value, GitGraphNodeLabelOptions defaults) {
+  if (value is! Map<String, Object>) return defaults;
+  return GitGraphNodeLabelOptions(
+    width: (value['width'] as num?)?.toDouble() ?? defaults.width,
+    height: (value['height'] as num?)?.toDouble() ?? defaults.height,
+    x: (value['x'] as num?)?.toDouble() ?? defaults.x,
+    y: (value['y'] as num?)?.toDouble() ?? defaults.y,
+  );
+}
+
+const _cynefinConfigKeys = {
+  ..._baseDiagramConfigKeys,
+  'width',
+  'height',
+  'padding',
+  'showDomainDescriptions',
+  'boundaryAmplitude',
+  'seed',
+};
 
 Map<String, Object> _cynefinConfig(Object? value) {
   if (value is! Map<String, Object?> || value.isEmpty || value.keys.any((key) => !_cynefinConfigKeys.contains(key))) {
@@ -339,13 +545,15 @@ Map<String, Object> _cynefinConfig(Object? value) {
   }
   final result = <String, Object>{};
   for (final MapEntry(:key, :value) in value.entries) {
-    final valid = switch ((key, value)) {
-      ('width' || 'height', final num option) when option > 0 => option,
-      ('padding' || 'boundaryAmplitude', final num option) when option >= 0 => option,
-      ('showDomainDescriptions', final bool option) => option,
-      ('seed', final int option) => option,
-      _ => null,
-    };
+    final valid = _baseDiagramConfigKeys.contains(key)
+        ? _baseDiagramConfigValue(key, value)
+        : switch ((key, value)) {
+            ('width' || 'height', final num option) when option > 0 => option,
+            ('padding' || 'boundaryAmplitude', final num option) when option >= 0 => option,
+            ('showDomainDescriptions', final bool option) => option,
+            ('seed', final int option) => option,
+            _ => null,
+          };
     if (valid == null) {
       throw const FormatException('Invalid fixture cynefinOptions');
     }
@@ -355,6 +563,7 @@ Map<String, Object> _cynefinConfig(Object? value) {
 }
 
 const _wardleyConfigKeys = {
+  ..._baseDiagramConfigKeys,
   'width',
   'height',
   'padding',
@@ -371,13 +580,16 @@ Map<String, Object> _wardleyConfig(Object? value) {
   }
   final result = <String, Object>{};
   for (final MapEntry(:key, :value) in value.entries) {
-    final valid = switch ((key, value)) {
-      ('width' || 'height' || 'nodeRadius' || 'axisFontSize' || 'labelFontSize', final num option) when option > 0 =>
-        option,
-      ('padding' || 'nodeLabelOffset', final num option) when option >= 0 => option,
-      ('showGrid', final bool option) => option,
-      _ => null,
-    };
+    final valid = _baseDiagramConfigKeys.contains(key)
+        ? _baseDiagramConfigValue(key, value)
+        : switch ((key, value)) {
+            ('width' || 'height' || 'nodeRadius' || 'axisFontSize' || 'labelFontSize', final num option)
+                when option > 0 =>
+              option,
+            ('padding' || 'nodeLabelOffset', final num option) when option >= 0 => option,
+            ('showGrid', final bool option) => option,
+            _ => null,
+          };
     if (valid == null) {
       throw const FormatException('Invalid fixture wardleyOptions');
     }
@@ -389,16 +601,18 @@ Map<String, Object> _wardleyConfig(Object? value) {
 Map<String, Object> _eventModelingConfig(Object? value) {
   if (value is! Map<String, Object?> ||
       value.isEmpty ||
-      value.keys.any((key) => key != 'padding' && key != 'rowHeight')) {
+      value.keys.any((key) => !_baseDiagramConfigKeys.contains(key) && key != 'padding' && key != 'rowHeight')) {
     throw const FormatException('Invalid fixture eventModelingOptions');
   }
   final result = <String, Object>{};
   for (final MapEntry(:key, :value) in value.entries) {
-    final valid = switch ((key, value)) {
-      ('padding', final num option) when option >= 0 => option,
-      ('rowHeight', final num option) when option > 0 => option,
-      _ => null,
-    };
+    final valid = _baseDiagramConfigKeys.contains(key)
+        ? _baseDiagramConfigValue(key, value)
+        : switch ((key, value)) {
+            ('padding', final num option) when option >= 0 => option,
+            ('rowHeight', final num option) when option > 0 => option,
+            _ => null,
+          };
     if (valid == null) {
       throw const FormatException('Invalid fixture eventModelingOptions');
     }
@@ -408,6 +622,7 @@ Map<String, Object> _eventModelingConfig(Object? value) {
 }
 
 const _treeViewConfigKeys = {
+  ..._baseDiagramConfigKeys,
   'rowIndent',
   'paddingX',
   'paddingY',
@@ -424,14 +639,16 @@ Map<String, Object> _treeViewConfig(Object? value) {
   }
   final result = <String, Object>{};
   for (final MapEntry(:key, :value) in value.entries) {
-    final valid = switch ((key, value)) {
-      ('rowIndent' || 'paddingX' || 'paddingY', final num option) when option >= 0 => option,
-      ('lineThickness', final num option) when option > 0 => option,
-      ('showIcons', final bool option) => option,
-      ('defaultIconPack', final String option) => option,
-      ('filenameIcons' || 'extensionIcons', final Map<String, Object?> option) => _treeViewIconMap(option),
-      _ => null,
-    };
+    final valid = _baseDiagramConfigKeys.contains(key)
+        ? _baseDiagramConfigValue(key, value)
+        : switch ((key, value)) {
+            ('rowIndent' || 'paddingX' || 'paddingY', final num option) when option >= 0 => option,
+            ('lineThickness', final num option) when option > 0 => option,
+            ('showIcons', final bool option) => option,
+            ('defaultIconPack', final String option) => option,
+            ('filenameIcons' || 'extensionIcons', final Map<String, Object?> option) => _treeViewIconMap(option),
+            _ => null,
+          };
     if (valid == null) {
       throw const FormatException('Invalid fixture treeViewOptions');
     }
@@ -454,6 +671,7 @@ Map<String, String>? _treeViewIconMap(Map<String, Object?> value) {
 }
 
 const _radarConfigKeys = {
+  ..._baseDiagramConfigKeys,
   'width',
   'height',
   'marginTop',
@@ -471,20 +689,34 @@ Map<String, Object> _radarConfig(Object? value) {
   }
   final result = <String, Object>{};
   for (final MapEntry(:key, :value) in value.entries) {
-    final valid = switch ((key, value)) {
-      ('width' || 'height', final num option) when option > 0 => option,
-      ('marginTop' || 'marginRight' || 'marginBottom' || 'marginLeft', final num option) when option >= 0 => option,
-      ('axisScaleFactor' || 'axisLabelFactor', final num option) when option > 0 => option,
-      ('curveTension', final num option) when option >= 0 && option <= 1 => option,
-      _ => null,
-    };
+    final valid = _baseDiagramConfigKeys.contains(key)
+        ? _baseDiagramConfigValue(key, value)
+        : switch ((key, value)) {
+            ('width' || 'height', final num option) when option > 0 => option,
+            ('marginTop' || 'marginRight' || 'marginBottom' || 'marginLeft', final num option) when option >= 0 =>
+              option,
+            ('axisScaleFactor' || 'axisLabelFactor', final num option) when option > 0 => option,
+            ('curveTension', final num option) when option >= 0 && option <= 1 => option,
+            _ => null,
+          };
     if (valid == null) throw const FormatException('Invalid fixture radarOptions');
     result[key] = valid;
   }
   return Map.unmodifiable(result);
 }
 
-const _architectureConfigKeys = {'randomize', 'idealEdgeLengthMultiplier', 'edgeElasticity', 'numIter', 'seed'};
+const _architectureConfigKeys = {
+  ..._baseDiagramConfigKeys,
+  'padding',
+  'iconSize',
+  'fontSize',
+  'randomize',
+  'nodeSeparation',
+  'idealEdgeLengthMultiplier',
+  'edgeElasticity',
+  'numIter',
+  'seed',
+};
 
 Map<String, Object> _architectureConfig(Object? value) {
   if (value == null) return const {};
@@ -493,14 +725,18 @@ Map<String, Object> _architectureConfig(Object? value) {
   }
   final result = <String, Object>{};
   for (final MapEntry(:key, :value) in value.entries) {
-    final valid = switch ((key, value)) {
-      ('randomize', final bool option) => option,
-      ('idealEdgeLengthMultiplier', final num option) when option > 0 => option,
-      ('edgeElasticity', final num option) when option >= 0 && option <= 1 => option,
-      ('numIter', final int option) when option > 0 => option,
-      ('seed', final int option) => option,
-      _ => null,
-    };
+    final valid = _baseDiagramConfigKeys.contains(key)
+        ? _baseDiagramConfigValue(key, value)
+        : switch ((key, value)) {
+            ('padding', final num option) when option >= 0 => option,
+            ('iconSize' || 'fontSize' || 'nodeSeparation', final num option) when option > 0 => option,
+            ('randomize', final bool option) => option,
+            ('idealEdgeLengthMultiplier', final num option) when option > 0 => option,
+            ('edgeElasticity', final num option) when option >= 0 && option <= 1 => option,
+            ('numIter', final int option) when option > 0 => option,
+            ('seed', final int option) => option,
+            _ => null,
+          };
     if (valid == null) throw const FormatException('Invalid fixture architectureOptions');
     result[key] = valid;
   }
@@ -514,20 +750,22 @@ Map<String, Object> _pieConfig(Object? value) {
   }
   final result = <String, Object>{};
   for (final MapEntry(:key, :value) in value.entries) {
-    final valid = switch ((key, value)) {
-      ('donutHole', final num option) => option,
-      ('highlightSlice', final String option) when option.isNotEmpty => option,
-      ('textPosition', final num option) => option,
-      ('legendPosition', final String option) when _pieLegendPositionNames.contains(option) => option,
-      _ => null,
-    };
+    final valid = _baseDiagramConfigKeys.contains(key)
+        ? _baseDiagramConfigValue(key, value)
+        : switch ((key, value)) {
+            ('donutHole', final num option) => option,
+            ('highlightSlice', final String option) when option.isNotEmpty => option,
+            ('textPosition', final num option) => option,
+            ('legendPosition', final String option) when _pieLegendPositionNames.contains(option) => option,
+            _ => null,
+          };
     if (valid == null) throw const FormatException('Invalid fixture pieOptions');
     result[key] = valid;
   }
   return Map.unmodifiable(result);
 }
 
-const _pieConfigKeys = {'donutHole', 'highlightSlice', 'textPosition', 'legendPosition'};
+const _pieConfigKeys = {..._baseDiagramConfigKeys, 'donutHole', 'highlightSlice', 'textPosition', 'legendPosition'};
 const _pieLegendPositionNames = {'top', 'bottom', 'left', 'right', 'center'};
 
 PieLegendPosition _pieLegendPosition(String value) => switch (value) {
@@ -540,10 +778,25 @@ PieLegendPosition _pieLegendPosition(String value) => switch (value) {
 };
 
 Map<String, Object> _packetConfig(Object? value) {
-  if (value case {'showBits': final bool showBits} when value.length == 1) {
-    return Map.unmodifiable({'showBits': showBits});
+  const keys = {..._baseDiagramConfigKeys, 'rowHeight', 'bitWidth', 'bitsPerRow', 'showBits', 'paddingX', 'paddingY'};
+  if (value is! Map<String, Object?> || value.isEmpty || value.keys.any((key) => !keys.contains(key))) {
+    throw const FormatException('Invalid fixture packetOptions');
   }
-  throw const FormatException('Invalid fixture packetOptions');
+  final result = <String, Object>{};
+  for (final MapEntry(:key, :value) in value.entries) {
+    final valid = _baseDiagramConfigKeys.contains(key)
+        ? _baseDiagramConfigValue(key, value)
+        : switch ((key, value)) {
+            ('rowHeight' || 'bitWidth', final num option) when option > 0 => option,
+            ('bitsPerRow', final int option) when option > 0 => option,
+            ('showBits', final bool option) => option,
+            ('paddingX' || 'paddingY', final num option) when option >= 0 => option,
+            _ => null,
+          };
+    if (valid == null) throw const FormatException('Invalid fixture packetOptions');
+    result[key] = valid;
+  }
+  return Map.unmodifiable(result);
 }
 
 Size _textMeasurement(Object? json) {

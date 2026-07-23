@@ -11,8 +11,8 @@ void main() {
     final manifest = ParityManifest.load(File('tool/mermaid_parity/fixtures.json'));
 
     expect(manifest.mermaidVersion, '11.16.0');
-    expect(manifest.fixtures.map((fixture) => fixture.id), hasLength(58));
-    expect(manifest.fixtures.map((fixture) => fixture.id).toSet(), hasLength(58));
+    expect(manifest.fixtures.map((fixture) => fixture.id), hasLength(60));
+    expect(manifest.fixtures.map((fixture) => fixture.id).toSet(), hasLength(60));
     expect(
       manifest.fixtures.map((fixture) => fixture.id),
       containsAll([
@@ -41,6 +41,7 @@ void main() {
         'git-special-commits',
         'git-special-commits-tb',
         'git-special-commits-bt',
+        'git-custom-config',
         'tree-highlighted-styles',
         'tree-custom-layout',
         'tree-automatic-icons',
@@ -58,6 +59,7 @@ void main() {
         'railroad-ebnf-sequence',
         'railroad-ebnf-choice-repetition',
         'railroad-peg-sequence',
+        'treemap-custom-config',
         'wardley-strategies',
         'wardley-custom-config',
       ]),
@@ -518,6 +520,35 @@ void main() {
   });
 
   test('fixture architecture options are positive and architecture-only', () {
+    const options = {
+      'padding': 32,
+      'iconSize': 64,
+      'fontSize': 14,
+      'randomize': false,
+      'nodeSeparation': 60,
+      'idealEdgeLengthMultiplier': 1.2,
+      'edgeElasticity': 0.35,
+      'numIter': 1500,
+      'seed': 42,
+    };
+    final configured = ParityFixture.fromJson({
+      'id': 'configured',
+      'type': 'architecture',
+      'source': 'architecture-beta',
+      'architectureOptions': options,
+    });
+
+    expect(configured.renderOptions.architecture.padding, 32);
+    expect(configured.renderOptions.architecture.iconSize, 64);
+    expect(configured.renderOptions.architecture.fontSize, 14);
+    expect(configured.renderOptions.architecture.randomize, isFalse);
+    expect(configured.renderOptions.architecture.nodeSeparation, 60);
+    expect(configured.renderOptions.architecture.idealEdgeLengthMultiplier, 1.2);
+    expect(configured.renderOptions.architecture.edgeElasticity, 0.35);
+    expect(configured.renderOptions.architecture.numIter, 1500);
+    expect(configured.renderOptions.architecture.seed, 42);
+    expect(configured.mermaidConfig, {'architecture': options});
+
     Object fixture(String type, num multiplier) => {
       'id': 'configured',
       'type': type,
@@ -583,17 +614,28 @@ void main() {
   });
 
   test('fixture packet options are typed and packet-only', () {
+    const options = {
+      'rowHeight': 40,
+      'bitWidth': 24,
+      'bitsPerRow': 16,
+      'showBits': false,
+      'paddingX': 8,
+      'paddingY': 10,
+    };
     final configured = ParityFixture.fromJson({
       'id': 'configured',
       'type': 'packet',
       'source': 'packet\n0: "Flag"',
-      'packetOptions': {'showBits': false},
+      'packetOptions': options,
     });
 
+    expect(configured.renderOptions.packet.rowHeight, 40);
+    expect(configured.renderOptions.packet.bitWidth, 24);
+    expect(configured.renderOptions.packet.bitsPerRow, 16);
     expect(configured.renderOptions.packet.showBits, isFalse);
-    expect(configured.mermaidConfig, {
-      'packet': {'showBits': false},
-    });
+    expect(configured.renderOptions.packet.paddingX, 8);
+    expect(configured.renderOptions.packet.paddingY, 10);
+    expect(configured.mermaidConfig, {'packet': options});
     expect(
       () => ParityFixture.fromJson({
         'id': 'configured',
@@ -609,6 +651,15 @@ void main() {
         'type': 'packet',
         'source': 'packet\n0: "Flag"',
         'packetOptions': {'showBits': 0},
+      }),
+      throwsFormatException,
+    );
+    expect(
+      () => ParityFixture.fromJson({
+        'id': 'configured',
+        'type': 'packet',
+        'source': 'packet\n0: "Flag"',
+        'packetOptions': {'bitsPerRow': 0},
       }),
       throwsFormatException,
     );
@@ -836,6 +887,178 @@ void main() {
         'type': 'wardley',
         'source': 'wardley-beta\ncomponent API [0.6, 0.5]\n',
         'wardleyOptions': {'nodeRadius': 0},
+      }),
+      throwsFormatException,
+    );
+  });
+
+  test('fixture Treemap options are typed and Treemap-only', () {
+    const options = {
+      'useMaxWidth': false,
+      'padding': 4,
+      'diagramPadding': 12,
+      'showValues': true,
+      'nodeWidth': 80,
+      'nodeHeight': 55,
+      'borderWidth': 2,
+      'valueFontSize': 16,
+      'labelFontSize': 18,
+      'valueFormat': r'$0,0',
+    };
+    final configured = ParityFixture.fromJson({
+      'id': 'configured',
+      'type': 'treemap',
+      'source': 'treemap\n"Products"\n  "Large": 3000\n  "Small": 1000\n',
+      'treemapOptions': options,
+    });
+
+    expect(configured.renderOptions.treemap.useMaxWidth, isFalse);
+    expect(configured.renderOptions.treemap.padding, 4);
+    expect(configured.renderOptions.treemap.diagramPadding, 12);
+    expect(configured.renderOptions.treemap.showValues, isTrue);
+    expect(configured.renderOptions.treemap.nodeWidth, 80);
+    expect(configured.renderOptions.treemap.nodeHeight, 55);
+    expect(configured.renderOptions.treemap.borderWidth, 2);
+    expect(configured.renderOptions.treemap.valueFontSize, 16);
+    expect(configured.renderOptions.treemap.labelFontSize, 18);
+    expect(configured.renderOptions.treemap.valueFormat, TreemapValueFormat.currencyGrouped);
+    expect(configured.mermaidConfig, {'treemap': options});
+    expect(
+      () => ParityFixture.fromJson({
+        'id': 'configured',
+        'type': 'info',
+        'source': 'info',
+        'treemapOptions': {'padding': 4},
+      }),
+      throwsFormatException,
+    );
+    expect(
+      () => ParityFixture.fromJson({
+        'id': 'configured',
+        'type': 'treemap',
+        'source': 'treemap\n"A": 1\n',
+        'treemapOptions': {'nodeWidth': 0},
+      }),
+      throwsFormatException,
+    );
+    expect(
+      () => ParityFixture.fromJson({
+        'id': 'configured',
+        'type': 'treemap',
+        'source': 'treemap\n"A": 1\n',
+        'treemapOptions': {'valueFormat': 'unsupported'},
+      }),
+      throwsFormatException,
+    );
+  });
+
+  test('fixture Git Graph options are typed and Git-Graph-only', () {
+    const options = {
+      'useMaxWidth': false,
+      'titleTopMargin': 40,
+      'diagramPadding': 16,
+      'nodeLabel': {'width': 80, 'height': 120, 'x': -30, 'y': 5},
+      'mainBranchName': 'trunk',
+      'mainBranchOrder': 2,
+      'showCommitLabel': false,
+      'showBranches': false,
+      'rotateCommitLabel': false,
+      'parallelCommits': true,
+      'arrowMarkerAbsolute': true,
+    };
+    final configured = ParityFixture.fromJson({
+      'id': 'configured',
+      'type': 'gitGraph',
+      'source': 'gitGraph\ncommit id: "A"\nbranch feature\ncommit id: "B"\n',
+      'gitGraphOptions': options,
+    });
+
+    expect(configured.renderOptions.gitGraph.useMaxWidth, isFalse);
+    expect(configured.renderOptions.gitGraph.titleTopMargin, 40);
+    expect(configured.renderOptions.gitGraph.diagramPadding, 16);
+    expect(
+      configured.renderOptions.gitGraph.nodeLabel,
+      const GitGraphNodeLabelOptions(width: 80, height: 120, x: -30, y: 5),
+    );
+    expect(configured.renderOptions.gitGraph.mainBranchName, 'trunk');
+    expect(configured.renderOptions.gitGraph.mainBranchOrder, 2);
+    expect(configured.renderOptions.gitGraph.showCommitLabel, isFalse);
+    expect(configured.renderOptions.gitGraph.showBranches, isFalse);
+    expect(configured.renderOptions.gitGraph.rotateCommitLabel, isFalse);
+    expect(configured.renderOptions.gitGraph.parallelCommits, isTrue);
+    expect(configured.renderOptions.gitGraph.arrowMarkerAbsolute, isTrue);
+    expect(configured.mermaidConfig, {'gitGraph': options});
+    expect(
+      () => ParityFixture.fromJson({
+        'id': 'configured',
+        'type': 'info',
+        'source': 'info',
+        'gitGraphOptions': {'showBranches': false},
+      }),
+      throwsFormatException,
+    );
+    expect(
+      () => ParityFixture.fromJson({
+        'id': 'configured',
+        'type': 'gitGraph',
+        'source': 'gitGraph\ncommit\n',
+        'gitGraphOptions': {
+          'nodeLabel': {'width': 0, 'height': 100, 'x': -25, 'y': 0},
+        },
+      }),
+      throwsFormatException,
+    );
+  });
+
+  test('all configurable renderers expose Mermaid base diagram options', () {
+    const cases = [
+      (type: 'architecture', options: 'architectureOptions', config: 'architecture'),
+      (type: 'cynefin', options: 'cynefinOptions', config: 'cynefin'),
+      (type: 'eventmodeling', options: 'eventModelingOptions', config: 'eventmodeling'),
+      (type: 'gitGraph', options: 'gitGraphOptions', config: 'gitGraph'),
+      (type: 'packet', options: 'packetOptions', config: 'packet'),
+      (type: 'pie', options: 'pieOptions', config: 'pie'),
+      (type: 'radar', options: 'radarOptions', config: 'radar'),
+      (type: 'railroad', options: 'railroadOptions', config: 'railroad'),
+      (type: 'treeView', options: 'treeViewOptions', config: 'treeView'),
+      (type: 'treemap', options: 'treemapOptions', config: 'treemap'),
+      (type: 'wardley', options: 'wardleyOptions', config: 'wardley-beta'),
+    ];
+    const baseOptions = {'useMaxWidth': false, 'useWidth': 777};
+
+    for (final entry in cases) {
+      final fixture = ParityFixture.fromJson({
+        'id': 'configured-${entry.type}',
+        'type': entry.type,
+        'source': 'placeholder',
+        entry.options: baseOptions,
+      });
+      final options = switch (fixture.type) {
+        DiagramType.architecture => fixture.renderOptions.architecture,
+        DiagramType.cynefin => fixture.renderOptions.cynefin,
+        DiagramType.eventModeling => fixture.renderOptions.eventModeling,
+        DiagramType.gitGraph => fixture.renderOptions.gitGraph,
+        DiagramType.packet => fixture.renderOptions.packet,
+        DiagramType.pie => fixture.renderOptions.pie,
+        DiagramType.radar => fixture.renderOptions.radar,
+        DiagramType.railroad => fixture.renderOptions.railroad,
+        DiagramType.treeView => fixture.renderOptions.treeView,
+        DiagramType.treemap => fixture.renderOptions.treemap,
+        DiagramType.wardley => fixture.renderOptions.wardley,
+        _ => throw StateError('Unexpected configurable type ${fixture.type}'),
+      };
+
+      expect(options.useMaxWidth, isFalse, reason: entry.type);
+      expect(options.useWidth, 777, reason: entry.type);
+      expect(fixture.mermaidConfig, {entry.config: baseOptions});
+    }
+
+    expect(
+      () => ParityFixture.fromJson({
+        'id': 'invalid-width',
+        'type': 'pie',
+        'source': 'placeholder',
+        'pieOptions': {'useWidth': 0},
       }),
       throwsFormatException,
     );

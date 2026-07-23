@@ -470,10 +470,20 @@ final class SceneClip with _SceneValue {
   List<Object?> get fields => [id, path];
 }
 
+/// Backend-neutral policy for sizing a scene within its host container.
+enum SceneWidthPolicy {
+  /// Preserve the scene viewport's intrinsic width and height.
+  fixed,
+
+  /// Fill the available width without growing beyond the intrinsic viewport.
+  fitContainer,
+}
+
 final class DiagramScene with _SceneValue {
   const DiagramScene({
     required this.viewport,
     required this.bounds,
+    this.widthPolicy = SceneWidthPolicy.fixed,
     this.background = const Color(255, 255, 255, 0),
     this.title,
     this.description,
@@ -484,6 +494,7 @@ final class DiagramScene with _SceneValue {
   });
   final Bounds viewport;
   final Bounds bounds;
+  final SceneWidthPolicy widthPolicy;
   final Color background;
   final String? title;
   final String? description;
@@ -495,6 +506,7 @@ final class DiagramScene with _SceneValue {
   List<Object?> get fields => [
     viewport,
     bounds,
+    widthPolicy,
     background,
     title,
     description,

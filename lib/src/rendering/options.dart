@@ -74,11 +74,24 @@ final class MermaidTheme {
 enum DiagramDirection { leftToRight, topToBottom }
 
 sealed class DiagramRenderOptions {
-  const DiagramRenderOptions();
+  const DiagramRenderOptions({this.useWidth, this.useMaxWidth});
+
+  /// Optional fixed width inherited from Mermaid's base diagram config.
+  ///
+  /// Most current renderers retain this for compatibility without consulting
+  /// it during layout.
+  final double? useWidth;
+
+  /// Whether an SVG backend should scale to the available container width.
+  ///
+  /// This backend concern never changes the geometry stored in a scene.
+  final bool? useMaxWidth;
 }
 
 final class ArchitectureRenderOptions extends DiagramRenderOptions {
   const ArchitectureRenderOptions({
+    super.useWidth,
+    super.useMaxWidth = true,
     this.padding = 40,
     this.iconSize = 80,
     this.fontSize = 16,
@@ -94,6 +107,11 @@ final class ArchitectureRenderOptions extends DiagramRenderOptions {
 
   final double padding;
   final double iconSize;
+
+  /// Font size used by Mermaid's architecture graph layout.
+  ///
+  /// Mermaid's SVG drawing layer renders labels with the global theme font
+  /// size, while fCoSE still uses this value when sizing positioned nodes.
   final double fontSize;
 
   /// Whether fCoSE-compatible layouts randomize their initial node positions.
@@ -117,6 +135,8 @@ final class ArchitectureRenderOptions extends DiagramRenderOptions {
 
 final class CynefinRenderOptions extends DiagramRenderOptions {
   const CynefinRenderOptions({
+    super.useWidth,
+    super.useMaxWidth = true,
     this.width = 800,
     this.height = 600,
     this.padding = 40,
@@ -163,6 +183,8 @@ final class InfoRenderOptions extends DiagramRenderOptions {
 
 final class EventModelingRenderOptions extends DiagramRenderOptions {
   const EventModelingRenderOptions({
+    super.useWidth,
+    super.useMaxWidth = true,
     this.padding = 30,
     this.rowHeight = 32,
     this.swimlaneMinHeight = 70,
@@ -200,7 +222,52 @@ final class EventModelingRenderOptions extends DiagramRenderOptions {
   final double textMaxWidth;
 }
 
+/// Mermaid's legacy Git Graph node-label configuration.
+///
+/// Mermaid 11.16 retains this object in its public configuration but its Git
+/// renderer does not currently consult it.
+final class GitGraphNodeLabelOptions {
+  const GitGraphNodeLabelOptions({
+    this.width = defaultWidth,
+    this.height = defaultHeight,
+    this.x = defaultX,
+    this.y = defaultY,
+  });
+
+  static const defaultWidth = 75.0;
+  static const defaultHeight = 100.0;
+  static const defaultX = -25.0;
+  static const defaultY = 0.0;
+
+  final double width;
+  final double height;
+  final double x;
+  final double y;
+
+  @override
+  bool operator ==(Object other) =>
+      other is GitGraphNodeLabelOptions &&
+      width == other.width &&
+      height == other.height &&
+      x == other.x &&
+      y == other.y;
+
+  @override
+  int get hashCode => Object.hash(width, height, x, y);
+}
+
 final class GitGraphRenderOptions extends DiagramRenderOptions {
+  static const defaultUseMaxWidth = true;
+  static const defaultTitleTopMargin = 25.0;
+  static const defaultDiagramPadding = 8.0;
+  static const defaultMainBranchName = 'main';
+  static const defaultMainBranchOrder = 0.0;
+  static const defaultShowCommitLabel = true;
+  static const defaultShowBranches = true;
+  static const defaultRotateCommitLabel = true;
+  static const defaultParallelCommits = false;
+  static const defaultArrowMarkerAbsolute = false;
+
   /// Mermaid's default-theme `git0` through `git7` colors after its standard
   /// light-theme darkening step.
   static const defaultBranchColors = [
@@ -240,14 +307,18 @@ final class GitGraphRenderOptions extends DiagramRenderOptions {
   ];
 
   const GitGraphRenderOptions({
-    this.titleTopMargin = 25,
-    this.diagramPadding = 8,
-    this.mainBranchName = 'main',
-    this.mainBranchOrder = 0,
-    this.showCommitLabel = true,
-    this.showBranches = true,
-    this.rotateCommitLabel = true,
-    this.parallelCommits = false,
+    super.useWidth,
+    super.useMaxWidth = defaultUseMaxWidth,
+    this.titleTopMargin = defaultTitleTopMargin,
+    this.diagramPadding = defaultDiagramPadding,
+    this.nodeLabel = const GitGraphNodeLabelOptions(),
+    this.mainBranchName = defaultMainBranchName,
+    this.mainBranchOrder = defaultMainBranchOrder,
+    this.showCommitLabel = defaultShowCommitLabel,
+    this.showBranches = defaultShowBranches,
+    this.rotateCommitLabel = defaultRotateCommitLabel,
+    this.parallelCommits = defaultParallelCommits,
+    this.arrowMarkerAbsolute = defaultArrowMarkerAbsolute,
     this.commitRadius = 10,
     this.branchSpacing = 50,
     this.commitSpacing = 50,
@@ -272,12 +343,22 @@ final class GitGraphRenderOptions extends DiagramRenderOptions {
 
   final double titleTopMargin;
   final double diagramPadding;
+
+  /// Compatibility-only in Mermaid 11.16; see [GitGraphNodeLabelOptions].
+  final GitGraphNodeLabelOptions nodeLabel;
+
   final String mainBranchName;
   final double mainBranchOrder;
   final bool showCommitLabel;
   final bool showBranches;
   final bool rotateCommitLabel;
   final bool parallelCommits;
+
+  /// Compatibility-only in Mermaid 11.16's Git renderer.
+  ///
+  /// Git Graph draws typed paths directly and does not emit SVG arrow markers.
+  final bool arrowMarkerAbsolute;
+
   final double commitRadius;
   final double branchSpacing;
   final double commitSpacing;
@@ -302,6 +383,8 @@ final class GitGraphRenderOptions extends DiagramRenderOptions {
 
 final class TreeViewRenderOptions extends DiagramRenderOptions {
   const TreeViewRenderOptions({
+    super.useWidth,
+    super.useMaxWidth = true,
     this.rowIndent = 10,
     this.paddingX = 5,
     this.paddingY = 5,
@@ -374,15 +457,29 @@ final class TreeViewRenderOptions extends DiagramRenderOptions {
 
 enum TreemapValueFormat { plain, grouped, currencyGrouped }
 
+// Mermaid 11.16 treemap configuration defaults.
+const _treemapUseMaxWidth = true;
+const _treemapPadding = 10.0;
+const _treemapDiagramPadding = 8.0;
+const _treemapShowValues = true;
+const _treemapNodeWidth = 100.0;
+const _treemapNodeHeight = 40.0;
+const _treemapBorderWidth = 1.0;
+const _treemapValueFontSize = 12.0;
+const _treemapLabelFontSize = 14.0;
+
 final class TreemapRenderOptions extends DiagramRenderOptions {
   const TreemapRenderOptions({
-    this.width = 1000,
-    this.height = 400,
-    this.innerPadding = 10,
-    this.sectionPadding = 10,
-    this.sectionHeaderHeight = 25,
-    this.diagramPadding = 8,
-    this.showValues = true,
+    super.useWidth,
+    super.useMaxWidth = _treemapUseMaxWidth,
+    this.padding = _treemapPadding,
+    this.diagramPadding = _treemapDiagramPadding,
+    this.showValues = _treemapShowValues,
+    this.nodeWidth = _treemapNodeWidth,
+    this.nodeHeight = _treemapNodeHeight,
+    this.borderWidth = _treemapBorderWidth,
+    this.valueFontSize = _treemapValueFontSize,
+    this.labelFontSize = _treemapLabelFontSize,
     this.valueFormat = TreemapValueFormat.grouped,
     this.sectionOpacity = .6,
     this.sectionStrokeOpacity = .4,
@@ -392,13 +489,30 @@ final class TreemapRenderOptions extends DiagramRenderOptions {
     this.labelColors = _mermaidColorScaleLabels,
   });
 
-  final double width;
-  final double height;
-  final double innerPadding;
-  final double sectionPadding;
-  final double sectionHeaderHeight;
+  /// Padding between D3 treemap tiles.
+  final double padding;
+
   final double diagramPadding;
   final bool showValues;
+  final double nodeWidth;
+  final double nodeHeight;
+
+  /// Mermaid configuration retained for parity with the current renderer.
+  ///
+  /// Mermaid 11.16 accepts this setting but still uses its fixed section and
+  /// leaf stroke widths.
+  final double borderWidth;
+
+  /// Mermaid configuration retained for parity with the current renderer.
+  ///
+  /// Mermaid 11.16 accepts this setting but computes value sizes dynamically.
+  final double valueFontSize;
+
+  /// Mermaid configuration retained for parity with the current renderer.
+  ///
+  /// Mermaid 11.16 accepts this setting but computes label sizes dynamically.
+  final double labelFontSize;
+
   final TreemapValueFormat valueFormat;
   final double sectionOpacity;
   final double sectionStrokeOpacity;
@@ -410,6 +524,8 @@ final class TreemapRenderOptions extends DiagramRenderOptions {
 
 final class WardleyRenderOptions extends DiagramRenderOptions {
   const WardleyRenderOptions({
+    super.useWidth,
+    super.useMaxWidth = true,
     this.width = 900,
     this.height = 600,
     this.padding = 48,
@@ -456,6 +572,8 @@ final class WardleyRenderOptions extends DiagramRenderOptions {
 
 final class RailroadRenderOptions extends DiagramRenderOptions {
   const RailroadRenderOptions({
+    super.useWidth,
+    super.useMaxWidth,
     this.compactMode = false,
     this.padding = 10,
     this.verticalSeparation = 8,
@@ -520,6 +638,8 @@ final class PacketRenderOptions extends DiagramRenderOptions {
   static const defaultTitleTextColor = Color(0, 0, 0);
 
   const PacketRenderOptions({
+    super.useWidth,
+    super.useMaxWidth = true,
     this.rowHeight = 32,
     this.bitWidth = 32,
     this.bitsPerRow = 32,
@@ -545,6 +665,8 @@ final class PieRenderOptions extends DiagramRenderOptions {
   static const defaultTitleTextColor = Color(0, 0, 0);
 
   const PieRenderOptions({
+    super.useWidth = 984,
+    super.useMaxWidth = true,
     this.size = 450,
     this.margin = 40,
     this.radius,
@@ -592,6 +714,8 @@ final class PieRenderOptions extends DiagramRenderOptions {
 
 final class RadarRenderOptions extends DiagramRenderOptions {
   const RadarRenderOptions({
+    super.useWidth,
+    super.useMaxWidth = true,
     this.width = 600,
     this.height = 600,
     this.marginTop = 50,
@@ -684,9 +808,26 @@ final class RenderOptions {
   }
 }
 
+enum SvgWidthMode {
+  /// Use the backend-neutral sizing policy carried by [DiagramScene].
+  scene,
+
+  /// Emit the viewport's intrinsic numeric width and height.
+  fixed,
+
+  /// Fill the available width up to the viewport's intrinsic width.
+  fitContainer,
+}
+
 final class SvgRenderOptions {
-  const SvgRenderOptions({this.pretty = false, this.includeXmlDeclaration = false, this.rootId});
+  const SvgRenderOptions({
+    this.pretty = false,
+    this.includeXmlDeclaration = false,
+    this.rootId,
+    this.widthMode = SvgWidthMode.scene,
+  });
   final bool pretty;
   final bool includeXmlDeclaration;
   final String? rootId;
+  final SvgWidthMode widthMode;
 }

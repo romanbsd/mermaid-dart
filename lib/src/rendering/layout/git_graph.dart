@@ -15,6 +15,11 @@ const _gitBranchLabelTextInset = 14.0;
 const _gitVerticalBranchLabelBackgroundInset = 10.0;
 const _gitVerticalBranchLabelTextInset = 5.0;
 const _gitEdgeRadius = 20.0;
+const _gitTitleFontSize = 18.0;
+// Browser text metrics place Mermaid's 18px Git title glyph box 17px above
+// its alphabetic baseline. This offset is needed because the SVG view box is
+// computed from the rendered title bounds.
+const _gitTitleBaselineAscent = 17.0;
 const _gitCommitLabelFontSize = 10.0;
 const _gitCommitLabelBaselineOffset = 25.0;
 const _gitCommitLabelBackgroundTopOffset = 13.5;
@@ -256,26 +261,34 @@ _LayoutResult _layoutGitGraph(GitGraphAst ast, _LayoutContext context) {
     _addGitTags(elements, context, commit.tags, point, axisPositions[commit.id]!, tagStyle, config, direction);
   }
 
+  final untitledBounds = _sceneGeometryBounds(elements);
+  Bounds? titleBounds;
   if (ast.title case final title?) {
-    elements.add(
-      _text(
-        context,
-        title,
-        maxPosition / 2,
-        config.titleTopMargin,
-        anchor: TextAnchor.middle,
-        role: SemanticRole.title,
-        style: SceneTextStyle(
-          fontFamily: context.options.theme.fontFamily,
-          fontSize: context.options.theme.fontSize,
-          weight: FontWeight.bold,
-          color: context.options.theme.primaryText,
-        ),
-        cssClasses: const ['git-title'],
+    final titleElement = _text(
+      context,
+      title,
+      untitledBounds?.center.x ?? 0,
+      -config.titleTopMargin,
+      anchor: TextAnchor.middle,
+      baseline: TextBaseline.alphabetic,
+      role: SemanticRole.title,
+      style: SceneTextStyle(
+        fontFamily: context.options.theme.fontFamily,
+        fontSize: _gitTitleFontSize,
+        color: context.options.theme.primaryText,
       ),
+      cssClasses: const ['git-title'],
     );
+    titleBounds = Bounds(
+      left: titleElement.bounds.left,
+      top: titleElement.position.y - _gitTitleBaselineAscent,
+      width: titleElement.bounds.width,
+      height: titleElement.bounds.height,
+    );
+    elements.add(titleElement);
   }
-  final bounds = _sceneGeometryBounds(elements) ?? const Bounds(left: 0, top: 0, width: 1, height: 1);
+  final geometryBounds = untitledBounds ?? const Bounds(left: 0, top: 0, width: 1, height: 1);
+  final bounds = titleBounds == null ? geometryBounds : geometryBounds.union(titleBounds);
   return _LayoutResult(
     math.max(bounds.width, 1),
     math.max(bounds.height, 1),

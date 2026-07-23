@@ -323,7 +323,7 @@ void main() {
         textMeasurer: measurer,
         options: const RenderOptions(
           padding: 0,
-          treemap: TreemapRenderOptions(width: 400, height: 240, showValues: false),
+          treemap: TreemapRenderOptions(nodeWidth: 40, nodeHeight: 24, showValues: false),
         ),
       );
       final elements = _flatten(scene.elements).toList();

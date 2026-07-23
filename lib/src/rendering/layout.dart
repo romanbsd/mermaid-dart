@@ -104,9 +104,24 @@ DiagramScene layoutDiagram(
       ? baseBounds
       : sharedTitle.bounds.union(baseBounds.translated(0, _diagramTitleBandHeight));
   final viewport = contentBounds.expand(options.padding + content.viewportPadding);
+  final diagramOptions = switch (diagram) {
+    ArchitectureAst() => options.optionsFor(const ArchitectureRenderOptions()),
+    CynefinAst() => options.optionsFor(const CynefinRenderOptions()),
+    EventModelingAst() => options.optionsFor(const EventModelingRenderOptions()),
+    GitGraphAst() => options.optionsFor(const GitGraphRenderOptions()),
+    InfoAst() => options.optionsFor(const InfoRenderOptions()),
+    PacketAst() => options.optionsFor(const PacketRenderOptions()),
+    PieAst() => options.optionsFor(const PieRenderOptions()),
+    RadarAst() => options.optionsFor(const RadarRenderOptions()),
+    RailroadAst() => options.optionsFor(const RailroadRenderOptions()),
+    TreeViewAst() => options.optionsFor(const TreeViewRenderOptions()),
+    TreemapAst() => options.optionsFor(const TreemapRenderOptions()),
+    WardleyAst() => options.optionsFor(const WardleyRenderOptions()),
+  };
   return DiagramScene(
     viewport: viewport,
     bounds: contentBounds,
+    widthPolicy: diagramOptions.useMaxWidth == true ? SceneWidthPolicy.fitContainer : SceneWidthPolicy.fixed,
     background: options.theme.background,
     title: diagram.title,
     description: diagram.accessibilityDescription,

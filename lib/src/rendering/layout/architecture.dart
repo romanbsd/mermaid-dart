@@ -39,9 +39,9 @@ _LayoutResult _layoutArchitecture(ArchitectureAst ast, _LayoutContext context) {
   );
 }
 
-SceneTextStyle _architectureTextStyle(_LayoutContext context, ArchitectureRenderOptions config) => SceneTextStyle(
+SceneTextStyle _architectureTextStyle(_LayoutContext context) => SceneTextStyle(
   fontFamily: context.options.theme.fontFamily,
-  fontSize: config.fontSize,
+  fontSize: context.options.theme.fontSize,
   color: context.options.theme.primaryText,
 );
 
@@ -81,11 +81,11 @@ List<SceneElement> _architectureGroupElements(
         label,
         group.bounds.left + 4 + iconSize,
         group.bounds.top +
-            config.fontSize +
+            context.options.theme.fontSize +
             _architectureGroupLabelBaseOffset +
             (group.icon == null ? 0 : config.fontSize / 2 - _architectureGroupIconLabelCorrection),
         baseline: TextBaseline.hanging,
-        style: _architectureTextStyle(context, config),
+        style: _architectureTextStyle(context),
         cssClasses: const ['architecture-group-label', 'architecture-service-label'],
       ),
   ];
@@ -111,18 +111,14 @@ List<SceneElement> _architectureEdgeElements(
     if (data.rightArrow) _architectureArrow(context, edge.end, data.rightDirection, config),
   ];
   if (data.title case final title?) {
-    elements.add(_architectureEdgeLabel(context, config, edge, title));
+    elements.add(_architectureEdgeLabel(context, edge, title));
   }
   return elements;
 }
 
-SceneElement _architectureEdgeLabel(
-  _LayoutContext context,
-  ArchitectureRenderOptions config,
-  ArchitectureEdgeLayout edge,
-  String title,
-) {
-  final style = _architectureTextStyle(context, config);
+SceneElement _architectureEdgeLabel(_LayoutContext context, ArchitectureEdgeLayout edge, String title) {
+  final style = _architectureTextStyle(context);
+  final renderedFontSize = context.options.theme.fontSize;
   const classes = ['architecture-edge-label', 'architecture-service-label'];
   if (edge.data.leftDirection.isVertical == edge.data.rightDirection.isVertical) {
     if (!edge.data.leftDirection.isVertical) {
@@ -130,7 +126,7 @@ SceneElement _architectureEdgeLabel(
         context,
         title,
         edge.bend.x,
-        edge.bend.y + config.fontSize,
+        edge.bend.y + renderedFontSize,
         anchor: TextAnchor.middle,
         style: style,
         cssClasses: classes,
@@ -140,7 +136,7 @@ SceneElement _architectureEdgeLabel(
       context,
       title,
       0,
-      config.fontSize,
+      renderedFontSize,
       anchor: TextAnchor.middle,
       style: style,
       cssClasses: classes,
@@ -163,7 +159,7 @@ SceneElement _architectureEdgeLabel(
     context,
     title,
     0,
-    config.fontSize,
+    renderedFontSize,
     anchor: TextAnchor.middle,
     baseline: TextBaseline.alphabetic,
     style: style,
@@ -217,7 +213,7 @@ SceneElement _architectureNodeElement(
         0,
         0,
         anchor: TextAnchor.middle,
-        style: _architectureTextStyle(context, config),
+        style: _architectureTextStyle(context),
         cssClasses: const ['architecture-icon-text', 'node-icon-text'],
       ),
     if (node.label case final label?)
@@ -225,10 +221,10 @@ SceneElement _architectureNodeElement(
         context,
         label,
         0,
-        config.iconSize / 2 + config.fontSize,
+        config.iconSize / 2 + context.options.theme.fontSize,
         anchor: TextAnchor.middle,
         baseline: TextBaseline.middle,
-        style: _architectureTextStyle(context, config),
+        style: _architectureTextStyle(context),
         cssClasses: const ['architecture-service-label'],
       ),
   ];
