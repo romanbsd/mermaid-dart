@@ -1,8 +1,5 @@
 part of '../layout.dart';
 
-// Mermaid's event-modeling renderer passes 30px to setupGraphViewbox.
-const _eventModelingViewportPadding = 30.0;
-
 _LayoutResult _layoutEventModeling(EventModelingAst ast, _LayoutContext context) {
   final config = context.options.optionsFor(const EventModelingRenderOptions());
   final boxTextStyle = SceneTextStyle(
@@ -120,11 +117,5 @@ _LayoutResult _layoutEventModeling(EventModelingAst ast, _LayoutContext context)
   }
 
   final bounds = Bounds(left: 0, top: 0, width: layout.maxRight + config.swimlanePadding, height: layout.height);
-  return _LayoutResult(
-    bounds.width,
-    bounds.height,
-    elements,
-    bounds: bounds,
-    viewportPadding: _eventModelingViewportPadding,
-  );
+  return _LayoutResult(bounds.width, bounds.height, elements, bounds: bounds, viewportPadding: config.padding);
 }

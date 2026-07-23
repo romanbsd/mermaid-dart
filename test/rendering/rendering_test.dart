@@ -13,6 +13,28 @@ void main() {
       expect(options.seed, 1);
     });
 
+    test('event modeling config controls viewport padding while rowHeight remains compatibility-only', () {
+      const ast = EventModelingAst(
+        frames: [
+          EventModelTimeFrameAst(name: '01', entityType: EventModelEntityType.command, entityIdentifier: 'Cart.Update'),
+        ],
+      );
+      final defaultScene = layoutDiagram(ast, options: const RenderOptions(padding: 0));
+      final configuredScene = layoutDiagram(
+        ast,
+        options: const RenderOptions(padding: 0, eventModeling: EventModelingRenderOptions(padding: 55, rowHeight: 48)),
+      );
+      final defaultFrame = _flatten(defaultScene.elements).whereType<SceneRect>().last;
+      final configuredFrame = _flatten(configuredScene.elements).whereType<SceneRect>().last;
+
+      expect(const EventModelingRenderOptions().padding, 30);
+      expect(const EventModelingRenderOptions().rowHeight, 32);
+      expect(configuredScene.viewport.left, -55);
+      expect(configuredScene.viewport.top, -55);
+      expect(configuredScene.bounds, defaultScene.bounds);
+      expect(configuredFrame.bounds, defaultFrame.bounds);
+    });
+
     test('architecture seed overrides select a reproducible layout variant', () {
       const source = '''architecture-beta
 group sub1(cloud)[Subscription A]

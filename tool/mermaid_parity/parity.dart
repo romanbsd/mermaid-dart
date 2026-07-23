@@ -75,6 +75,7 @@ final class ParityFixture {
 
   RenderOptions get renderOptions {
     const architectureDefaults = ArchitectureRenderOptions();
+    const eventModelingDefaults = EventModelingRenderOptions();
     const packetDefaults = PacketRenderOptions();
     const pieDefaults = PieRenderOptions();
     const radarDefaults = RadarRenderOptions();
@@ -89,6 +90,10 @@ final class ParityFixture {
         edgeElasticity: (diagramConfig['edgeElasticity'] as num?)?.toDouble() ?? architectureDefaults.edgeElasticity,
         numIter: diagramConfig['numIter'] as int? ?? architectureDefaults.numIter,
         seed: diagramConfig['seed'] as int? ?? architectureDefaults.seed,
+      ),
+      eventModeling: EventModelingRenderOptions(
+        padding: (diagramConfig['padding'] as num?)?.toDouble() ?? eventModelingDefaults.padding,
+        rowHeight: (diagramConfig['rowHeight'] as num?)?.toDouble() ?? eventModelingDefaults.rowHeight,
       ),
       packet: PacketRenderOptions(showBits: diagramConfig['showBits'] as bool? ?? packetDefaults.showBits),
       pie: PieRenderOptions(
@@ -127,6 +132,7 @@ final class ParityFixture {
 
 const _fixtureOptionNames = {
   DiagramType.architecture: 'architectureOptions',
+  DiagramType.eventModeling: 'eventModelingOptions',
   DiagramType.packet: 'packetOptions',
   DiagramType.pie: 'pieOptions',
   DiagramType.radar: 'radarOptions',
@@ -135,6 +141,7 @@ const _fixtureOptionNames = {
 
 const _mermaidConfigNames = {
   DiagramType.architecture: 'architecture',
+  DiagramType.eventModeling: 'eventmodeling',
   DiagramType.packet: 'packet',
   DiagramType.pie: 'pie',
   DiagramType.radar: 'radar',
@@ -151,12 +158,34 @@ Map<String, Object> _diagramConfig(Map<Object?, Object?> json, DiagramType type)
   final value = json[expected];
   return switch (type) {
     DiagramType.architecture => _architectureConfig(value),
+    DiagramType.eventModeling => _eventModelingConfig(value),
     DiagramType.packet => _packetConfig(value),
     DiagramType.pie => _pieConfig(value),
     DiagramType.radar => _radarConfig(value),
     DiagramType.treeView => _treeViewConfig(value),
     _ => throw FormatException('$expected are not supported for ${type.name} fixtures'),
   };
+}
+
+Map<String, Object> _eventModelingConfig(Object? value) {
+  if (value is! Map<String, Object?> ||
+      value.isEmpty ||
+      value.keys.any((key) => key != 'padding' && key != 'rowHeight')) {
+    throw const FormatException('Invalid fixture eventModelingOptions');
+  }
+  final result = <String, Object>{};
+  for (final MapEntry(:key, :value) in value.entries) {
+    final valid = switch ((key, value)) {
+      ('padding', final num option) when option >= 0 => option,
+      ('rowHeight', final num option) when option > 0 => option,
+      _ => null,
+    };
+    if (valid == null) {
+      throw const FormatException('Invalid fixture eventModelingOptions');
+    }
+    result[key] = valid;
+  }
+  return Map.unmodifiable(result);
 }
 
 const _treeViewConfigKeys = {

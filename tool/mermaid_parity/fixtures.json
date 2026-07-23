@@ -137,6 +137,20 @@
       }
     },
     {
+      "id": "event-modeling-custom-config",
+      "type": "eventmodeling",
+      "source": "eventmodeling\ntimeframe 01 command Cart.Update\ntf 02 evt Cart.Updated ->> 01 `jsobj`{ a: b }\nresetframe 03 readmodel Cart.Items ->> 02\n",
+      "eventModelingOptions": {
+        "padding": 55,
+        "rowHeight": 48
+      },
+      "textMeasurements": {
+        "Update": { "width": 116, "height": 20 },
+        "Updated\n\na: b": { "width": 204.33333333333334, "height": 60 },
+        "Items": { "width": 103, "height": 20 }
+      }
+    },
+    {
       "id": "event-modeling-unicode-multiline",
       "type": "eventmodeling",
       "source": "eventmodeling\ntimeframe 01 command Cart.Update\ntf 02 evt Cart.Updated ->> 01 `jsobj`{ status: café, owner: 👩‍💻 }\n",

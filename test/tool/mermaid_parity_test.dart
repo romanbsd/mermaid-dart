@@ -11,8 +11,8 @@ void main() {
     final manifest = ParityManifest.load(File('tool/mermaid_parity/fixtures.json'));
 
     expect(manifest.mermaidVersion, '11.16.0');
-    expect(manifest.fixtures.map((fixture) => fixture.id), hasLength(54));
-    expect(manifest.fixtures.map((fixture) => fixture.id).toSet(), hasLength(54));
+    expect(manifest.fixtures.map((fixture) => fixture.id), hasLength(55));
+    expect(manifest.fixtures.map((fixture) => fixture.id).toSet(), hasLength(55));
     expect(
       manifest.fixtures.map((fixture) => fixture.id),
       containsAll([
@@ -36,6 +36,7 @@ void main() {
         'architecture-reasonable-height',
         'architecture-deeply-nested',
         'event-modeling-unicode-multiline',
+        'event-modeling-custom-config',
         'git-special-commits',
         'git-special-commits-tb',
         'git-special-commits-bt',
@@ -655,6 +656,39 @@ void main() {
         'type': 'radar',
         'source': 'radar-beta\naxis speed\ncurve current { 1 }',
         'radarOptions': {'width': 0},
+      }),
+      throwsFormatException,
+    );
+  });
+
+  test('fixture event modeling options are typed and event-modeling-only', () {
+    final configured = ParityFixture.fromJson({
+      'id': 'configured',
+      'type': 'eventmodeling',
+      'source': 'eventmodeling\ntimeframe 01 command Cart.Update\n',
+      'eventModelingOptions': {'padding': 55, 'rowHeight': 48},
+    });
+
+    expect(configured.renderOptions.eventModeling.padding, 55);
+    expect(configured.renderOptions.eventModeling.rowHeight, 48);
+    expect(configured.mermaidConfig, {
+      'eventmodeling': {'padding': 55, 'rowHeight': 48},
+    });
+    expect(
+      () => ParityFixture.fromJson({
+        'id': 'configured',
+        'type': 'info',
+        'source': 'info',
+        'eventModelingOptions': {'padding': 55},
+      }),
+      throwsFormatException,
+    );
+    expect(
+      () => ParityFixture.fromJson({
+        'id': 'configured',
+        'type': 'eventmodeling',
+        'source': 'eventmodeling\ntimeframe 01 command Cart.Update\n',
+        'eventModelingOptions': {'rowHeight': 0},
       }),
       throwsFormatException,
     );

@@ -163,6 +163,8 @@ final class InfoRenderOptions extends DiagramRenderOptions {
 
 final class EventModelingRenderOptions extends DiagramRenderOptions {
   const EventModelingRenderOptions({
+    this.padding = 30,
+    this.rowHeight = 32,
     this.swimlaneMinHeight = 70,
     this.swimlanePadding = 15,
     this.swimlaneGap = 10,
@@ -175,6 +177,15 @@ final class EventModelingRenderOptions extends DiagramRenderOptions {
     this.contentStartX = 250,
     this.textMaxWidth = 430,
   });
+
+  /// Outer viewport padding passed to Mermaid's graph view-box setup.
+  final double padding;
+
+  /// Mermaid's public compatibility setting.
+  ///
+  /// Mermaid.js 11.16 exposes and defaults this value but its event-modeling
+  /// renderer does not currently consult it during layout.
+  final double rowHeight;
 
   final double swimlaneMinHeight;
   final double swimlanePadding;
