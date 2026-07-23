@@ -422,7 +422,7 @@ final class WardleyRenderOptions extends DiagramRenderOptions {
     this.axisColor = const Color(51, 51, 51),
     this.axisTextColor = const Color(19, 19, 0),
     this.stageBoundaryColor = const Color(0, 0, 0, 204),
-    this.gridColor = const Color(100, 100, 100, 51),
+    this.gridColor = const Color(211, 211, 211),
     this.componentFill = const Color(255, 255, 255),
     this.componentStroke = const Color(51, 51, 51),
     this.componentLabelColor = const Color(19, 19, 0),

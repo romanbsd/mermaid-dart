@@ -75,11 +75,13 @@ final class ParityFixture {
 
   RenderOptions get renderOptions {
     const architectureDefaults = ArchitectureRenderOptions();
+    const cynefinDefaults = CynefinRenderOptions();
     const eventModelingDefaults = EventModelingRenderOptions();
     const packetDefaults = PacketRenderOptions();
     const pieDefaults = PieRenderOptions();
     const radarDefaults = RadarRenderOptions();
     const treeViewDefaults = TreeViewRenderOptions();
+    const wardleyDefaults = WardleyRenderOptions();
     return RenderOptions(
       padding: 0,
       architecture: ArchitectureRenderOptions(
@@ -90,6 +92,16 @@ final class ParityFixture {
         edgeElasticity: (diagramConfig['edgeElasticity'] as num?)?.toDouble() ?? architectureDefaults.edgeElasticity,
         numIter: diagramConfig['numIter'] as int? ?? architectureDefaults.numIter,
         seed: diagramConfig['seed'] as int? ?? architectureDefaults.seed,
+      ),
+      cynefin: CynefinRenderOptions(
+        width: (diagramConfig['width'] as num?)?.toDouble() ?? cynefinDefaults.width,
+        height: (diagramConfig['height'] as num?)?.toDouble() ?? cynefinDefaults.height,
+        padding: (diagramConfig['padding'] as num?)?.toDouble() ?? cynefinDefaults.padding,
+        showDomainDescriptions:
+            diagramConfig['showDomainDescriptions'] as bool? ?? cynefinDefaults.showDomainDescriptions,
+        boundaryAmplitude:
+            (diagramConfig['boundaryAmplitude'] as num?)?.toDouble() ?? cynefinDefaults.boundaryAmplitude,
+        seed: diagramConfig['seed'] as int? ?? cynefinDefaults.seed,
       ),
       eventModeling: EventModelingRenderOptions(
         padding: (diagramConfig['padding'] as num?)?.toDouble() ?? eventModelingDefaults.padding,
@@ -126,26 +138,40 @@ final class ParityFixture {
         filenameIcons: diagramConfig['filenameIcons'] as Map<String, String>? ?? treeViewDefaults.filenameIcons,
         extensionIcons: diagramConfig['extensionIcons'] as Map<String, String>? ?? treeViewDefaults.extensionIcons,
       ),
+      wardley: WardleyRenderOptions(
+        width: (diagramConfig['width'] as num?)?.toDouble() ?? wardleyDefaults.width,
+        height: (diagramConfig['height'] as num?)?.toDouble() ?? wardleyDefaults.height,
+        padding: (diagramConfig['padding'] as num?)?.toDouble() ?? wardleyDefaults.padding,
+        nodeRadius: (diagramConfig['nodeRadius'] as num?)?.toDouble() ?? wardleyDefaults.nodeRadius,
+        nodeLabelOffset: (diagramConfig['nodeLabelOffset'] as num?)?.toDouble() ?? wardleyDefaults.nodeLabelOffset,
+        axisFontSize: (diagramConfig['axisFontSize'] as num?)?.toDouble() ?? wardleyDefaults.axisFontSize,
+        labelFontSize: (diagramConfig['labelFontSize'] as num?)?.toDouble() ?? wardleyDefaults.labelFontSize,
+        showGrid: diagramConfig['showGrid'] as bool? ?? wardleyDefaults.showGrid,
+      ),
     );
   }
 }
 
 const _fixtureOptionNames = {
   DiagramType.architecture: 'architectureOptions',
+  DiagramType.cynefin: 'cynefinOptions',
   DiagramType.eventModeling: 'eventModelingOptions',
   DiagramType.packet: 'packetOptions',
   DiagramType.pie: 'pieOptions',
   DiagramType.radar: 'radarOptions',
   DiagramType.treeView: 'treeViewOptions',
+  DiagramType.wardley: 'wardleyOptions',
 };
 
 const _mermaidConfigNames = {
   DiagramType.architecture: 'architecture',
+  DiagramType.cynefin: 'cynefin',
   DiagramType.eventModeling: 'eventmodeling',
   DiagramType.packet: 'packet',
   DiagramType.pie: 'pie',
   DiagramType.radar: 'radar',
   DiagramType.treeView: 'treeView',
+  DiagramType.wardley: 'wardley-beta',
 };
 
 Map<String, Object> _diagramConfig(Map<Object?, Object?> json, DiagramType type) {
@@ -158,13 +184,70 @@ Map<String, Object> _diagramConfig(Map<Object?, Object?> json, DiagramType type)
   final value = json[expected];
   return switch (type) {
     DiagramType.architecture => _architectureConfig(value),
+    DiagramType.cynefin => _cynefinConfig(value),
     DiagramType.eventModeling => _eventModelingConfig(value),
     DiagramType.packet => _packetConfig(value),
     DiagramType.pie => _pieConfig(value),
     DiagramType.radar => _radarConfig(value),
     DiagramType.treeView => _treeViewConfig(value),
+    DiagramType.wardley => _wardleyConfig(value),
     _ => throw FormatException('$expected are not supported for ${type.name} fixtures'),
   };
+}
+
+const _cynefinConfigKeys = {'width', 'height', 'padding', 'showDomainDescriptions', 'boundaryAmplitude', 'seed'};
+
+Map<String, Object> _cynefinConfig(Object? value) {
+  if (value is! Map<String, Object?> || value.isEmpty || value.keys.any((key) => !_cynefinConfigKeys.contains(key))) {
+    throw const FormatException('Invalid fixture cynefinOptions');
+  }
+  final result = <String, Object>{};
+  for (final MapEntry(:key, :value) in value.entries) {
+    final valid = switch ((key, value)) {
+      ('width' || 'height', final num option) when option > 0 => option,
+      ('padding' || 'boundaryAmplitude', final num option) when option >= 0 => option,
+      ('showDomainDescriptions', final bool option) => option,
+      ('seed', final int option) => option,
+      _ => null,
+    };
+    if (valid == null) {
+      throw const FormatException('Invalid fixture cynefinOptions');
+    }
+    result[key] = valid;
+  }
+  return Map.unmodifiable(result);
+}
+
+const _wardleyConfigKeys = {
+  'width',
+  'height',
+  'padding',
+  'nodeRadius',
+  'nodeLabelOffset',
+  'axisFontSize',
+  'labelFontSize',
+  'showGrid',
+};
+
+Map<String, Object> _wardleyConfig(Object? value) {
+  if (value is! Map<String, Object?> || value.isEmpty || value.keys.any((key) => !_wardleyConfigKeys.contains(key))) {
+    throw const FormatException('Invalid fixture wardleyOptions');
+  }
+  final result = <String, Object>{};
+  for (final MapEntry(:key, :value) in value.entries) {
+    final valid = switch ((key, value)) {
+      ('width' || 'height' || 'nodeRadius' || 'axisFontSize' || 'labelFontSize', final num option) when option > 0 =>
+        option,
+      ('padding' || 'nodeLabelOffset', final num option) when option >= 0 => option,
+      ('showGrid', final bool option) => option,
+      _ => null,
+    };
+    if (valid == null) {
+      throw const FormatException('Invalid fixture wardleyOptions');
+    }
+    result[key] = valid;
+  }
+  return Map.unmodifiable(result);
 }
 
 Map<String, Object> _eventModelingConfig(Object? value) {
@@ -603,6 +686,7 @@ String _normalizedPaintValue(String name, String value, XmlElement element, Stri
 
 String _normalizedColor(String value) {
   final compact = value.replaceAll(' ', '');
+  if (_namedCssColors[compact] case final hex?) return hex;
   if (compact.startsWith('#') && compact.length == 4) {
     final hex = compact.substring(1);
     return '#${[for (final digit in hex.split('')) '$digit$digit'].join()}';
@@ -635,13 +719,17 @@ String _normalizedColor(String value) {
       (_hueChannel(lower, upper, hue - _oneThirdTurn) * _colorChannelMax).round(),
     ]);
   }
-  return switch (compact) {
-    'black' => '#000000',
-    'white' => '#ffffff',
-    'red' => '#ff0000',
-    _ => compact,
-  };
+  return compact;
 }
+
+// Named colors emitted by Mermaid themes that need comparison with scene
+// colors, which are serialized as hexadecimal RGB values.
+const _namedCssColors = <String, String>{
+  'black': '#000000',
+  'lightgrey': '#d3d3d3',
+  'red': '#ff0000',
+  'white': '#ffffff',
+};
 
 ({List<int> channels, double alpha})? _parseRgba(String value) {
   final compact = value

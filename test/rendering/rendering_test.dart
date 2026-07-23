@@ -35,6 +35,92 @@ void main() {
       expect(configuredFrame.bounds, defaultFrame.bounds);
     });
 
+    test('Cynefin config controls canvas, descriptions, and deterministic boundaries', () {
+      final ast = parse(DiagramType.cynefin, 'cynefin-beta\ncomplex "Probe"\ncomplicated "Analyze"\n');
+      const cynefinOptions = CynefinRenderOptions(
+        width: 720,
+        height: 480,
+        padding: 30,
+        showDomainDescriptions: false,
+        boundaryAmplitude: 0,
+        seed: 42,
+      );
+      const options = RenderOptions(padding: 0, cynefin: cynefinOptions);
+      final first = layoutDiagram(ast, options: options);
+      final second = layoutDiagram(ast, options: options);
+      final elements = _flatten(first.elements).toList();
+      final boundaries = elements
+          .whereType<ScenePath>()
+          .where((element) => element.cssClasses.contains('cynefinBoundary'))
+          .toList();
+      final foldXCoordinates = [
+        for (final command in boundaries.first.commands)
+          ...switch (command) {
+            MoveTo(:final point) => [point.x],
+            CubicTo(:final control1, :final control2, :final end) => [control1.x, control2.x, end.x],
+            _ => const <double>[],
+          },
+      ];
+      final horizontalYCoordinates = [
+        for (final command in boundaries.last.commands)
+          ...switch (command) {
+            MoveTo(:final point) => [point.y],
+            CubicTo(:final control1, :final control2, :final end) => [control1.y, control2.y, end.y],
+            _ => const <double>[],
+          },
+      ];
+
+      expect(first.bounds, const Bounds(left: 0, top: 0, width: 780, height: 540));
+      expect(first.elements, second.elements);
+      expect(
+        elements.whereType<SceneText>().where((element) => element.cssClasses.contains('cynefinSubtitle')),
+        isEmpty,
+      );
+      expect(foldXCoordinates, everyElement(cynefinOptions.padding + cynefinOptions.width / 2));
+      expect(horizontalYCoordinates, everyElement(cynefinOptions.padding + cynefinOptions.height / 2));
+    });
+
+    test('Wardley config controls canvas, grid, nodes, labels, and typography', () {
+      final scene = layoutDiagram(
+        parse(DiagramType.wardley, 'wardley-beta\ncomponent API [0.6, 0.5]\n'),
+        options: const RenderOptions(
+          wardley: WardleyRenderOptions(
+            width: 720,
+            height: 480,
+            padding: 60,
+            nodeRadius: 10,
+            nodeLabelOffset: 14,
+            axisFontSize: 14,
+            labelFontSize: 12,
+            showGrid: true,
+          ),
+        ),
+      );
+      final elements = _flatten(scene.elements).toList();
+      final component = elements.whereType<SceneCircle>().singleWhere(
+        (element) => element.cssClasses.contains('wardley-component'),
+      );
+      final nodeLabel = elements.whereType<SceneText>().singleWhere(
+        (element) => element.cssClasses.contains('wardley-node-label'),
+      );
+      final axisLabels = elements.whereType<SceneText>().where(
+        (element) => element.cssClasses.contains('wardley-axis-label'),
+      );
+
+      expect(scene.bounds, const Bounds(left: 0, top: 0, width: 720, height: 480));
+      final gridLines = elements
+          .whereType<SceneLine>()
+          .where((element) => element.cssClasses.contains('wardley-grid-line'))
+          .toList();
+      expect(gridLines, hasLength(6));
+      expect(gridLines.map((line) => line.stroke?.color), everyElement(const Color(211, 211, 211)));
+      expect(component.radius, 10);
+      expect(nodeLabel.position.x - component.center.x, 14);
+      expect(nodeLabel.position.y - component.center.y, -14);
+      expect(nodeLabel.style.fontSize, 12);
+      expect(axisLabels.map((label) => label.style.fontSize), everyElement(14));
+    });
+
     test('architecture seed overrides select a reproducible layout variant', () {
       const source = '''architecture-beta
 group sub1(cloud)[Subscription A]
@@ -229,9 +315,11 @@ disk2:T -- B:db
       const scene = DiagramScene(
         viewport: Bounds(left: 0, top: 0, width: 10.5, height: 5.25),
         bounds: Bounds(left: 0, top: 0, width: 10.5, height: 5.25),
+        elements: [SceneLine(id: 'precise', start: Point(0, 209.144957), end: Point(10, 20))],
       );
       final svg = renderSvg(scene);
       expect(svg, contains('viewBox="0 0 10.5 5.25"'));
+      expect(svg, contains('y1="209.144957"'));
       expect(svg, isNot(contains(r'$1')));
     });
 

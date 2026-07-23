@@ -11,8 +11,8 @@ void main() {
     final manifest = ParityManifest.load(File('tool/mermaid_parity/fixtures.json'));
 
     expect(manifest.mermaidVersion, '11.16.0');
-    expect(manifest.fixtures.map((fixture) => fixture.id), hasLength(55));
-    expect(manifest.fixtures.map((fixture) => fixture.id).toSet(), hasLength(55));
+    expect(manifest.fixtures.map((fixture) => fixture.id), hasLength(57));
+    expect(manifest.fixtures.map((fixture) => fixture.id).toSet(), hasLength(57));
     expect(
       manifest.fixtures.map((fixture) => fixture.id),
       containsAll([
@@ -35,6 +35,7 @@ void main() {
         'architecture-edge-length-3',
         'architecture-reasonable-height',
         'architecture-deeply-nested',
+        'cynefin-custom-config',
         'event-modeling-unicode-multiline',
         'event-modeling-custom-config',
         'git-special-commits',
@@ -57,6 +58,7 @@ void main() {
         'railroad-ebnf-choice-repetition',
         'railroad-peg-sequence',
         'wardley-strategies',
+        'wardley-custom-config',
       ]),
     );
     final railroad = manifest.fixtures.singleWhere((fixture) => fixture.id == 'railroad-sequence');
@@ -133,10 +135,13 @@ void main() {
       '<svg><rect fill="#00ff00" stroke="#000" stroke-width="2" '
       'opacity="0.5" width="10" height="10"/></svg>',
     );
+    final namedColor = SvgSnapshot.fromSvg('<svg><rect fill="lightgrey" width="10" height="10"/></svg>');
+    final namedColorHex = SvgSnapshot.fromSvg('<svg><rect fill="#d3d3d3" width="10" height="10"/></svg>');
 
     final equivalent = SvgComparison.compare(attributes, stylesheet);
     expect(equivalent.samePaint, isTrue);
     expect(equivalent.visualParity, isTrue);
+    expect(SvgComparison.compare(namedColor, namedColorHex).samePaint, isTrue);
 
     final comparison = SvgComparison.compare(attributes, different);
     expect(comparison.sameGeometry, isTrue);
@@ -766,6 +771,114 @@ void main() {
         'treeViewOptions': {
           'filenameIcons': {'Dockerfile': 42},
         },
+      }),
+      throwsFormatException,
+    );
+  });
+
+  test('fixture Wardley options are typed and Wardley-only', () {
+    final configured = ParityFixture.fromJson({
+      'id': 'configured',
+      'type': 'wardley',
+      'source': 'wardley-beta\ncomponent API [0.6, 0.5]\n',
+      'wardleyOptions': {
+        'width': 720,
+        'height': 480,
+        'padding': 60,
+        'nodeRadius': 10,
+        'nodeLabelOffset': 14,
+        'axisFontSize': 14,
+        'labelFontSize': 12,
+        'showGrid': true,
+      },
+    });
+
+    expect(configured.renderOptions.wardley.width, 720);
+    expect(configured.renderOptions.wardley.height, 480);
+    expect(configured.renderOptions.wardley.padding, 60);
+    expect(configured.renderOptions.wardley.nodeRadius, 10);
+    expect(configured.renderOptions.wardley.nodeLabelOffset, 14);
+    expect(configured.renderOptions.wardley.axisFontSize, 14);
+    expect(configured.renderOptions.wardley.labelFontSize, 12);
+    expect(configured.renderOptions.wardley.showGrid, isTrue);
+    expect(configured.mermaidConfig, {
+      'wardley-beta': {
+        'width': 720,
+        'height': 480,
+        'padding': 60,
+        'nodeRadius': 10,
+        'nodeLabelOffset': 14,
+        'axisFontSize': 14,
+        'labelFontSize': 12,
+        'showGrid': true,
+      },
+    });
+    expect(
+      () => ParityFixture.fromJson({
+        'id': 'configured',
+        'type': 'pie',
+        'source': 'pie\n"A": 1\n',
+        'wardleyOptions': {'showGrid': true},
+      }),
+      throwsFormatException,
+    );
+    expect(
+      () => ParityFixture.fromJson({
+        'id': 'configured',
+        'type': 'wardley',
+        'source': 'wardley-beta\ncomponent API [0.6, 0.5]\n',
+        'wardleyOptions': {'nodeRadius': 0},
+      }),
+      throwsFormatException,
+    );
+  });
+
+  test('fixture Cynefin options are typed and Cynefin-only', () {
+    final configured = ParityFixture.fromJson({
+      'id': 'configured',
+      'type': 'cynefin',
+      'source': 'cynefin-beta\ncomplex "Probe"\n',
+      'cynefinOptions': {
+        'width': 720,
+        'height': 480,
+        'padding': 30,
+        'showDomainDescriptions': false,
+        'boundaryAmplitude': 0,
+        'seed': 42,
+      },
+    });
+
+    expect(configured.renderOptions.cynefin.width, 720);
+    expect(configured.renderOptions.cynefin.height, 480);
+    expect(configured.renderOptions.cynefin.padding, 30);
+    expect(configured.renderOptions.cynefin.showDomainDescriptions, isFalse);
+    expect(configured.renderOptions.cynefin.boundaryAmplitude, 0);
+    expect(configured.renderOptions.cynefin.seed, 42);
+    expect(configured.mermaidConfig, {
+      'cynefin': {
+        'width': 720,
+        'height': 480,
+        'padding': 30,
+        'showDomainDescriptions': false,
+        'boundaryAmplitude': 0,
+        'seed': 42,
+      },
+    });
+    expect(
+      () => ParityFixture.fromJson({
+        'id': 'configured',
+        'type': 'pie',
+        'source': 'pie\n"A": 1\n',
+        'cynefinOptions': {'seed': 42},
+      }),
+      throwsFormatException,
+    );
+    expect(
+      () => ParityFixture.fromJson({
+        'id': 'configured',
+        'type': 'cynefin',
+        'source': 'cynefin-beta\ncomplex "Probe"\n',
+        'cynefinOptions': {'boundaryAmplitude': -1},
       }),
       throwsFormatException,
     );

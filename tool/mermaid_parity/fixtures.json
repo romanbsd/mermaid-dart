@@ -127,6 +127,26 @@
       }
     },
     {
+      "id": "cynefin-custom-config",
+      "type": "cynefin",
+      "source": "cynefin-beta\ncomplex \"Probe\"\ncomplicated \"Analyze\"\nclear \"Sense\"\nchaotic \"Act\"\nconfusion \"Collect\"\n",
+      "cynefinOptions": {
+        "width": 720,
+        "height": 480,
+        "padding": 30,
+        "showDomainDescriptions": false,
+        "boundaryAmplitude": 0,
+        "seed": 42
+      },
+      "textMeasurements": {
+        "Probe": { "width": 34.46875, "height": 14 },
+        "Analyze": { "width": 45.640625, "height": 14 },
+        "Sense": { "width": 34.28125, "height": 14 },
+        "Act": { "width": 21.78125, "height": 14 },
+        "Collect": { "width": 41.953125, "height": 14 }
+      }
+    },
+    {
       "id": "event-modeling-flow",
       "type": "eventmodeling",
       "source": "eventmodeling\ntimeframe 01 command Cart.Update\ntf 02 evt Cart.Updated ->> 01 `jsobj`{ a: b }\nresetframe 03 readmodel Cart.Items ->> 02\n",
@@ -458,6 +478,21 @@
       "id": "wardley-components",
       "type": "wardley",
       "source": "wardley-beta\ncomponent API [0.6, 0.5]\ncomponent Database [0.3, 0.8]\nAPI -> Database\n"
+    },
+    {
+      "id": "wardley-custom-config",
+      "type": "wardley",
+      "source": "wardley-beta\ncomponent API [0.6, 0.5]\ncomponent Database [0.3, 0.8]\nAPI -> Database\n",
+      "wardleyOptions": {
+        "width": 720,
+        "height": 480,
+        "padding": 60,
+        "nodeRadius": 10,
+        "nodeLabelOffset": 14,
+        "axisFontSize": 14,
+        "labelFontSize": 12,
+        "showGrid": true
+      }
     },
     {
       "id": "wardley-advanced",

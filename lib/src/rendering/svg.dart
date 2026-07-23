@@ -248,9 +248,19 @@ String _points(List<Point> points) => points.map((point) => '${_number(point.x)}
 String _bounds(Bounds bounds) =>
     '${_number(bounds.left)} ${_number(bounds.top)} ${_number(bounds.width)} ${_number(bounds.height)}';
 
+// Four digits keep ordinary SVG compact. Six are retained only when the
+// shorter representation would cross a centipixel comparison boundary.
+const _svgCompactFractionDigits = 4;
+const _svgPreciseFractionDigits = 6;
+const _svgComparisonFractionDigits = 2;
+
 String _number(num value) {
   if (!value.isFinite) return '0';
-  var rounded = value.toStringAsFixed(4);
+  var rounded = value.toStringAsFixed(_svgCompactFractionDigits);
+  if (double.parse(rounded).toStringAsFixed(_svgComparisonFractionDigits) !=
+      value.toStringAsFixed(_svgComparisonFractionDigits)) {
+    rounded = value.toStringAsFixed(_svgPreciseFractionDigits);
+  }
   if (rounded.contains('.')) {
     while (rounded.endsWith('0')) {
       rounded = rounded.substring(0, rounded.length - 1);
