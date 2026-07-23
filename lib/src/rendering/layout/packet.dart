@@ -19,81 +19,22 @@ _LayoutResult _layoutPacket(PacketAst ast, _LayoutContext context) {
   final bitStyle = _packetTextStyle(context, _packetBitFontSize);
   final paddingY = config.paddingY + (config.showBits ? _packetBitLabelPadding : 0);
   final width = config.bitWidth * config.bitsPerRow + _packetOuterWidth;
+  final model = buildPacketLayoutModel(ast, bitsPerRow: config.bitsPerRow);
   final elements = <SceneElement>[];
-  var cursor = 0;
-  for (final block in ast.blocks) {
-    final (start, end) = switch (block) {
-      PacketSingleBitBlockAst(:final bit) => (bit, bit),
-      PacketRangeBlockAst(:final start, :final end) => (start, end),
-      PacketRelativeWidthBlockAst(:final bits) => (cursor, cursor + bits - 1),
-    };
-    var segmentStart = start;
-    while (segmentStart <= end) {
-      final row = segmentStart ~/ config.bitsPerRow;
-      final rowEnd = (row + 1) * config.bitsPerRow - 1;
-      final segmentEnd = math.min(end, rowEnd);
-      final x = (segmentStart % config.bitsPerRow) * config.bitWidth + _packetBlockLeftInset;
-      final y = row * (config.rowHeight + paddingY) + paddingY;
-      final blockWidth = (segmentEnd - segmentStart + 1) * config.bitWidth - config.paddingX;
-      elements.add(
-        SceneRect(
-          id: context.id('packet-block'),
-          bounds: Bounds(left: x, top: y, width: blockWidth, height: config.rowHeight),
-          fill: const SolidFill(_packetBlockFill),
-          stroke: const SceneStroke(color: _packetInk, width: _packetStrokeWidth),
-          role: SemanticRole.node,
-          cssClasses: const ['packetBlock'],
-          label: block.label,
-        ),
-      );
-      elements.add(
-        _text(
-          context,
-          block.label,
-          x + blockWidth / 2,
-          y + config.rowHeight / 2,
-          anchor: TextAnchor.middle,
-          baseline: TextBaseline.middle,
-          style: labelStyle,
-          cssClasses: const ['packetLabel'],
-        ),
-      );
-      if (config.showBits) {
-        final single = segmentStart == segmentEnd;
-        elements.add(
-          _text(
-            context,
-            '$segmentStart',
-            x + (single ? blockWidth / 2 : 0),
-            y - _packetBitLabelOffset,
-            anchor: single ? TextAnchor.middle : TextAnchor.start,
-            baseline: TextBaseline.alphabetic,
-            style: bitStyle,
-            cssClasses: const ['packetByte', 'start'],
-          ),
-        );
-        if (!single) {
-          elements.add(
-            _text(
-              context,
-              '$segmentEnd',
-              x + blockWidth,
-              y - _packetBitLabelOffset,
-              anchor: TextAnchor.end,
-              baseline: TextBaseline.alphabetic,
-              style: bitStyle,
-              cssClasses: const ['packetByte', 'end'],
-            ),
-          );
-        }
-      }
-      segmentStart = segmentEnd + 1;
-    }
-    cursor = end + 1;
+  for (final segment in model.segments) {
+    elements.addAll(
+      _packetSegmentElements(
+        context,
+        segment,
+        config: config,
+        rowTopPadding: paddingY,
+        labelStyle: labelStyle,
+        bitStyle: bitStyle,
+      ),
+    );
   }
-  final rows = math.max(1, (cursor + config.bitsPerRow - 1) ~/ config.bitsPerRow);
   final totalRowHeight = config.rowHeight + paddingY;
-  final height = totalRowHeight * (rows + 1) - (ast.title == null ? config.rowHeight : 0);
+  final height = totalRowHeight * (model.rowCount + 1) - (ast.title == null ? config.rowHeight : 0);
   if (ast.title != null) {
     elements.add(
       _text(
@@ -110,6 +51,62 @@ _LayoutResult _layoutPacket(PacketAst ast, _LayoutContext context) {
     );
   }
   return _LayoutResult(width, height, elements);
+}
+
+List<SceneElement> _packetSegmentElements(
+  _LayoutContext context,
+  PacketSegment segment, {
+  required PacketRenderOptions config,
+  required double rowTopPadding,
+  required SceneTextStyle labelStyle,
+  required SceneTextStyle bitStyle,
+}) {
+  final x = (segment.startBit % config.bitsPerRow) * config.bitWidth + _packetBlockLeftInset;
+  final y = segment.row * (config.rowHeight + rowTopPadding) + rowTopPadding;
+  final width = segment.bitCount * config.bitWidth - config.paddingX;
+  return [
+    SceneRect(
+      id: context.id('packet-block'),
+      bounds: Bounds(left: x, top: y, width: width, height: config.rowHeight),
+      fill: const SolidFill(_packetBlockFill),
+      stroke: const SceneStroke(color: _packetInk, width: _packetStrokeWidth),
+      role: SemanticRole.node,
+      cssClasses: const ['packetBlock'],
+      label: segment.label,
+    ),
+    _text(
+      context,
+      segment.label,
+      x + width / 2,
+      y + config.rowHeight / 2,
+      anchor: TextAnchor.middle,
+      baseline: TextBaseline.middle,
+      style: labelStyle,
+      cssClasses: const ['packetLabel'],
+    ),
+    if (config.showBits)
+      _text(
+        context,
+        '${segment.startBit}',
+        x + (segment.isSingleBit ? width / 2 : 0),
+        y - _packetBitLabelOffset,
+        anchor: segment.isSingleBit ? TextAnchor.middle : TextAnchor.start,
+        baseline: TextBaseline.alphabetic,
+        style: bitStyle,
+        cssClasses: const ['packetByte', 'start'],
+      ),
+    if (config.showBits && !segment.isSingleBit)
+      _text(
+        context,
+        '${segment.endBit}',
+        x + width,
+        y - _packetBitLabelOffset,
+        anchor: TextAnchor.end,
+        baseline: TextBaseline.alphabetic,
+        style: bitStyle,
+        cssClasses: const ['packetByte', 'end'],
+      ),
+  ];
 }
 
 SceneTextStyle _packetTextStyle(_LayoutContext context, double fontSize, {Color color = _packetInk}) => SceneTextStyle(

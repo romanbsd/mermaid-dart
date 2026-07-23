@@ -9,6 +9,7 @@ import 'geometry/architecture.dart';
 import 'geometry/cynefin.dart';
 import 'geometry/event_modeling.dart';
 import 'geometry/git_graph.dart';
+import 'geometry/packet.dart';
 import 'geometry/path_builders.dart';
 import 'geometry/polar.dart';
 import 'geometry/scene_bounds.dart';
