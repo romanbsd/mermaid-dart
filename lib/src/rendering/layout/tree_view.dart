@@ -3,6 +3,7 @@ part of '../layout.dart';
 // Mermaid treeView renders a synthetic filesystem root. The remaining values
 // describe its icon, description, and hover-highlight geometry.
 const _treeRootName = '/';
+const _treeLabelFontSize = 16.0;
 const _treeIconSize = 14.0;
 const _treeIconGap = 4.0;
 const _treeIconLabelOffset = _treeIconSize + _treeIconGap;
@@ -12,7 +13,9 @@ const _treeHighlightRightOverflow = 8.0;
 const _treeHighlightStrokeAllowance = 2.0;
 SceneTextStyle _treeTextStyle(_LayoutContext context, Color color) => SceneTextStyle(
   fontFamily: context.textStyle.fontFamily,
-  fontSize: context.textStyle.fontSize,
+  // Both label and description selectors fix their size at 16px, overriding
+  // the global SVG font size while still inheriting its font family.
+  fontSize: _treeLabelFontSize,
   color: color,
   lineHeight: context.textStyle.lineHeight,
 );

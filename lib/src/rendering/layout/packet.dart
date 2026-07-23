@@ -15,8 +15,8 @@ const _packetBitLabelOffset = 2.0;
 
 _LayoutResult _layoutPacket(PacketAst ast, _LayoutContext context) {
   final config = context.options.optionsFor(const PacketRenderOptions());
-  final labelStyle = _packetTextStyle(_packetLabelFontSize);
-  final bitStyle = _packetTextStyle(_packetBitFontSize);
+  final labelStyle = _packetTextStyle(context, _packetLabelFontSize);
+  final bitStyle = _packetTextStyle(context, _packetBitFontSize);
   final paddingY = config.paddingY + (config.showBits ? _packetBitLabelPadding : 0);
   final width = config.bitWidth * config.bitsPerRow + _packetOuterWidth;
   final elements = <SceneElement>[];
@@ -103,7 +103,7 @@ _LayoutResult _layoutPacket(PacketAst ast, _LayoutContext context) {
         height - totalRowHeight / 2,
         anchor: TextAnchor.middle,
         baseline: TextBaseline.middle,
-        style: _packetTextStyle(_packetTitleFontSize, color: config.titleText),
+        style: _packetTextStyle(context, _packetTitleFontSize, color: config.titleText),
         cssClasses: const ['packetTitle'],
         role: SemanticRole.title,
       ),
@@ -112,5 +112,8 @@ _LayoutResult _layoutPacket(PacketAst ast, _LayoutContext context) {
   return _LayoutResult(width, height, elements);
 }
 
-SceneTextStyle _packetTextStyle(double fontSize, {Color color = _packetInk}) =>
-    SceneTextStyle(fontFamily: _mermaidFontFamily, fontSize: fontSize, color: color);
+SceneTextStyle _packetTextStyle(_LayoutContext context, double fontSize, {Color color = _packetInk}) => SceneTextStyle(
+  fontFamily: context.options.theme.resolveFontFamily(fallback: _mermaidFontFamily),
+  fontSize: fontSize,
+  color: color,
+);

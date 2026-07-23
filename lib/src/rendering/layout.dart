@@ -293,8 +293,11 @@ Color _colorWithOpacity(Color color, double opacity) => Color(
   (color.alpha / _colorAlphaMaximum * opacity.clamp(0, 1) * _colorAlphaMaximum).round(),
 );
 
-SceneTextStyle _mermaidTextStyle(_LayoutContext context, double fontSize) =>
-    SceneTextStyle(fontFamily: _mermaidFontFamily, fontSize: fontSize, color: context.options.theme.primaryText);
+SceneTextStyle _mermaidTextStyle(_LayoutContext context, double fontSize, {Color? color}) => SceneTextStyle(
+  fontFamily: context.options.theme.resolveFontFamily(fallback: _mermaidFontFamily),
+  fontSize: fontSize,
+  color: color ?? context.options.theme.primaryText,
+);
 
 IconGeometry _iconGeometry(_LayoutContext context, String reference) =>
     context.iconResolver.resolve(reference) ?? const PlaceholderIconResolver().resolve(reference);

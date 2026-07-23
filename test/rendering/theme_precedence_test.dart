@@ -473,6 +473,37 @@ void main() {
       expect(frame.fill, const SolidFill(_g));
       expect(frame.stroke?.color, _h);
     });
+
+    test('fixed-size renderers inherit only Mermaid-supported global typography', () {
+      const theme = MermaidTheme(fontFamily: 'monospace', fontSize: 27, text: _a);
+
+      final infoTexts = _flatten(
+        layoutDiagram(parse(DiagramType.info, 'info showInfo\n'), options: const RenderOptions(theme: theme)).elements,
+      ).whereType<SceneText>().toList();
+      expect(infoTexts.single.style.fontFamily, 'monospace');
+      expect(infoTexts.single.style.fontSize, 32);
+      expect(infoTexts.single.style.color, _a);
+
+      final packetTexts = _flatten(
+        layoutDiagram(
+          parse(DiagramType.packet, '---\ntitle: Packet\n---\npacket\n0-7: "Source"\n'),
+          options: const RenderOptions(theme: theme),
+        ).elements,
+      ).whereType<SceneText>().toList();
+      expect(packetTexts.map((text) => text.style.fontFamily), everyElement('monospace'));
+      expect(packetTexts.map((text) => text.style.fontSize).toSet(), {10, 12, 14});
+      expect(packetTexts.map((text) => text.style.color), everyElement(const Color(0, 0, 0)));
+
+      final treeTexts = _flatten(
+        layoutDiagram(
+          parse(DiagramType.treeView, 'treeView-beta\nsrc/\n'),
+          options: const RenderOptions(theme: theme),
+        ).elements,
+      ).whereType<SceneText>().toList();
+      expect(treeTexts.map((text) => text.style.fontFamily), everyElement('monospace'));
+      expect(treeTexts.map((text) => text.style.fontSize), everyElement(16));
+      expect(treeTexts.map((text) => text.style.color), everyElement(TreeViewRenderOptions.defaultLabelColor));
+    });
   });
 }
 

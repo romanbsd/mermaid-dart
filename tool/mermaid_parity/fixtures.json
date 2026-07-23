@@ -371,9 +371,29 @@
       "source": "info showInfo\n"
     },
     {
+      "id": "info-theme-variables",
+      "type": "info",
+      "source": "info showInfo\n",
+      "themeVariables": {
+        "fontFamily": "monospace",
+        "fontSize": "27px",
+        "textColor": "#123456"
+      }
+    },
+    {
       "id": "packet-header",
       "type": "packet",
       "source": "packet-beta\n0-7: \"Source\"\n8: \"Flag\"\n+16: \"Payload\"\n"
+    },
+    {
+      "id": "packet-theme-variables",
+      "type": "packet",
+      "source": "---\ntitle: Custom Packet\n---\npacket\n0-7: \"Source\"\n8-15: \"Destination\"\n",
+      "themeVariables": {
+        "fontFamily": "monospace",
+        "fontSize": "27px",
+        "textColor": "#123456"
+      }
     },
     {
       "id": "packet-complex-no-bits",
@@ -664,6 +684,22 @@
         "src": { "width": 21, "height": 19 },
         "index.js": { "width": 56, "height": 19 },
         "app.dart": { "width": 62, "height": 19 }
+      }
+    },
+    {
+      "id": "tree-theme-variables",
+      "type": "treeView",
+      "source": "treeView-beta\nsrc/\n    index.js\n    app.dart\n",
+      "themeVariables": {
+        "fontFamily": "monospace",
+        "fontSize": "27px",
+        "textColor": "#123456"
+      },
+      "textMeasurements": {
+        "/": { "width": 9.6328125, "height": 19 },
+        "src": { "width": 28.8984375, "height": 19 },
+        "index.js": { "width": 77.0625, "height": 19 },
+        "app.dart": { "width": 77.0625, "height": 19 }
       }
     },
     {

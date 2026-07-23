@@ -26,8 +26,8 @@ void main() {
     final manifest = ParityManifest.load(File('tool/mermaid_parity/fixtures.json'));
 
     expect(manifest.mermaidVersion, '11.16.0');
-    expect(manifest.fixtures.map((fixture) => fixture.id), hasLength(70));
-    expect(manifest.fixtures.map((fixture) => fixture.id).toSet(), hasLength(70));
+    expect(manifest.fixtures.map((fixture) => fixture.id), hasLength(73));
+    expect(manifest.fixtures.map((fixture) => fixture.id).toSet(), hasLength(73));
     expect(
       manifest.fixtures.map((fixture) => fixture.id),
       containsAll([
@@ -53,6 +53,8 @@ void main() {
         'cynefin-theme-variables',
         'event-modeling-theme-variables',
         'git-theme-variables',
+        'info-theme-variables',
+        'packet-theme-variables',
         'pie-theme-variables',
         'radar-theme-variables',
         'railroad-theme-variables',
@@ -67,6 +69,7 @@ void main() {
         'git-special-commits-bt',
         'git-custom-config',
         'tree-highlighted-styles',
+        'tree-theme-variables',
         'tree-custom-layout',
         'tree-automatic-icons',
         'tree-unicode-invalid-icon',
