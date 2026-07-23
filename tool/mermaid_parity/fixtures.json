@@ -300,12 +300,41 @@
       }
     },
     {
+      "id": "railroad-ebnf-choice-repetition",
+      "type": "railroadEbnf",
+      "source": "railroad-ebnf-beta\nrule = (\"a\" | b)+ ;\n",
+      "textMeasurements": {
+        "a": { "width": 8.40625, "height": 19 },
+        "b": { "width": 8.921875, "height": 19 },
+        "rule =": { "width": 41.625, "height": 19 }
+      }
+    },
+    {
       "id": "railroad-abnf-sequence",
       "type": "railroadAbnf",
       "source": "railroad-abnf-beta\nrule = \"a\" [b] ;\n",
       "textMeasurements": {
         "a": { "width": 8.40625, "height": 19 },
         "b": { "width": 8.921875, "height": 19 },
+        "rule =": { "width": 41.625, "height": 19 }
+      }
+    },
+    {
+      "id": "railroad-abnf-zero-or-more",
+      "type": "railroadAbnf",
+      "source": "railroad-abnf-beta\nrule = *(\"a\" / b) ;\n",
+      "textMeasurements": {
+        "a": { "width": 8.40625, "height": 19 },
+        "b": { "width": 8.921875, "height": 19 },
+        "rule =": { "width": 41.625, "height": 19 }
+      }
+    },
+    {
+      "id": "railroad-abnf-bounded-repetition",
+      "type": "railroadAbnf",
+      "source": "railroad-abnf-beta\nrule = 2*3\"a\" ;\n",
+      "textMeasurements": {
+        "a": { "width": 8.40625, "height": 19 },
         "rule =": { "width": 41.625, "height": 19 }
       }
     },
