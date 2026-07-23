@@ -15,6 +15,7 @@ part 'cynefin_ast.dart';
 part 'event_modeling_ast.dart';
 part 'git_graph_ast.dart';
 part 'info_ast.dart';
+part 'kanban_ast.dart';
 part 'packet_ast.dart';
 part 'pie_ast.dart';
 part 'radar_ast.dart';

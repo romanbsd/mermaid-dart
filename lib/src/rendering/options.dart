@@ -999,6 +999,38 @@ final class InfoRenderOptions extends DiagramRenderOptions {
   final String version;
 }
 
+/// Typed rendering options for Mermaid Kanban diagrams.
+final class KanbanRenderOptions extends DiagramRenderOptions {
+  /// Creates a typed [KanbanRenderOptions].
+  const KanbanRenderOptions({
+    super.useWidth,
+    super.useMaxWidth = true,
+    this.padding = 8,
+    this.sectionWidth = 200,
+    this.ticketBaseUrl = '',
+    this.sectionGap = 5,
+    this.cardGap = 5,
+  });
+
+  /// Mermaid Kanban padding retained for configuration compatibility.
+  ///
+  /// Mermaid 11.16 reads the mindmap padding while laying out Kanban diagrams,
+  /// so this setting does not currently alter the rendered viewport.
+  final double padding;
+
+  /// Width of each Kanban section in scene units.
+  final double sectionWidth;
+
+  /// Optional URL template where `#TICKET#` is replaced by the card ticket.
+  final String ticketBaseUrl;
+
+  /// Horizontal gap between sections.
+  final double sectionGap;
+
+  /// Vertical gap between cards.
+  final double cardGap;
+}
+
 /// Typed rendering options for Mermaid event modeling diagrams.
 final class EventModelingRenderOptions extends DiagramRenderOptions {
   /// Creates a typed [EventModelingRenderOptions].
@@ -2276,6 +2308,7 @@ final class RenderOptions {
     this.eventModeling = const EventModelingRenderOptions(),
     this.gitGraph = const GitGraphRenderOptions(),
     this.info = const InfoRenderOptions(),
+    this.kanban = const KanbanRenderOptions(),
     this.packet = const PacketRenderOptions(),
     this.pie = const PieRenderOptions(),
     this.radar = const RadarRenderOptions(),
@@ -2306,6 +2339,9 @@ final class RenderOptions {
 
   /// Info renderer configuration.
   final InfoRenderOptions info;
+
+  /// Kanban renderer configuration.
+  final KanbanRenderOptions kanban;
 
   /// Packet renderer configuration.
   final PacketRenderOptions packet;
@@ -2344,6 +2380,7 @@ final class RenderOptions {
           EventModelingRenderOptions() => eventModeling,
           GitGraphRenderOptions() => gitGraph,
           InfoRenderOptions() => info,
+          KanbanRenderOptions() => kanban,
           PacketRenderOptions() => packet,
           PieRenderOptions() => pie,
           RadarRenderOptions() => radar,

@@ -25,6 +25,7 @@ part 'layout/cynefin.dart';
 part 'layout/event_modeling.dart';
 part 'layout/git_graph.dart';
 part 'layout/info.dart';
+part 'layout/kanban.dart';
 part 'layout/packet.dart';
 part 'layout/pie.dart';
 part 'layout/radar.dart';
@@ -88,6 +89,11 @@ DiagramScene layoutDiagram(
     InfoAst ast => (
       content: _layoutInfo(ast, context),
       diagramOptions: options.optionsFor(const InfoRenderOptions()),
+      rendererHandlesTitle: false,
+    ),
+    KanbanAst ast => (
+      content: _layoutKanban(ast, context),
+      diagramOptions: options.optionsFor(const KanbanRenderOptions()),
       rendererHandlesTitle: false,
     ),
     PacketAst ast => (
@@ -228,6 +234,8 @@ SceneText _text(
   TextBaseline baseline = TextBaseline.central,
   SemanticRole role = SemanticRole.label,
   SceneTextStyle? style,
+  SceneStroke? stroke,
+  String? link,
   List<String> cssClasses = const [],
 }) {
   final resolved = style ?? context.textStyle;
@@ -245,6 +253,8 @@ SceneText _text(
     style: resolved,
     anchor: anchor,
     baseline: baseline,
+    stroke: stroke,
+    link: link,
     role: role,
     cssClasses: cssClasses,
   );

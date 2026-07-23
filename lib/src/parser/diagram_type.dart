@@ -20,6 +20,9 @@ enum DiagramType {
   /// Selects the info variant.
   info('info'),
 
+  /// Selects the kanban variant.
+  kanban('kanban'),
+
   /// Selects the packet variant.
   packet('packet'),
 

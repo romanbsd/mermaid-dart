@@ -169,46 +169,63 @@ void _element(XmlBuilder builder, SceneElement element, {bool omitIdentity = fal
         'path',
         attributes: {...common, 'd': commands.map(_command).join(' '), ..._fill(fill), ..._stroke(stroke)},
       );
-    case SceneText(:final position, :final text, :final style, :final anchor, :final baseline):
-      builder.element(
-        'text',
-        attributes: {
-          ...common,
-          'x': _number(position.x),
-          'y': _number(position.y),
-          'text-anchor': anchor.name,
-          'dominant-baseline': switch (baseline) {
-            TextBaseline.alphabetic => 'alphabetic',
-            TextBaseline.central => 'central',
-            TextBaseline.middle => 'middle',
-            TextBaseline.hanging => 'hanging',
+    case SceneText(
+      :final position,
+      :final text,
+      :final style,
+      :final anchor,
+      :final baseline,
+      :final stroke,
+      :final link,
+    ):
+      void buildText() {
+        builder.element(
+          'text',
+          attributes: {
+            ...common,
+            'x': _number(position.x),
+            'y': _number(position.y),
+            'text-anchor': anchor.name,
+            'dominant-baseline': switch (baseline) {
+              TextBaseline.alphabetic => 'alphabetic',
+              TextBaseline.central => 'central',
+              TextBaseline.middle => 'middle',
+              TextBaseline.hanging => 'hanging',
+            },
+            'font-family': style.fontFamily,
+            'font-size': _number(style.fontSize),
+            'font-weight': switch (style.weight) {
+              FontWeight.normal => '400',
+              FontWeight.medium => '500',
+              FontWeight.semibold => '600',
+              FontWeight.bold => '700',
+            },
+            if (style.style == FontStyle.italic) 'font-style': 'italic',
+            ..._colorAttributes('fill', style.color),
+            ..._stroke(stroke),
           },
-          'font-family': style.fontFamily,
-          'font-size': _number(style.fontSize),
-          'font-weight': switch (style.weight) {
-            FontWeight.normal => '400',
-            FontWeight.medium => '500',
-            FontWeight.semibold => '600',
-            FontWeight.bold => '700',
-          },
-          if (style.style == FontStyle.italic) 'font-style': 'italic',
-          ..._colorAttributes('fill', style.color),
-        },
-        nest: () {
-          final lines = text.split('\n');
-          if (lines.length == 1) {
-            builder.text(text);
-          } else {
-            for (var i = 0; i < lines.length; i++) {
-              builder.element(
-                'tspan',
-                attributes: {'x': _number(position.x), if (i > 0) 'dy': '${_number(style.lineHeight)}em'},
-                nest: lines[i],
-              );
+          nest: () {
+            final lines = text.split('\n');
+            if (lines.length == 1) {
+              builder.text(text);
+            } else {
+              for (var i = 0; i < lines.length; i++) {
+                builder.element(
+                  'tspan',
+                  attributes: {'x': _number(position.x), if (i > 0) 'dy': '${_number(style.lineHeight)}em'},
+                  nest: lines[i],
+                );
+              }
             }
-          }
-        },
-      );
+          },
+        );
+      }
+
+      if (link == null) {
+        buildText();
+      } else {
+        builder.element('a', attributes: {'href': link, 'target': '_blank'}, nest: buildText);
+      }
     case SceneIcon(:final position, :final geometry, :final fill, :final stroke):
       builder.element(
         'g',

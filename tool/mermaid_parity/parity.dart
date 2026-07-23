@@ -84,6 +84,7 @@ final class ParityFixture {
     const cynefinDefaults = CynefinRenderOptions();
     const eventModelingDefaults = EventModelingRenderOptions();
     const gitGraphDefaults = GitGraphRenderOptions();
+    const kanbanDefaults = KanbanRenderOptions();
     const packetDefaults = PacketRenderOptions();
     const pieDefaults = PieRenderOptions();
     const radarDefaults = RadarRenderOptions();
@@ -140,6 +141,13 @@ final class ParityFixture {
         rotateCommitLabel: diagramConfig['rotateCommitLabel'] as bool? ?? gitGraphDefaults.rotateCommitLabel,
         parallelCommits: diagramConfig['parallelCommits'] as bool? ?? gitGraphDefaults.parallelCommits,
         arrowMarkerAbsolute: diagramConfig['arrowMarkerAbsolute'] as bool? ?? gitGraphDefaults.arrowMarkerAbsolute,
+      ),
+      kanban: KanbanRenderOptions(
+        useWidth: _configuredUseWidth(diagramConfig, kanbanDefaults),
+        useMaxWidth: _configuredUseMaxWidth(diagramConfig, kanbanDefaults),
+        padding: (diagramConfig['padding'] as num?)?.toDouble() ?? kanbanDefaults.padding,
+        sectionWidth: (diagramConfig['sectionWidth'] as num?)?.toDouble() ?? kanbanDefaults.sectionWidth,
+        ticketBaseUrl: diagramConfig['ticketBaseUrl'] as String? ?? kanbanDefaults.ticketBaseUrl,
       ),
       packet: PacketRenderOptions(
         useWidth: _configuredUseWidth(diagramConfig, packetDefaults),
@@ -703,6 +711,7 @@ const _fixtureOptionNames = {
   DiagramType.cynefin: 'cynefinOptions',
   DiagramType.eventModeling: 'eventModelingOptions',
   DiagramType.gitGraph: 'gitGraphOptions',
+  DiagramType.kanban: 'kanbanOptions',
   DiagramType.packet: 'packetOptions',
   DiagramType.pie: 'pieOptions',
   DiagramType.radar: 'radarOptions',
@@ -720,6 +729,7 @@ const _mermaidConfigNames = {
   DiagramType.cynefin: 'cynefin',
   DiagramType.eventModeling: 'eventmodeling',
   DiagramType.gitGraph: 'gitGraph',
+  DiagramType.kanban: 'kanban',
   DiagramType.packet: 'packet',
   DiagramType.pie: 'pie',
   DiagramType.radar: 'radar',
@@ -753,6 +763,7 @@ Map<String, Object> _diagramConfig(Map<Object?, Object?> json, DiagramType type)
     DiagramType.cynefin => _cynefinConfig(value),
     DiagramType.eventModeling => _eventModelingConfig(value),
     DiagramType.gitGraph => _gitGraphConfig(value),
+    DiagramType.kanban => _kanbanConfig(value),
     DiagramType.packet => _packetConfig(value),
     DiagramType.pie => _pieConfig(value),
     DiagramType.radar => _radarConfig(value),
@@ -765,6 +776,28 @@ Map<String, Object> _diagramConfig(Map<Object?, Object?> json, DiagramType type)
     DiagramType.wardley => _wardleyConfig(value),
     _ => throw FormatException('$expected are not supported for ${type.name} fixtures'),
   };
+}
+
+const _kanbanConfigKeys = {..._baseDiagramConfigKeys, 'padding', 'sectionWidth', 'ticketBaseUrl'};
+
+Map<String, Object> _kanbanConfig(Object? value) {
+  if (value is! Map<String, Object?> || value.isEmpty || value.keys.any((key) => !_kanbanConfigKeys.contains(key))) {
+    throw const FormatException('Invalid fixture kanbanOptions');
+  }
+  final result = <String, Object>{};
+  for (final MapEntry(:key, :value) in value.entries) {
+    final valid = _baseDiagramConfigKeys.contains(key)
+        ? _baseDiagramConfigValue(key, value)
+        : switch ((key, value)) {
+            ('padding', final num option) when option >= 0 => option,
+            ('sectionWidth', final num option) when option > 0 => option,
+            ('ticketBaseUrl', final String option) => option,
+            _ => null,
+          };
+    if (valid == null) throw const FormatException('Invalid fixture kanbanOptions');
+    result[key] = valid;
+  }
+  return Map.unmodifiable(result);
 }
 
 const _railroadConfigKeys = {
@@ -1590,7 +1623,10 @@ String _normalizedColor(String value) {
 // colors, which are serialized as hexadecimal RGB values.
 const _namedCssColors = <String, String>{
   'black': '#000000',
+  'blue': '#0000ff',
+  'lightblue': '#add8e6',
   'lightgrey': '#d3d3d3',
+  'orange': '#ffa500',
   'red': '#ff0000',
   'white': '#ffffff',
 };

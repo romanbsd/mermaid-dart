@@ -770,6 +770,25 @@
       }
     },
     {
+      "id": "kanban-delivery",
+      "type": "kanban",
+      "source": "kanban\n  todo[To do]\n    parser[Implement parser]@{ ticket: M-1, assigned: Roman, priority: High }\n  done[Done]\n    release[Release]\n",
+      "textMeasurements": {
+        "To do": { "width": 38.203, "height": 24 },
+        "Done": { "width": 35.875, "height": 24 },
+        "Implement parser": { "width": 126.969, "height": 24 },
+        "M-1": { "width": 25.625, "height": 24 },
+        "Roman": { "width": 47.688, "height": 24 },
+        "Release": { "width": 54.453, "height": 24 }
+      },
+      "kanbanOptions": {
+        "useMaxWidth": true,
+        "padding": 8,
+        "sectionWidth": 200,
+        "ticketBaseUrl": "https://issues.example/#TICKET#"
+      }
+    },
+    {
       "id": "treemap-products",
       "type": "treemap",
       "source": "treemap\n\"Products\"\n  \"Large\": 3\n  \"Small\": 1\n"

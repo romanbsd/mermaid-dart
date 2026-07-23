@@ -5,6 +5,7 @@ import 'diagram_type.dart';
 import 'event_modeling_parser.dart';
 import 'git_graph_parser.dart';
 import 'info_parser.dart';
+import 'kanban_parser.dart';
 import 'packet_parser.dart';
 import 'pie_parser.dart';
 import 'radar_parser.dart';
@@ -26,6 +27,7 @@ DiagramAst parse(DiagramType diagramType, String source) => switch (diagramType)
   DiagramType.eventModeling => parseEventModeling(source),
   DiagramType.gitGraph => parseGitGraph(source),
   DiagramType.info => parseInfo(source),
+  DiagramType.kanban => parseKanban(source),
   DiagramType.packet => parsePacket(source),
   DiagramType.pie => parsePie(source),
   DiagramType.radar => parseRadar(source),

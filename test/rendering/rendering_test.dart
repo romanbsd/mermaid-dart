@@ -525,6 +525,7 @@ disk2:T -- B:db
         DiagramType.eventModeling: 'eventmodeling',
         DiagramType.gitGraph: 'gitGraph',
         DiagramType.info: 'info',
+        DiagramType.kanban: 'kanban',
         DiagramType.packet: 'packet-beta',
         DiagramType.pie: 'pie',
         DiagramType.radar: 'radar-beta',

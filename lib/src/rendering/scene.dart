@@ -760,6 +760,8 @@ final class SceneText extends SceneElement with _SceneValue {
     this.style = const SceneTextStyle(),
     this.anchor = TextAnchor.start,
     this.baseline = TextBaseline.alphabetic,
+    this.stroke,
+    this.link,
     super.role,
     super.cssClasses,
     super.label,
@@ -782,8 +784,28 @@ final class SceneText extends SceneElement with _SceneValue {
 
   /// The baseline.
   final TextBaseline baseline;
+
+  /// Optional outline applied to the text glyphs.
+  final SceneStroke? stroke;
+
+  /// Optional destination represented by interactive backends.
+  final String? link;
+
   @override
-  List<Object?> get fields => [id, position, text, bounds, style, anchor, baseline, role, cssClasses, label];
+  List<Object?> get fields => [
+    id,
+    position,
+    text,
+    bounds,
+    style,
+    anchor,
+    baseline,
+    stroke,
+    link,
+    role,
+    cssClasses,
+    label,
+  ];
 }
 
 /// Resolved, backend-neutral vector geometry for an icon.

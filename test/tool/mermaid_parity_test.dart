@@ -26,8 +26,8 @@ void main() {
     final manifest = ParityManifest.load(File('tool/mermaid_parity/fixtures.json'));
 
     expect(manifest.mermaidVersion, '11.16.0');
-    expect(manifest.fixtures.map((fixture) => fixture.id), hasLength(73));
-    expect(manifest.fixtures.map((fixture) => fixture.id).toSet(), hasLength(73));
+    expect(manifest.fixtures.map((fixture) => fixture.id), hasLength(74));
+    expect(manifest.fixtures.map((fixture) => fixture.id).toSet(), hasLength(74));
     expect(
       manifest.fixtures.map((fixture) => fixture.id),
       containsAll([
@@ -68,6 +68,7 @@ void main() {
         'git-special-commits-tb',
         'git-special-commits-bt',
         'git-custom-config',
+        'kanban-delivery',
         'tree-highlighted-styles',
         'tree-theme-variables',
         'tree-custom-layout',
@@ -107,6 +108,7 @@ void main() {
         'eventModeling',
         'gitGraph',
         'info',
+        'kanban',
         'packet',
         'pie',
         'radar',
@@ -173,6 +175,11 @@ void main() {
     expect(equivalent.samePaint, isTrue);
     expect(equivalent.visualParity, isTrue);
     expect(SvgComparison.compare(namedColor, namedColorHex).samePaint, isTrue);
+    for (final (name, hex) in [('orange', '#ffa500'), ('blue', '#0000ff'), ('lightblue', '#add8e6')]) {
+      final named = SvgSnapshot.fromSvg('<svg><line stroke="$name" x2="10"/></svg>');
+      final hexadecimal = SvgSnapshot.fromSvg('<svg><line stroke="$hex" x2="10"/></svg>');
+      expect(SvgComparison.compare(named, hexadecimal).samePaint, isTrue, reason: name);
+    }
 
     final comparison = SvgComparison.compare(attributes, different);
     expect(comparison.sameGeometry, isTrue);
@@ -1414,6 +1421,45 @@ void main() {
         'type': 'treemap',
         'source': 'treemap\n"A": 1\n',
         'treemapOptions': {'valueFormat': 'unsupported'},
+      }),
+      throwsFormatException,
+    );
+  });
+
+  test('fixture Kanban options are typed and Kanban-only', () {
+    const options = {
+      'useMaxWidth': false,
+      'padding': 12,
+      'sectionWidth': 240,
+      'ticketBaseUrl': 'https://issues.example/#TICKET#',
+    };
+    final configured = ParityFixture.fromJson({
+      'id': 'configured',
+      'type': 'kanban',
+      'source': 'kanban\n  todo\n    task\n',
+      'kanbanOptions': options,
+    });
+
+    expect(configured.renderOptions.kanban.useMaxWidth, isFalse);
+    expect(configured.renderOptions.kanban.padding, 12);
+    expect(configured.renderOptions.kanban.sectionWidth, 240);
+    expect(configured.renderOptions.kanban.ticketBaseUrl, 'https://issues.example/#TICKET#');
+    expect(configured.mermaidConfig, {'kanban': options});
+    expect(
+      () => ParityFixture.fromJson({
+        'id': 'configured',
+        'type': 'info',
+        'source': 'info',
+        'kanbanOptions': {'sectionWidth': 240},
+      }),
+      throwsFormatException,
+    );
+    expect(
+      () => ParityFixture.fromJson({
+        'id': 'configured',
+        'type': 'kanban',
+        'source': 'kanban\n  todo\n',
+        'kanbanOptions': {'sectionWidth': 0},
       }),
       throwsFormatException,
     );
