@@ -523,6 +523,7 @@ disk2:T -- B:db
         DiagramType.architecture: 'architecture-beta',
         DiagramType.cynefin: 'cynefin-beta',
         DiagramType.eventModeling: 'eventmodeling',
+        DiagramType.gantt: 'gantt',
         DiagramType.gitGraph: 'gitGraph',
         DiagramType.info: 'info',
         DiagramType.kanban: 'kanban',

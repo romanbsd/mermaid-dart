@@ -6,6 +6,7 @@ library;
 
 export 'layout.dart' show layoutDiagram, renderDiagramSvg;
 export 'geometry/scene_bounds.dart';
+export 'icons/architecture.dart';
 export 'options.dart';
 export 'scene.dart';
 export 'svg.dart' show renderSvg;

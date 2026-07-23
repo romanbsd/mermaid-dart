@@ -83,6 +83,7 @@ final class ParityFixture {
     const architectureDefaults = ArchitectureRenderOptions();
     const cynefinDefaults = CynefinRenderOptions();
     const eventModelingDefaults = EventModelingRenderOptions();
+    const ganttDefaults = GanttRenderOptions();
     const gitGraphDefaults = GitGraphRenderOptions();
     const kanbanDefaults = KanbanRenderOptions();
     const packetDefaults = PacketRenderOptions();
@@ -127,6 +128,35 @@ final class ParityFixture {
         useMaxWidth: _configuredUseMaxWidth(diagramConfig, eventModelingDefaults),
         padding: (diagramConfig['padding'] as num?)?.toDouble() ?? eventModelingDefaults.padding,
         rowHeight: (diagramConfig['rowHeight'] as num?)?.toDouble() ?? eventModelingDefaults.rowHeight,
+      ),
+      gantt: GanttRenderOptions(
+        useWidth: _configuredUseWidth(diagramConfig, ganttDefaults),
+        useMaxWidth: _configuredUseMaxWidth(diagramConfig, ganttDefaults),
+        titleTopMargin: (diagramConfig['titleTopMargin'] as num?)?.toDouble() ?? ganttDefaults.titleTopMargin,
+        barHeight: (diagramConfig['barHeight'] as num?)?.toDouble() ?? ganttDefaults.barHeight,
+        barGap: (diagramConfig['barGap'] as num?)?.toDouble() ?? ganttDefaults.barGap,
+        topPadding: (diagramConfig['topPadding'] as num?)?.toDouble() ?? ganttDefaults.topPadding,
+        rightPadding: (diagramConfig['rightPadding'] as num?)?.toDouble() ?? ganttDefaults.rightPadding,
+        leftPadding: (diagramConfig['leftPadding'] as num?)?.toDouble() ?? ganttDefaults.leftPadding,
+        gridLineStartPadding:
+            (diagramConfig['gridLineStartPadding'] as num?)?.toDouble() ?? ganttDefaults.gridLineStartPadding,
+        fontSize: (diagramConfig['fontSize'] as num?)?.toDouble() ?? ganttDefaults.fontSize,
+        sectionFontSize: (diagramConfig['sectionFontSize'] as num?)?.toDouble() ?? ganttDefaults.sectionFontSize,
+        numberSectionStyles: diagramConfig['numberSectionStyles'] as int? ?? ganttDefaults.numberSectionStyles,
+        axisFormat: diagramConfig['axisFormat'] as String? ?? ganttDefaults.axisFormat,
+        tickInterval: switch (diagramConfig['tickInterval']) {
+          final String value => _ganttTickInterval(value),
+          _ => ganttDefaults.tickInterval,
+        },
+        topAxis: diagramConfig['topAxis'] as bool? ?? ganttDefaults.topAxis,
+        displayMode: switch (diagramConfig['displayMode']) {
+          'compact' => GanttDisplayMode.compact,
+          _ => ganttDefaults.displayMode,
+        },
+        weekday: switch (diagramConfig['weekday']) {
+          final String value => GanttWeekday.values.byName(value),
+          _ => ganttDefaults.weekday,
+        },
       ),
       gitGraph: GitGraphRenderOptions(
         useWidth: _configuredUseWidth(diagramConfig, gitGraphDefaults),
@@ -710,6 +740,7 @@ const _fixtureOptionNames = {
   DiagramType.architecture: 'architectureOptions',
   DiagramType.cynefin: 'cynefinOptions',
   DiagramType.eventModeling: 'eventModelingOptions',
+  DiagramType.gantt: 'ganttOptions',
   DiagramType.gitGraph: 'gitGraphOptions',
   DiagramType.kanban: 'kanbanOptions',
   DiagramType.packet: 'packetOptions',
@@ -728,6 +759,7 @@ const _mermaidConfigNames = {
   DiagramType.architecture: 'architecture',
   DiagramType.cynefin: 'cynefin',
   DiagramType.eventModeling: 'eventmodeling',
+  DiagramType.gantt: 'gantt',
   DiagramType.gitGraph: 'gitGraph',
   DiagramType.kanban: 'kanban',
   DiagramType.packet: 'packet',
@@ -762,6 +794,7 @@ Map<String, Object> _diagramConfig(Map<Object?, Object?> json, DiagramType type)
     DiagramType.architecture => _architectureConfig(value),
     DiagramType.cynefin => _cynefinConfig(value),
     DiagramType.eventModeling => _eventModelingConfig(value),
+    DiagramType.gantt => _ganttConfig(value),
     DiagramType.gitGraph => _gitGraphConfig(value),
     DiagramType.kanban => _kanbanConfig(value),
     DiagramType.packet => _packetConfig(value),
@@ -779,6 +812,69 @@ Map<String, Object> _diagramConfig(Map<Object?, Object?> json, DiagramType type)
 }
 
 const _kanbanConfigKeys = {..._baseDiagramConfigKeys, 'padding', 'sectionWidth', 'ticketBaseUrl'};
+
+const _ganttConfigKeys = {
+  ..._baseDiagramConfigKeys,
+  'titleTopMargin',
+  'barHeight',
+  'barGap',
+  'topPadding',
+  'rightPadding',
+  'leftPadding',
+  'gridLineStartPadding',
+  'fontSize',
+  'sectionFontSize',
+  'numberSectionStyles',
+  'axisFormat',
+  'tickInterval',
+  'topAxis',
+  'displayMode',
+  'weekday',
+};
+
+Map<String, Object> _ganttConfig(Object? value) {
+  if (value is! Map<String, Object?> || value.isEmpty || value.keys.any((key) => !_ganttConfigKeys.contains(key))) {
+    throw const FormatException('Invalid fixture ganttOptions');
+  }
+  final result = <String, Object>{};
+  for (final MapEntry(:key, :value) in value.entries) {
+    final valid = _baseDiagramConfigKeys.contains(key)
+        ? _baseDiagramConfigValue(key, value)
+        : switch ((key, value)) {
+            (
+              'titleTopMargin' ||
+                  'barHeight' ||
+                  'barGap' ||
+                  'topPadding' ||
+                  'rightPadding' ||
+                  'leftPadding' ||
+                  'gridLineStartPadding' ||
+                  'fontSize' ||
+                  'sectionFontSize',
+              final num option,
+            )
+                when option >= 0 =>
+              option,
+            ('numberSectionStyles', final int option) when option > 0 => option,
+            ('axisFormat', final String option) when option.isNotEmpty => option,
+            ('tickInterval', final String option) when _ganttTickPattern.hasMatch(option) => option,
+            ('topAxis', final bool option) => option,
+            ('displayMode', '' || 'compact') => value,
+            ('weekday', final String option) when GanttWeekday.values.any((day) => day.name == option) => option,
+            _ => null,
+          };
+    if (valid == null) throw const FormatException('Invalid fixture ganttOptions');
+    result[key] = valid;
+  }
+  return Map.unmodifiable(result);
+}
+
+final _ganttTickPattern = RegExp(r'^([1-9]\d*)(millisecond|second|minute|hour|day|week|month)$');
+
+GanttTickInterval _ganttTickInterval(String value) {
+  final match = _ganttTickPattern.firstMatch(value)!;
+  return GanttTickInterval(int.parse(match.group(1)!), GanttTickUnit.values.byName(match.group(2)!));
+}
 
 Map<String, Object> _kanbanConfig(Object? value) {
   if (value is! Map<String, Object?> || value.isEmpty || value.keys.any((key) => !_kanbanConfigKeys.contains(key))) {
@@ -1425,8 +1521,14 @@ List<String> _elementSignatures(
   void visit(XmlElement element, String inheritedTransform) {
     if (!_isComparableGeometryElement(element, root)) return;
     final ownTransform = element.getAttribute('transform') ?? '';
+    final stylesheetTransform = _stylesheetTransform(element, styleSheets);
     final stylesheetScale = _stylesheetScaleTransform(element, styleSheets);
-    final transform = [inheritedTransform, ownTransform, stylesheetScale].where((value) => value.isNotEmpty).join(' ');
+    final transform = [
+      inheritedTransform,
+      ownTransform,
+      stylesheetTransform,
+      stylesheetScale,
+    ].where((value) => value.isNotEmpty).join(' ');
     final isEmptyText =
         (element.name.local == 'text' || element.name.local == 'foreignObject') && element.innerText.trim().isEmpty;
     if (_visibleElements.contains(element.name.local) && !isEmptyText) {
@@ -1451,6 +1553,22 @@ String _stylesheetScaleTransform(XmlElement element, String styleSheets) {
     'scale',
   )?.replaceFirst(RegExp(r'\s*!important\s*$', caseSensitive: false), '').trim();
   return value == null || value.isEmpty || value == 'none' ? '' : 'scale($value)';
+}
+
+/// Converts a static CSS transform and its transform origin into an equivalent
+/// SVG transform list. Mermaid's Gantt milestones use this form.
+String _stylesheetTransform(XmlElement element, String styleSheets) {
+  final value = _stylesheetProperty(element, styleSheets, 'transform');
+  if (value == null || value == 'none') return '';
+  final transform = value.replaceAll(RegExp(r'deg\b', caseSensitive: false), '');
+  final origin =
+      element.getAttribute('transform-origin') ?? _stylesheetProperty(element, styleSheets, 'transform-origin');
+  if (origin == null) return transform;
+  final coordinates = _signatureNumber.allMatches(origin).map((match) => double.parse(match.group(0)!)).toList();
+  if (coordinates.length < 2) return transform;
+  final x = _formatNumber(coordinates[0]);
+  final y = _formatNumber(coordinates[1]);
+  return 'translate($x $y) $transform translate(-$x -$y)';
 }
 
 // SVG presentation properties that materially affect the visible paint while
@@ -1624,8 +1742,10 @@ String _normalizedColor(String value) {
 const _namedCssColors = <String, String>{
   'black': '#000000',
   'blue': '#0000ff',
+  'grey': '#808080',
   'lightblue': '#add8e6',
   'lightgrey': '#d3d3d3',
+  'navy': '#000080',
   'orange': '#ffa500',
   'red': '#ff0000',
   'white': '#ffffff',
@@ -1820,9 +1940,14 @@ List<String> _textGeometryValues(
     'middle' || 'central' => 'central',
     final value => value,
   };
+  // Mermaid createText uses y=-0.1em/dy=1.1em inside a group whose
+  // dominant-baseline=start. Chrome paints that wrapper from the group's
+  // translated top; counting the tspan's one-em advance again puts the
+  // normalized geometry a full line too low.
+  final normalizedY = rawBaseline == 'start' ? localY - fontSize : localY;
   return [
     _formatNumber(localX + (translation?.dx ?? 0)),
-    _formatNumber(localY + (translation?.dy ?? 0)),
+    _formatNumber(normalizedY + (translation?.dy ?? 0)),
     _formatNumber(fontSize),
     anchor,
     baseline,
@@ -1942,6 +2067,7 @@ String _normalizedTransform(String transform) {
       continue;
     }
     flushTranslation();
+    if (name == 'scale' && values.length == 1) values.add(values.single);
     result.add('$name(${values.map(_formatNumber).join(' ')})');
   }
   flushTranslation();

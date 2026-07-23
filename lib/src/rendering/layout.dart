@@ -16,6 +16,7 @@ import 'geometry/railroad.dart';
 import 'geometry/scene_bounds.dart';
 import 'geometry/treemap.dart';
 import 'geometry/wardley.dart';
+import 'icons/architecture.dart';
 import 'options.dart';
 import 'scene.dart';
 import 'svg.dart';
@@ -23,6 +24,7 @@ import 'svg.dart';
 part 'layout/architecture.dart';
 part 'layout/cynefin.dart';
 part 'layout/event_modeling.dart';
+part 'layout/gantt.dart';
 part 'layout/git_graph.dart';
 part 'layout/info.dart';
 part 'layout/kanban.dart';
@@ -80,6 +82,11 @@ DiagramScene layoutDiagram(
       content: _layoutEventModeling(ast, context),
       diagramOptions: options.optionsFor(const EventModelingRenderOptions()),
       rendererHandlesTitle: false,
+    ),
+    GanttAst ast => (
+      content: _layoutGantt(ast, context),
+      diagramOptions: options.optionsFor(const GanttRenderOptions()),
+      rendererHandlesTitle: true,
     ),
     GitGraphAst ast => (
       content: _layoutGitGraph(ast, context),
@@ -316,7 +323,9 @@ SceneTextStyle _mermaidTextStyle(_LayoutContext context, double fontSize, {Color
 );
 
 IconGeometry _iconGeometry(_LayoutContext context, String reference) =>
-    context.iconResolver.resolve(reference) ?? const PlaceholderIconResolver().resolve(reference);
+    context.iconResolver.resolve(reference) ??
+    const ArchitectureIconResolver().resolve(reference) ??
+    const PlaceholderIconResolver().resolve(reference);
 
 SceneGroup _scaledIcon(
   _LayoutContext context,

@@ -26,11 +26,12 @@ void main() {
     final manifest = ParityManifest.load(File('tool/mermaid_parity/fixtures.json'));
 
     expect(manifest.mermaidVersion, '11.16.0');
-    expect(manifest.fixtures.map((fixture) => fixture.id), hasLength(74));
-    expect(manifest.fixtures.map((fixture) => fixture.id).toSet(), hasLength(74));
+    expect(manifest.fixtures.map((fixture) => fixture.id), hasLength(78));
+    expect(manifest.fixtures.map((fixture) => fixture.id).toSet(), hasLength(78));
     expect(
       manifest.fixtures.map((fixture) => fixture.id),
       containsAll([
+        'architecture-cloud-services',
         'architecture-nested-routing',
         'architecture-external-gateway',
         'architecture-fallback-icon',
@@ -68,6 +69,9 @@ void main() {
         'git-special-commits-tb',
         'git-special-commits-bt',
         'git-custom-config',
+        'gantt-delivery',
+        'gantt-markers',
+        'gantt-exclusions-compact',
         'kanban-delivery',
         'tree-highlighted-styles',
         'tree-theme-variables',
@@ -106,6 +110,7 @@ void main() {
         'architecture',
         'cynefin',
         'eventModeling',
+        'gantt',
         'gitGraph',
         'info',
         'kanban',
@@ -175,7 +180,13 @@ void main() {
     expect(equivalent.samePaint, isTrue);
     expect(equivalent.visualParity, isTrue);
     expect(SvgComparison.compare(namedColor, namedColorHex).samePaint, isTrue);
-    for (final (name, hex) in [('orange', '#ffa500'), ('blue', '#0000ff'), ('lightblue', '#add8e6')]) {
+    for (final (name, hex) in [
+      ('orange', '#ffa500'),
+      ('blue', '#0000ff'),
+      ('lightblue', '#add8e6'),
+      ('grey', '#808080'),
+      ('navy', '#000080'),
+    ]) {
       final named = SvgSnapshot.fromSvg('<svg><line stroke="$name" x2="10"/></svg>');
       final hexadecimal = SvgSnapshot.fromSvg('<svg><line stroke="$hex" x2="10"/></svg>');
       expect(SvgComparison.compare(named, hexadecimal).samePaint, isTrue, reason: name);
@@ -213,6 +224,20 @@ void main() {
 ''');
 
     expect(SvgComparison.compare(stylesheet, explicit).visualParity, isTrue);
+  });
+
+  test('comparison resolves static CSS transforms around their origin', () {
+    final stylesheet = SvgSnapshot.fromSvg(
+      '<svg><style>.milestone { transform: rotate(45deg) scale(.8,.8); }</style>'
+      '<rect class="milestone" transform-origin="20px 30px" x="10" y="20" width="20" height="20"/>'
+      '</svg>',
+    );
+    final explicit = SvgSnapshot.fromSvg(
+      '<svg><g transform="translate(20 30) rotate(45) scale(.8) translate(-20 -30)">'
+      '<rect x="10" y="20" width="20" height="20"/></g></svg>',
+    );
+
+    expect(SvgComparison.compare(stylesheet, explicit).sameGeometry, isTrue);
   });
 
   test('paint comparison ignores fill properties that cannot affect lines', () {
@@ -432,6 +457,21 @@ void main() {
     final dart = SvgSnapshot.fromSvg(
       '<svg><text x="10" y="36" font-size="16" text-anchor="middle" '
       'dominant-baseline="middle">API</text></svg>',
+    );
+
+    expect(SvgComparison.compare(dart, mermaid).sameGeometry, isTrue);
+  });
+
+  test('normalizes Mermaid start-baseline wrappers to their painted top', () {
+    final mermaid = SvgSnapshot.fromSvg(
+      '<svg><g transform="translate(10 20)" dominant-baseline="start" '
+      'text-anchor="start"><text y="-10.1" font-size="16">'
+      '<tspan x="0" y="-0.1em" dy="1.1em">Cloud</tspan>'
+      '</text></g></svg>',
+    );
+    final dart = SvgSnapshot.fromSvg(
+      '<svg><text x="10" y="20" font-size="16" text-anchor="start" '
+      'dominant-baseline="hanging">Cloud</text></svg>',
     );
 
     expect(SvgComparison.compare(dart, mermaid).sameGeometry, isTrue);
@@ -1421,6 +1461,50 @@ void main() {
         'type': 'treemap',
         'source': 'treemap\n"A": 1\n',
         'treemapOptions': {'valueFormat': 'unsupported'},
+      }),
+      throwsFormatException,
+    );
+  });
+
+  test('fixture Gantt options are typed and Gantt-only', () {
+    const options = {
+      'useWidth': 640,
+      'useMaxWidth': false,
+      'barHeight': 24,
+      'barGap': 6,
+      'tickInterval': '2week',
+      'displayMode': 'compact',
+      'weekday': 'monday',
+    };
+    final configured = ParityFixture.fromJson({
+      'id': 'configured',
+      'type': 'gantt',
+      'source': 'gantt\n',
+      'ganttOptions': options,
+    });
+
+    expect(configured.renderOptions.gantt.useWidth, 640);
+    expect(configured.renderOptions.gantt.barHeight, 24);
+    expect(configured.renderOptions.gantt.barGap, 6);
+    expect(configured.renderOptions.gantt.tickInterval, const GanttTickInterval(2, GanttTickUnit.week));
+    expect(configured.renderOptions.gantt.displayMode, GanttDisplayMode.compact);
+    expect(configured.renderOptions.gantt.weekday, GanttWeekday.monday);
+    expect(configured.mermaidConfig, {'gantt': options});
+    expect(
+      () => ParityFixture.fromJson({
+        'id': 'configured',
+        'type': 'info',
+        'source': 'info',
+        'ganttOptions': {'barHeight': 24},
+      }),
+      throwsFormatException,
+    );
+    expect(
+      () => ParityFixture.fromJson({
+        'id': 'configured',
+        'type': 'gantt',
+        'source': 'gantt\n',
+        'ganttOptions': {'tickInterval': 'day'},
       }),
       throwsFormatException,
     );

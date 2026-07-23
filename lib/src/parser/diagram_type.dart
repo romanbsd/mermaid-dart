@@ -14,6 +14,9 @@ enum DiagramType {
   /// Selects the event modeling variant.
   eventModeling('eventmodeling'),
 
+  /// Selects the Gantt variant.
+  gantt('gantt'),
+
   /// Selects the git graph variant.
   gitGraph('gitGraph'),
 

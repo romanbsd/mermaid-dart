@@ -1,3 +1,4 @@
+import '../parser/ast.dart';
 import 'scene.dart';
 
 // Mermaid's default 12-step categorical theme scales. Radar consumes the
@@ -997,6 +998,160 @@ final class InfoRenderOptions extends DiagramRenderOptions {
 
   /// The version.
   final String version;
+}
+
+/// Typed rendering options for Mermaid Kanban diagrams.
+enum GanttDisplayMode {
+  /// One row per task.
+  normal,
+
+  /// Reuse rows for non-overlapping tasks in each section.
+  compact,
+}
+
+/// Typed rendering options for Mermaid Gantt diagrams.
+final class GanttRenderOptions extends DiagramRenderOptions {
+  /// Creates Mermaid-compatible Gantt options.
+  const GanttRenderOptions({
+    super.useWidth,
+    super.useMaxWidth = true,
+    this.titleTopMargin = 25,
+    this.barHeight = 20,
+    this.barGap = 4,
+    this.topPadding = 50,
+    this.rightPadding = 75,
+    this.leftPadding = 75,
+    this.gridLineStartPadding = 35,
+    this.fontSize = 11,
+    this.sectionFontSize = 11,
+    this.numberSectionStyles = 4,
+    this.axisFormat = '%Y-%m-%d',
+    this.tickInterval,
+    this.topAxis = false,
+    this.displayMode = GanttDisplayMode.normal,
+    this.weekday = GanttWeekday.sunday,
+    this.sectionBackground = const Color(102, 102, 255, 25),
+    this.alternateSectionBackground = const Color(255, 255, 255, 51),
+    this.sectionBackground2 = const Color(255, 244, 0, 51),
+    this.excludeBackground = const Color(238, 238, 238),
+    this.taskBackground = const Color(138, 144, 221),
+    this.taskBorder = const Color(83, 79, 188),
+    this.activeTaskBackground = const Color(191, 199, 255),
+    this.activeTaskBorder = const Color(83, 79, 188),
+    this.doneTaskBackground = const Color(211, 211, 211),
+    this.doneTaskBorder = const Color(128, 128, 128),
+    this.criticalTaskBackground = const Color(255, 0, 0),
+    this.criticalTaskBorder = const Color(255, 136, 136),
+    this.taskText = const Color(255, 255, 255),
+    this.taskTextOutside = const Color(0, 0, 0),
+    this.clickableTaskText = const Color(0, 49, 99),
+    this.gridColor = const Color(211, 211, 211),
+    this.todayLineColor = const Color(255, 0, 0),
+    this.verticalLineColor = const Color(0, 0, 128),
+    this.titleColor = const Color(51, 51, 51),
+  });
+
+  /// Title baseline offset.
+  final double titleTopMargin;
+
+  /// Task bar height.
+  final double barHeight;
+
+  /// Gap between task rows.
+  final double barGap;
+
+  /// Space above and below the task rows.
+  final double topPadding;
+
+  /// Space reserved on the right.
+  final double rightPadding;
+
+  /// Space reserved for section labels.
+  final double leftPadding;
+
+  /// Vertical grid-line start inset.
+  final double gridLineStartPadding;
+
+  /// Task label font size.
+  final double fontSize;
+
+  /// Section label font size.
+  final double sectionFontSize;
+
+  /// Number of alternating section styles.
+  final int numberSectionStyles;
+
+  /// Default D3-compatible axis format.
+  final String axisFormat;
+
+  /// Default axis interval when syntax does not override it.
+  final GanttTickInterval? tickInterval;
+
+  /// Whether the top axis is enabled by configuration.
+  final bool topAxis;
+
+  /// Task row allocation mode.
+  final GanttDisplayMode displayMode;
+
+  /// Weekday used for week interval ticks.
+  final GanttWeekday weekday;
+
+  /// Primary section-band paint, including Mermaid's section opacity.
+  final Color sectionBackground;
+
+  /// Alternating section-band paint.
+  final Color alternateSectionBackground;
+
+  /// Third section-band paint.
+  final Color sectionBackground2;
+
+  /// Excluded-date background paint.
+  final Color excludeBackground;
+
+  /// Planned task fill.
+  final Color taskBackground;
+
+  /// Planned task stroke.
+  final Color taskBorder;
+
+  /// Active task fill.
+  final Color activeTaskBackground;
+
+  /// Active task stroke.
+  final Color activeTaskBorder;
+
+  /// Completed task fill.
+  final Color doneTaskBackground;
+
+  /// Completed task stroke.
+  final Color doneTaskBorder;
+
+  /// Critical task fill.
+  final Color criticalTaskBackground;
+
+  /// Critical task stroke.
+  final Color criticalTaskBorder;
+
+  /// Text painted inside task bars.
+  final Color taskText;
+
+  /// Text painted beside narrow task bars.
+  final Color taskTextOutside;
+
+  /// Linked task text.
+  final Color clickableTaskText;
+
+  /// Grid stroke.
+  final Color gridColor;
+
+  /// Today marker stroke.
+  final Color todayLineColor;
+
+  /// Vertical marker paint.
+  final Color verticalLineColor;
+
+  /// Diagram and section title paint.
+  final Color titleColor;
 }
 
 /// Typed rendering options for Mermaid Kanban diagrams.
@@ -2306,6 +2461,7 @@ final class RenderOptions {
     this.architecture = const ArchitectureRenderOptions(),
     this.cynefin = const CynefinRenderOptions(),
     this.eventModeling = const EventModelingRenderOptions(),
+    this.gantt = const GanttRenderOptions(),
     this.gitGraph = const GitGraphRenderOptions(),
     this.info = const InfoRenderOptions(),
     this.kanban = const KanbanRenderOptions(),
@@ -2333,6 +2489,9 @@ final class RenderOptions {
 
   /// Event Modeling renderer configuration.
   final EventModelingRenderOptions eventModeling;
+
+  /// Gantt renderer configuration.
+  final GanttRenderOptions gantt;
 
   /// Git Graph renderer configuration.
   final GitGraphRenderOptions gitGraph;
@@ -2378,6 +2537,7 @@ final class RenderOptions {
           ArchitectureRenderOptions() => architecture,
           CynefinRenderOptions() => cynefin,
           EventModelingRenderOptions() => eventModeling,
+          GanttRenderOptions() => gantt,
           GitGraphRenderOptions() => gitGraph,
           InfoRenderOptions() => info,
           KanbanRenderOptions() => kanban,

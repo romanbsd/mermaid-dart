@@ -808,18 +808,42 @@ final class SceneText extends SceneElement with _SceneValue {
   ];
 }
 
+/// One independently styled vector path inside an icon.
+final class IconPath with _SceneValue {
+  /// Creates a styled icon path.
+  const IconPath({required this.commands, this.fill, this.stroke});
+
+  /// The drawable path commands.
+  final List<PathCommand> commands;
+
+  /// The path fill, independent from other icon paths.
+  final SceneFill? fill;
+
+  /// The path stroke, independent from other icon paths.
+  final SceneStroke? stroke;
+
+  @override
+  List<Object?> get fields => [commands, fill, stroke];
+}
+
 /// Resolved, backend-neutral vector geometry for an icon.
 final class IconGeometry with _SceneValue {
   /// Creates a typed [IconGeometry].
-  const IconGeometry({required this.bounds, this.paths = const []});
+  const IconGeometry({required this.bounds, this.paths = const [], this.styledPaths = const []});
 
   /// The icon's local coordinate bounds.
   final Bounds bounds;
 
   /// The icon's drawable path components.
+  ///
+  /// These legacy paths inherit [SceneIcon.fill] and [SceneIcon.stroke].
   final List<List<PathCommand>> paths;
+
+  /// Independently painted paths for multi-color icons.
+  final List<IconPath> styledPaths;
+
   @override
-  List<Object?> get fields => [bounds, paths];
+  List<Object?> get fields => [bounds, paths, styledPaths];
 }
 
 /// Backend-neutral scene icon in a laid-out diagram scene.

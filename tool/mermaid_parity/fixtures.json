@@ -7,6 +7,11 @@
       "source": "architecture-beta\ngroup cloud(cloud)[Cloud]\nservice api(server)[API] in cloud\nservice db(database)[Database] in cloud\napi:R --> L:db\n"
     },
     {
+      "id": "architecture-cloud-services",
+      "type": "architecture",
+      "source": "architecture-beta\ngroup cloud(cloud)[Cloud]\nservice gateway(internet)[Gateway] in cloud\nservice api(server)[API] in cloud\nservice db(database)[Database] in cloud\ngateway:R --> L:api\napi:R --> L:db\n"
+    },
+    {
       "id": "architecture-theme-variables",
       "type": "architecture",
       "source": "architecture-beta\ngroup cloud(cloud)[Cloud]\nservice api(server)[API] in cloud\nservice db(database)[Database] in cloud\napi:R --> L:db\n",
@@ -786,6 +791,35 @@
         "padding": 8,
         "sectionWidth": 200,
         "ticketBaseUrl": "https://issues.example/#TICKET#"
+      }
+    },
+    {
+      "id": "gantt-delivery",
+      "type": "gantt",
+      "source": "gantt\ntitle Delivery plan\ndateFormat YYYY-MM-DD\naxisFormat %m-%d\ntickInterval 1day\ntodayMarker off\nsection Design\nResearch :done, research, 2025-01-01, 2d\nReview :active, crit, review, after research, 1d\nsection Ship\nRelease :release, after review, 2d\n",
+      "ganttOptions": {
+        "useWidth": 600,
+        "useMaxWidth": false
+      }
+    },
+    {
+      "id": "gantt-markers",
+      "type": "gantt",
+      "source": "gantt\ndateFormat YYYY-MM-DD\naxisFormat %m-%d\ntickInterval 1day\ntodayMarker off\nsection Delivery\nBuild :build, 2025-01-01, 2d\nGate :crit, milestone, gate, after build, 0d\nDeadline :vert, deadline, 2025-01-02, 1d\n",
+      "ganttOptions": {
+        "useWidth": 600,
+        "useMaxWidth": false,
+        "topAxis": true
+      }
+    },
+    {
+      "id": "gantt-exclusions-compact",
+      "type": "gantt",
+      "source": "gantt\ndateFormat YYYY-MM-DD\naxisFormat %m-%d\ntickInterval 1day\ntodayMarker off\nexcludes weekends\nsection Work\nA :a, 2025-01-03, 2d\nB :b, after a, 2d\n",
+      "ganttOptions": {
+        "useWidth": 600,
+        "useMaxWidth": false,
+        "displayMode": "compact"
       }
     },
     {

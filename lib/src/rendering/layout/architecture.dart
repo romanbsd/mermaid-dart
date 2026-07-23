@@ -81,7 +81,6 @@ List<SceneElement> _architectureGroupElements(
         label,
         group.bounds.left + 4 + iconSize,
         group.bounds.top +
-            context.options.theme.fontSize +
             _architectureGroupLabelBaseOffset +
             (group.icon == null ? 0 : config.fontSize / 2 - _architectureGroupIconLabelCorrection),
         baseline: TextBaseline.hanging,

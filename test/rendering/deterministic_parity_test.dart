@@ -1788,6 +1788,29 @@ void main() {
       expect(scene.viewport.height, 262);
     });
 
+    test('architecture positions an icon group label like Mermaid.js', () {
+      final ast =
+          parse(
+                DiagramType.architecture,
+                'architecture-beta\n'
+                'group cloud(cloud)[Cloud]\n'
+                'service gateway(internet)[Gateway] in cloud\n'
+                'service api(server)[API] in cloud\n'
+                'service db(database)[Database] in cloud\n'
+                'gateway:R --> L:api\n'
+                'api:R --> L:db\n',
+              )
+              as ArchitectureAst;
+      final scene = layoutDiagram(ast, textMeasurer: measurer, options: const RenderOptions(padding: 0));
+      final label = _flatten(scene.elements).whereType<SceneText>().singleWhere((element) => element.text == 'Cloud');
+      final group = _flatten(
+        scene.elements,
+      ).whereType<SceneRect>().singleWhere((element) => element.cssClasses.contains('architecture-group'));
+
+      expect(label.position, Point(group.bounds.left + 34, group.bounds.top + 7));
+      expectSvgGolden('architecture_cloud_services', renderSvg(scene));
+    });
+
     test('architecture typed spacing options control connected node distance', () {
       final scene = layoutDiagram(
         const ArchitectureAst(

@@ -237,6 +237,12 @@ void _element(XmlBuilder builder, SceneElement element, {bool omitIdentity = fal
               attributes: {'d': path.map(_command).join(' '), ..._fill(fill), ..._stroke(stroke)},
             );
           }
+          for (final path in geometry.styledPaths) {
+            builder.element(
+              'path',
+              attributes: {'d': path.commands.map(_command).join(' '), ..._fill(path.fill), ..._stroke(path.stroke)},
+            );
+          }
         },
       );
   }
