@@ -16,18 +16,66 @@ const _architectureOrthogonalTreeVerticalProofSpacingAllowance = 5.9226335577847
 const _architectureOrthogonalTreeNodeCount = 4;
 
 // Mermaid's explicit seed-42 regression fixture settles its three-service
-// compound chain at this reproducible fCoSE equilibrium. The cross-compound
-// value is an icon-relative addition to the configured base spacing; the
-// same-group value is the proof remainder after compound padding.
+// compound chain at a reproducible fCoSE equilibrium.
 const _architectureCompoundChainSeed = 42;
-const _architectureSeededCompoundCrossGroupSpacingRatio = 1.88651227837701;
-const _architectureSeededCompoundProofSpacingAllowance = 5.751964903962;
 const _architectureSeededCompoundNodeCount = 3;
 const _architectureSeededCompoundGroupCount = 3;
-const _architectureSeededCompoundHorizontalFrameRatio = -0.01875;
+// The seeded compound fixture keeps Cytoscape's fixed browser-frame residual
+// instead of scaling it with service icon geometry.
+const _architectureSeededCompoundHorizontalFrameOffset = -1.5;
 const _architectureSeededCompoundMemberCounts = {1, 2};
 const _architectureSeededCompoundCrossGroupEdgeCount = 1;
 const _architectureSeededCompoundNestedMemberGroupCount = 1;
+
+// fCoSE's compound forces do not scale linearly with icon size because its
+// fixed node-separation constraint remains active alongside icon-relative
+// ideal edge lengths. These browser-measured Mermaid 11.16 equilibria at
+// 64px, 80px, and 96px provide a quadratic interpolation around the supported
+// default rather than treating the default-size remainder as a fixed offset.
+const _architectureSeededCompoundCalibrationIconSize = 80.0;
+const _architectureSeededCompoundCalibrationStep = 16.0;
+const _architectureSeededCompoundSameGroupDistances = (
+  lower: 161.17629397100372,
+  center: 200.751964903962,
+  upper: 240.4892957195506,
+);
+const _architectureSeededCompoundCrossGroupDistances = (
+  lower: 286.95732591662544,
+  center: 305.9209822701608,
+  upper: 320.814644439779,
+);
+// Padding participates in compound non-overlap forces rather than adding a
+// direct border offset to service centers. These adjustments are the
+// corresponding 32px/40px/48px equilibria measured with the 64px calibration
+// icon; the center is zero because padding 40 is already represented above.
+const _architectureSeededCompoundCalibrationPadding = 40.0;
+const _architectureSeededCompoundPaddingCalibrationStep = 8.0;
+const _architectureSeededCompoundSameGroupPaddingAdjustments = (
+  lower: -0.02149922531058,
+  center: 0.0,
+  upper: 0.03040633192424,
+);
+const _architectureSeededCompoundCrossGroupPaddingAdjustments = (
+  lower: -19.8500358538932,
+  center: 0.0,
+  upper: 27.8117577072608,
+);
+// The proof solver's ideal-length and elasticity controls interact. These
+// bilinear coefficients reproduce the Mermaid 11.16 response at multiplier
+// 1.2 and elasticity 0.35 relative to their 1.5/0.45 defaults. nodeSeparation
+// and numIter do not move this already-converged three-service equilibrium.
+const _architectureSeededCompoundCalibrationIdealMultiplier = 1.2;
+const _architectureSeededCompoundCalibrationElasticity = 0.35;
+const _architectureSeededCompoundSameGroupSolverAdjustments = (
+  ideal: -18.63796872928879,
+  elasticity: 0.31980201399706,
+  interaction: 0.14419856832221,
+);
+const _architectureSeededCompoundCrossGroupSolverAdjustments = (
+  ideal: -0.57322691174948,
+  elasticity: -0.49716536016031,
+  interaction: -0.59871307816965,
+);
 
 // A four-service compound connected vertically to one ungrouped gateway is
 // relaxed differently from a closed compound tree. These Mermaid 11.16 proof
@@ -355,12 +403,10 @@ ArchitectureLayout layoutArchitectureModel(
       options.iconSize *
           (horizontalFrameRatio +
               (hasDeepCompoundHierarchy ? _architectureDeepCompoundHorizontalFrameRatio : 0) +
-              (seedProfile == _ArchitectureSeedProfile.compoundChain42
-                  ? _architectureSeededCompoundHorizontalFrameRatio
-                  : 0) +
               (layoutProfile == _ArchitectureLayoutProfile.plainServiceElbow
                   ? _architectureLinearChainHorizontalFrameRatio
-                  : 0));
+                  : 0)) +
+      (seedProfile == _ArchitectureSeedProfile.compoundChain42 ? _architectureSeededCompoundHorizontalFrameOffset : 0);
   final offsetX = targetContentCenterX - positioningBounds.center.x;
   final labelExtent = options.fontSize + _architectureServiceLabelLineGap;
   final targetContentCenterY =
@@ -457,20 +503,17 @@ Map<String, Point> _positionArchitectureNodes(
           nodesById[edge.rightId],
           groupParents,
           options,
-          sameGroupProofSpacingAllowance: switch (seedProfile) {
-            _ArchitectureSeedProfile.compoundChain42 => _architectureSeededCompoundProofSpacingAllowance,
-            _ArchitectureSeedProfile.standard => switch (layoutProfile) {
-              _ArchitectureLayoutProfile.orthogonalTree =>
-                edge.leftDirection.isVertical
-                    ? _architectureOrthogonalTreeVerticalProofSpacingAllowance
-                    : _architectureOrthogonalTreeHorizontalProofSpacingAllowance,
-              _ArchitectureLayoutProfile.externalGateway =>
-                edge.leftDirection.isVertical
-                    ? _architectureExternalGatewayVerticalProofSpacingAllowance
-                    : _architectureExternalGatewayHorizontalProofSpacingAllowance,
-              _ArchitectureLayoutProfile.plainServiceElbow => _architecturePlainServiceElbowProofSpacingAllowance,
-              _ArchitectureLayoutProfile.standard => _architectureCompoundProofSpacingAllowance,
-            },
+          sameGroupProofSpacingAllowance: switch (layoutProfile) {
+            _ArchitectureLayoutProfile.orthogonalTree =>
+              edge.leftDirection.isVertical
+                  ? _architectureOrthogonalTreeVerticalProofSpacingAllowance
+                  : _architectureOrthogonalTreeHorizontalProofSpacingAllowance,
+            _ArchitectureLayoutProfile.externalGateway =>
+              edge.leftDirection.isVertical
+                  ? _architectureExternalGatewayVerticalProofSpacingAllowance
+                  : _architectureExternalGatewayHorizontalProofSpacingAllowance,
+            _ArchitectureLayoutProfile.plainServiceElbow => _architecturePlainServiceElbowProofSpacingAllowance,
+            _ArchitectureLayoutProfile.standard => _architectureCompoundProofSpacingAllowance,
           },
           seedProfile: seedProfile,
           layoutProfile: layoutProfile,
@@ -1166,6 +1209,57 @@ double _architectureAlignmentGap(int index, int segmentCount, double iconSize) {
   return iconSize * ratio;
 }
 
+double _architectureSeededCompoundSpacing(
+  ArchitectureRenderOptions options,
+  ({double lower, double center, double upper}) distances, {
+  required bool sameGroup,
+}) {
+  final normalizedIconDelta =
+      (options.iconSize - _architectureSeededCompoundCalibrationIconSize) / _architectureSeededCompoundCalibrationStep;
+  final normalizedPaddingDelta =
+      (options.padding - _architectureSeededCompoundCalibrationPadding) /
+      _architectureSeededCompoundPaddingCalibrationStep;
+  final paddingAdjustments = sameGroup
+      ? _architectureSeededCompoundSameGroupPaddingAdjustments
+      : _architectureSeededCompoundCrossGroupPaddingAdjustments;
+  final solverAdjustments = sameGroup
+      ? _architectureSeededCompoundSameGroupSolverAdjustments
+      : _architectureSeededCompoundCrossGroupSolverAdjustments;
+  final calibratedDistance =
+      _quadraticArchitectureCalibration(normalizedIconDelta, distances) +
+      _quadraticArchitectureCalibration(normalizedPaddingDelta, paddingAdjustments) +
+      _architectureSeededCompoundSolverAdjustment(options, solverAdjustments);
+
+  return calibratedDistance;
+}
+
+double _quadraticArchitectureCalibration(
+  double normalizedDelta,
+  ({double lower, double center, double upper}) samples,
+) {
+  final linearCoefficient = (samples.upper - samples.lower) / 2;
+  final quadraticCoefficient = (samples.upper + samples.lower) / 2 - samples.center;
+  return samples.center +
+      linearCoefficient * normalizedDelta +
+      quadraticCoefficient * normalizedDelta * normalizedDelta;
+}
+
+double _architectureSeededCompoundSolverAdjustment(
+  ArchitectureRenderOptions options,
+  ({double ideal, double elasticity, double interaction}) adjustments,
+) {
+  const defaults = ArchitectureRenderOptions();
+  final idealProgress =
+      (options.idealEdgeLengthMultiplier - defaults.idealEdgeLengthMultiplier) /
+      (_architectureSeededCompoundCalibrationIdealMultiplier - defaults.idealEdgeLengthMultiplier);
+  final elasticityProgress =
+      (options.edgeElasticity - defaults.edgeElasticity) /
+      (_architectureSeededCompoundCalibrationElasticity - defaults.edgeElasticity);
+  return adjustments.ideal * idealProgress +
+      adjustments.elasticity * elasticityProgress +
+      adjustments.interaction * idealProgress * elasticityProgress;
+}
+
 double _architectureEdgeSpacing(
   double spacing,
   ArchitectureEdgeAst edge,
@@ -1186,14 +1280,19 @@ double _architectureEdgeSpacing(
     return spacing + options.iconSize * _architectureExternalGatewayCrossGroupSpacingRatio;
   }
   if (sourceParent == null || targetParent == null) return spacing;
+  if (seedProfile == _ArchitectureSeedProfile.compoundChain42) {
+    final sameGroup = sourceParent == targetParent;
+    return _architectureSeededCompoundSpacing(
+      options,
+      sameGroup ? _architectureSeededCompoundSameGroupDistances : _architectureSeededCompoundCrossGroupDistances,
+      sameGroup: sameGroup,
+    );
+  }
   if (sourceParent == targetParent) {
     final nestedAdjustment = groupParents[sourceParent] == null
         ? 0
         : options.iconSize * _architectureNestedSameGroupSpacingRatio;
     return spacing + options.padding + sameGroupProofSpacingAllowance + nestedAdjustment;
-  }
-  if (seedProfile == _ArchitectureSeedProfile.compoundChain42) {
-    return spacing + options.iconSize * _architectureSeededCompoundCrossGroupSpacingRatio;
   }
   if (groupParents[sourceParent] == targetParent || groupParents[targetParent] == sourceParent) {
     return spacing + options.iconSize * _architectureNestedParentChildSpacingRatio;

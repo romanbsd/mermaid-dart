@@ -31,7 +31,14 @@
       "architectureOptions": {
         "useMaxWidth": false,
         "useWidth": 900,
+        "padding": 32,
+        "iconSize": 64,
         "fontSize": 14,
+        "randomize": false,
+        "nodeSeparation": 60,
+        "idealEdgeLengthMultiplier": 1.2,
+        "edgeElasticity": 0.35,
+        "numIter": 1500,
         "seed": 42
       }
     },

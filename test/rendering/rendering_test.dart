@@ -207,11 +207,34 @@ web:R --> L:db
       final first = layoutDiagram(ast, options: seededOptions);
       final second = layoutDiagram(ast, options: seededOptions);
       final defaultSeed = layoutDiagram(ast);
+      final scaled = layoutDiagram(
+        ast,
+        options: const RenderOptions(
+          architecture: ArchitectureRenderOptions(
+            padding: 32,
+            iconSize: 64,
+            fontSize: 14,
+            randomize: false,
+            nodeSeparation: 60,
+            idealEdgeLengthMultiplier: 1.2,
+            edgeElasticity: 0.35,
+            numIter: 1500,
+            seed: 42,
+          ),
+        ),
+      );
+      final scaledPositions = _flatten(scaled.elements)
+          .whereType<SceneGroup>()
+          .where((element) => element.cssClasses.contains('architecture-service'))
+          .map((element) => element.transforms.single as Translate)
+          .toList();
 
       expect(first.viewport, second.viewport);
       expect(first.elements, second.elements);
       expect(first.bounds, isNot(defaultSeed.bounds));
       expect(first.bounds.width, closeTo(713.1729471741228, 1e-9));
+      expect(scaledPositions[1].x - scaledPositions[0].x, closeTo(265.4381847126528, 1e-9));
+      expect(scaledPositions[2].x - scaledPositions[1].x, closeTo(142.98082659872362, 1e-9));
     });
 
     test('architecture compounds preserve cross-boundary gateway spacing', () {
