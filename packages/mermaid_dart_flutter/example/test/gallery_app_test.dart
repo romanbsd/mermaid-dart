@@ -12,7 +12,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Mermaid Dart Gallery'), findsOneWidget);
-    expect(find.textContaining('18 supported grammars'), findsOneWidget);
+    expect(find.textContaining('19 supported grammars'), findsOneWidget);
     expect(find.byKey(const ValueKey('sample-architecture')), findsOneWidget);
     expect(find.byKey(const ValueKey('sample-flowchart')), findsOneWidget);
 

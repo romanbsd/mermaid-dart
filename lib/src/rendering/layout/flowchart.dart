@@ -1,5 +1,10 @@
 part of '../layout.dart';
 
+// Mermaid Flowchart reserves a 50-unit title band above unchanged graph
+// coordinates and positions its 18px title baseline at y=-25.
+const _flowchartTitleBandHeight = 50.0;
+const _flowchartTitleY = -25.0;
+const _flowchartTitleFontSize = 18.0;
 // Mermaid flowchart nodes use label-driven dimensions with a practical minimum
 // matching the Dagre renderer's compact simple-node geometry.
 const _flowchartMinimumNodeWidth = 80.0;
@@ -8,6 +13,12 @@ const _flowchartRoundedRadius = 5.0;
 const _flowchartStadiumRadius = 25.0;
 const _flowchartArrowLength = 10.0;
 const _flowchartArrowHalfWidth = 5.0;
+// Mermaid's point marker reference shortens the painted edge by four scene
+// units while leaving the marker tip on the node boundary.
+const _flowchartPointMarkerOffset = 4.0;
+// Mermaid's classic polygon renderer applies a half-pixel horizontal alignment
+// to diamond points for crisp one-pixel strokes.
+const _flowchartDiamondHorizontalOffset = .5;
 // Dagre reserves 35 horizontal and 37.5 vertical scene units around compound
 // flowchart nodes in Mermaid.js.
 const _flowchartSubgraphHorizontalPadding = 35.0;
@@ -15,9 +26,6 @@ const _flowchartSubgraphVerticalPadding = 37.5;
 const _flowchartSubgraphTitleOffset = 12.0;
 // Compound ranks receive additional clearance for the cluster boundary.
 const _flowchartSubgraphRankSpacingAdjustment = 25.0;
-// Mermaid.js cylinders use shallow elliptical caps whose height is roughly
-// twelve percent of the body width.
-const _flowchartCylinderCapRatio = .12;
 const _flowchartCylinderHeightOverlap = .625;
 // Mermaid's stadium path adds 24.73 units around a 15-unit node padding.
 const _flowchartStadiumPaddingRatio = 1.648656;
@@ -142,8 +150,8 @@ _LayoutResult _layoutFlowchart(FlowchartAst ast, _LayoutContext context) {
         SceneRect(
           id: context.id('flowchart-subgraph'),
           bounds: bounds,
-          fill: SolidFill(context.options.theme.tertiary),
-          stroke: SceneStroke(color: context.options.theme.tertiaryBorder),
+          fill: SolidFill(context.options.theme.secondary),
+          stroke: SceneStroke(color: context.options.theme.secondaryBorder),
           role: SemanticRole.group,
           cssClasses: const ['flowchart-subgraph'],
           label: subgraph.title,
@@ -175,9 +183,37 @@ _LayoutResult _layoutFlowchart(FlowchartAst ast, _LayoutContext context) {
     elements.addAll(_flowchartEdgeElements(edge, fromBounds, toBounds, direction, context, config));
   }
   for (final layout in positions.values) {
-    elements.addAll(_flowchartNodeElements(layout, ast.classDefinitions, context));
+    elements.addAll(_flowchartNodeElements(layout, ast.classDefinitions, context, config));
   }
-  return _LayoutResult(outer.width, outer.height, elements);
+  if (ast.title == null) return _LayoutResult(outer.width, outer.height, elements);
+  elements.add(
+    _text(
+      context,
+      ast.title!,
+      outer.width / 2,
+      _flowchartTitleY,
+      anchor: TextAnchor.middle,
+      baseline: TextBaseline.alphabetic,
+      role: SemanticRole.title,
+      style: SceneTextStyle(
+        fontFamily: context.textStyle.fontFamily,
+        fontSize: _flowchartTitleFontSize,
+        color: context.textStyle.color,
+      ),
+      cssClasses: const ['flowchart-title'],
+    ),
+  );
+  return _LayoutResult(
+    outer.width,
+    outer.height + _flowchartTitleBandHeight,
+    elements,
+    bounds: Bounds(
+      left: 0,
+      top: -_flowchartTitleBandHeight,
+      width: outer.width,
+      height: outer.height + _flowchartTitleBandHeight,
+    ),
+  );
 }
 
 Size _flowchartNodeSize(FlowchartNodeAst node, _LayoutContext context, FlowchartRenderOptions config) {
@@ -319,6 +355,7 @@ List<SceneElement> _flowchartNodeElements(
   _FlowchartNodeLayout layout,
   Map<String, Map<String, String>> classDefinitions,
   _LayoutContext context,
+  FlowchartRenderOptions config,
 ) {
   final node = layout.node;
   final styles = <String, String>{
@@ -329,7 +366,11 @@ List<SceneElement> _flowchartNodeElements(
   final strokeColor = _flowchartColor(styles['stroke']) ?? context.options.theme.nodeBorder;
   final strokeWidth = double.tryParse(styles['stroke-width']?.replaceFirst('px', '') ?? '') ?? 1;
   final stroke = SceneStroke(color: strokeColor, width: strokeWidth);
-  final classes = ['flowchart-node', ...node.cssClasses];
+  final classes = [
+    'flowchart-node',
+    if (node.shape == FlowchartNodeShape.stadium) 'flowchart-node-stadium',
+    ...node.cssClasses,
+  ];
   final shape = _flowchartNodeShape(context, node, layout.bounds, fill, stroke, classes);
   return [
     shape,
@@ -337,7 +378,7 @@ List<SceneElement> _flowchartNodeElements(
       context,
       node.label,
       layout.bounds.center.x,
-      layout.bounds.center.y,
+      layout.bounds.center.y + (node.shape == FlowchartNodeShape.cylinder ? config.nodePadding / 1.5 : 0),
       anchor: TextAnchor.middle,
       role: SemanticRole.label,
       style: SceneTextStyle(
@@ -373,10 +414,10 @@ SceneElement _flowchartNodeShape(
     FlowchartNodeShape.diamond => ScenePolygon(
       id: context.id('flowchart-node'),
       points: [
-        Point(bounds.center.x, bounds.top),
-        Point(bounds.right, bounds.center.y),
-        Point(bounds.center.x, bounds.bottom),
-        Point(bounds.left, bounds.center.y),
+        Point(bounds.center.x + _flowchartDiamondHorizontalOffset, bounds.top),
+        Point(bounds.right + _flowchartDiamondHorizontalOffset, bounds.center.y),
+        Point(bounds.center.x + _flowchartDiamondHorizontalOffset, bounds.bottom),
+        Point(bounds.left + _flowchartDiamondHorizontalOffset, bounds.center.y),
       ],
       fill: commonFill,
       stroke: stroke,
@@ -444,8 +485,9 @@ ScenePath _flowchartCylinder(
   SceneStroke stroke,
   List<String> classes,
 ) {
-  final capHeight = bounds.width * _flowchartCylinderCapRatio;
   final radiusX = bounds.width / 2;
+  // Mermaid.js cylinder.ts: ry = rx / (2.5 + width / 50).
+  final capHeight = radiusX / (2.5 + bounds.width / 50);
   final capY = bounds.top + capHeight;
   final bottomCapY = bounds.bottom - capHeight;
   return ScenePath(
@@ -521,17 +563,25 @@ List<SceneElement> _flowchartEdgeElements(
       : Point(to.center.x, forward ? to.top : to.bottom);
   final middle = horizontal ? Point((start.x + end.x) / 2, start.y) : Point(start.x, (start.y + end.y) / 2);
   final beforeEnd = horizontal ? Point(middle.x, end.y) : Point(end.x, middle.y);
-  final commands = <PathCommand>[MoveTo(start), LineTo(middle), LineTo(beforeEnd), LineTo(end)];
+  final pathEnd = edge.endMarker == FlowchartEdgeMarker.arrow
+      ? horizontal
+            ? Point(end.x + (forward ? -_flowchartPointMarkerOffset : _flowchartPointMarkerOffset), end.y)
+            : Point(end.x, end.y + (forward ? -_flowchartPointMarkerOffset : _flowchartPointMarkerOffset))
+      : end;
+  final commands = middle.x == beforeEnd.x && middle.y == beforeEnd.y
+      ? _flowchartBasisPath(start, middle, pathEnd)
+      : <PathCommand>[MoveTo(start), LineTo(middle), LineTo(beforeEnd), LineTo(pathEnd)];
   final stroke = SceneStroke(
     color: context.options.theme.line,
-    width: edge.stroke == FlowchartEdgeStroke.thick ? config.edgeWidth * 1.75 : config.edgeWidth,
-    dashes: edge.stroke == FlowchartEdgeStroke.dotted ? const [3, 3] : const [],
-    join: StrokeJoin.round,
+    width: edge.stroke == FlowchartEdgeStroke.thick ? config.edgeWidth * 3.5 : config.edgeWidth,
+    dashes: edge.stroke == FlowchartEdgeStroke.dotted ? const [2] : const [0],
+    join: StrokeJoin.miter,
   );
   final elements = <SceneElement>[
     ScenePath(
       id: edge.id ?? context.id('flowchart-edge'),
       commands: commands,
+      fill: const NoFill(),
       stroke: stroke,
       role: SemanticRole.edge,
       cssClasses: ['flowchart-edge', 'flowchart-edge-${edge.stroke.name}'],
@@ -550,7 +600,7 @@ List<SceneElement> _flowchartEdgeElements(
         context,
         label,
         (start.x + end.x) / 2,
-        (start.y + end.y) / 2 - 8,
+        (start.y + end.y) / 2,
         anchor: TextAnchor.middle,
         role: SemanticRole.label,
         cssClasses: const ['flowchart-edge-label'],
@@ -558,6 +608,30 @@ List<SceneElement> _flowchartEdgeElements(
     );
   }
   return elements;
+}
+
+List<PathCommand> _flowchartBasisPath(Point start, Point middle, Point end) => [
+  MoveTo(start),
+  LineTo(_weightedPoint(start, 5, middle, 1, 6)),
+  CubicTo(
+    _weightedPoint(start, 2, middle, 1, 3),
+    _weightedPoint(start, 1, middle, 2, 3),
+    _weightedPoint(start, 1, middle, 4, 6, end: end),
+  ),
+  CubicTo(
+    _weightedPoint(middle, 2, end, 1, 3),
+    _weightedPoint(middle, 1, end, 2, 3),
+    _weightedPoint(middle, 1, end, 5, 6),
+  ),
+  LineTo(end),
+];
+
+Point _weightedPoint(Point first, double firstWeight, Point second, double secondWeight, double divisor, {Point? end}) {
+  final third = end ?? const Point(0, 0);
+  return Point(
+    (first.x * firstWeight + second.x * secondWeight + third.x) / divisor,
+    (first.y * firstWeight + second.y * secondWeight + third.y) / divisor,
+  );
 }
 
 SceneElement _flowchartMarker(

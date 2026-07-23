@@ -85,6 +85,7 @@ title Visible title %% trailing comment
     expect(DiagramType.gitGraph.wireName, 'gitGraph');
     expect(DiagramType.tryFromWireName('flowchart'), DiagramType.flowchart);
     expect(parseByName('flowchart', 'flowchart LR'), isA<FlowchartAst>());
+    expect(DiagramType.tryFromWireName('sequence'), DiagramType.sequence);
     expect(DiagramType.tryFromWireName('sequenceDiagram'), isNull);
   });
 }

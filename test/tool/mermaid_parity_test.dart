@@ -26,8 +26,8 @@ void main() {
     final manifest = ParityManifest.load(File('tool/mermaid_parity/fixtures.json'));
 
     expect(manifest.mermaidVersion, '11.16.0');
-    expect(manifest.fixtures.map((fixture) => fixture.id), hasLength(79));
-    expect(manifest.fixtures.map((fixture) => fixture.id).toSet(), hasLength(79));
+    expect(manifest.fixtures.map((fixture) => fixture.id), hasLength(81));
+    expect(manifest.fixtures.map((fixture) => fixture.id).toSet(), hasLength(81));
     expect(
       manifest.fixtures.map((fixture) => fixture.id),
       containsAll([
@@ -47,6 +47,8 @@ void main() {
         'architecture-directional-arrows',
         'architecture-edge-labels',
         'flowchart-request-lifecycle',
+        'sequence-request-response',
+        'sequence-demo',
         'architecture-simple-junctions',
         'architecture-edge-length-default',
         'architecture-no-icon-edge-lengths',
@@ -122,6 +124,7 @@ void main() {
         'railroadAbnf',
         'railroadEbnf',
         'railroadPeg',
+        'sequence',
         'treeView',
         'treemap',
         'wardley',
@@ -438,6 +441,26 @@ void main() {
     expect(SvgComparison.compare(inherited, differentStyle).sameGeometry, isFalse);
   });
 
+  test('compares paint from a visible tspan with direct scene text paint', () {
+    final wrapped = SvgSnapshot.fromSvg(
+      '<svg><style>text.actor > tspan { fill: black; stroke: none; }</style>'
+      '<text class="actor" fill="red" stroke="blue"><tspan>Actor</tspan></text></svg>',
+    );
+    final direct = SvgSnapshot.fromSvg('<svg><text fill="black" stroke="none">Actor</text></svg>');
+
+    expect(SvgComparison.compare(wrapped, direct).samePaint, isTrue);
+  });
+
+  test('stylesheet child combinators do not match deeper descendants', () {
+    final styled = SvgSnapshot.fromSvg(
+      '<svg><style>.success > rect { fill: red; }</style>'
+      '<g class="success"><g><rect width="10" height="10"/></g></g></svg>',
+    );
+    final defaultPaint = SvgSnapshot.fromSvg('<svg><g><g><rect width="10" height="10" fill="black"/></g></g></svg>');
+
+    expect(SvgComparison.compare(styled, defaultPaint).samePaint, isTrue);
+  });
+
   test('normalizes semantic HTML typography in foreignObject labels', () {
     final html = SvgSnapshot.fromSvg(
       '<svg><foreignObject x="0" y="0" width="2" height="4">'
@@ -457,6 +480,16 @@ void main() {
 
     expect(SvgComparison.compare(html, svg).sameGeometry, isTrue);
     expect(SvgComparison.compare(plainHtml, svg).sameGeometry, isFalse);
+  });
+
+  test('uses semantic HTML color as foreignObject text paint', () {
+    final html = SvgSnapshot.fromSvg(
+      '<svg><foreignObject><span style="color:#145a32;fill:#d5f5e3;stroke:#1e8449">API</span>'
+      '</foreignObject></svg>',
+    );
+    final svgText = SvgSnapshot.fromSvg('<svg><text fill="#145a32" stroke="none">API</text></svg>');
+
+    expect(SvgComparison.compare(html, svgText).samePaint, isTrue);
   });
 
   test('normalizes Mermaid createText wrappers to positioned SVG text', () {
@@ -529,6 +562,38 @@ void main() {
     );
 
     final comparison = SvgComparison.compare(positioned, marker);
+    expect(comparison.sameElementCounts, isTrue);
+    expect(comparison.sameGeometry, isTrue);
+  });
+
+  test('ignores backend-specific sequence arrowhead representations', () {
+    final marker = SvgSnapshot.fromSvg(
+      '<svg><defs><marker><path d="M0 0 L10 5 L0 10Z"/></marker></defs>'
+      '<line x1="0" y1="5" x2="20" y2="5"/></svg>',
+    );
+    final positioned = SvgSnapshot.fromSvg(
+      '<svg><line x1="0" y1="5" x2="20" y2="5"/>'
+      '<polygon class="sequence-message-marker" points="20,5 15,0 15,10"/></svg>',
+    );
+
+    final comparison = SvgComparison.compare(positioned, marker);
+    expect(comparison.sameElementCounts, isTrue);
+    expect(comparison.sameGeometry, isTrue);
+  });
+
+  test('ignores backend-specific flowchart markers and rough node outlines', () {
+    final mermaid = SvgSnapshot.fromSvg(
+      '<svg><g><marker><path d="M0 0L10 5L0 10Z"/></marker>'
+      '<g class="outer-path"><path d="M0 0L20 0L20 10L0 10Z"/></g>'
+      '<text x="10" y="5">Node</text></g></svg>',
+    );
+    final dart = SvgSnapshot.fromSvg(
+      '<svg><rect class="flowchart-node-stadium" width="20" height="10"/>'
+      '<polygon class="flowchart-arrowhead" points="20,5 15,0 15,10"/>'
+      '<text x="10" y="5">Node</text></svg>',
+    );
+
+    final comparison = SvgComparison.compare(dart, mermaid);
     expect(comparison.sameElementCounts, isTrue);
     expect(comparison.sameGeometry, isTrue);
   });
@@ -632,6 +697,15 @@ void main() {
     expect(SvgComparison.compare(axisCommands, lines).sameGeometry, isTrue);
   });
 
+  test('normalizes relative arc and line commands to absolute path geometry', () {
+    final absolute = SvgSnapshot.fromSvg(
+      '<svg><path d="M10 20 A5 3 0 0 0 30 20 L30 40 A5 3 0 0 0 10 40 L10 20"/></svg>',
+    );
+    final relative = SvgSnapshot.fromSvg('<svg><path d="M10 20 a5 3 0 0 0 20 0 l0 20 a5 3 0 0 0 -20 0 l0 -20"/></svg>');
+
+    expect(SvgComparison.compare(absolute, relative).sameGeometry, isTrue);
+  });
+
   test('ignores paint-equivalent sibling order in geometry comparison', () {
     final shapesFirst = SvgSnapshot.fromSvg(
       '<svg><circle cx="1" cy="2" r="3"/><rect x="4" y="5" width="6" height="7"/>'
@@ -694,6 +768,13 @@ void main() {
     final rotated = SvgSnapshot.fromSvg('<svg><polygon points="10,0 5,10 0,0"/></svg>');
 
     expect(SvgComparison.compare(first, rotated).sameGeometry, isTrue);
+  });
+
+  test('normalizes equivalent reversed polygon point order', () {
+    final clockwise = SvgSnapshot.fromSvg('<svg><polygon points="0,0 10,0 5,10"/></svg>');
+    final counterclockwise = SvgSnapshot.fromSvg('<svg><polygon points="0,0 5,10 10,0"/></svg>');
+
+    expect(SvgComparison.compare(clockwise, counterclockwise).sameGeometry, isTrue);
   });
 
   test('treats fully transparent paint as a disabled paint channel', () {
@@ -1630,6 +1711,7 @@ void main() {
       (type: 'pie', options: 'pieOptions', config: 'pie'),
       (type: 'radar', options: 'radarOptions', config: 'radar'),
       (type: 'railroad', options: 'railroadOptions', config: 'railroad'),
+      (type: 'sequence', options: 'sequenceOptions', config: 'sequence'),
       (type: 'treeView', options: 'treeViewOptions', config: 'treeView'),
       (type: 'treemap', options: 'treemapOptions', config: 'treemap'),
       (type: 'wardley', options: 'wardleyOptions', config: 'wardley-beta'),
@@ -1653,6 +1735,7 @@ void main() {
         DiagramType.pie => fixture.renderOptions.pie,
         DiagramType.radar => fixture.renderOptions.radar,
         DiagramType.railroad => fixture.renderOptions.railroad,
+        DiagramType.sequence => fixture.renderOptions.sequence,
         DiagramType.treeView => fixture.renderOptions.treeView,
         DiagramType.treemap => fixture.renderOptions.treemap,
         DiagramType.wardley => fixture.renderOptions.wardley,

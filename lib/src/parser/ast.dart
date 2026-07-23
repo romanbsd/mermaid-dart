@@ -22,6 +22,7 @@ part 'packet_ast.dart';
 part 'pie_ast.dart';
 part 'radar_ast.dart';
 part 'railroad_ast.dart';
+part 'sequence_ast.dart';
 part 'tree_view_ast.dart';
 part 'treemap_ast.dart';
 part 'wardley_ast.dart';

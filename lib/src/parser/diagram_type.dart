@@ -50,6 +50,9 @@ enum DiagramType {
   /// Selects the railroad peg variant.
   railroadPeg('railroadPeg'),
 
+  /// Selects the sequence diagram variant.
+  sequence('sequence'),
+
   /// Selects the tree view variant.
   treeView('treeView'),
 

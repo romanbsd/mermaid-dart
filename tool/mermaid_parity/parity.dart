@@ -91,6 +91,7 @@ final class ParityFixture {
     const pieDefaults = PieRenderOptions();
     const radarDefaults = RadarRenderOptions();
     const railroadDefaults = RailroadRenderOptions();
+    const sequenceDefaults = SequenceRenderOptions();
     const treeViewDefaults = TreeViewRenderOptions();
     const treemapDefaults = TreemapRenderOptions();
     const wardleyDefaults = WardleyRenderOptions();
@@ -252,6 +253,30 @@ final class ParityFixture {
         specialFill: _configuredOptionalColor(diagramConfig, 'specialFill'),
         specialStroke: _configuredOptionalColor(diagramConfig, 'specialStroke'),
         ruleNameColor: _configuredOptionalColor(diagramConfig, 'ruleNameColor'),
+      ),
+      sequence: SequenceRenderOptions(
+        useWidth: _configuredUseWidth(diagramConfig, sequenceDefaults),
+        useMaxWidth: _configuredUseMaxWidth(diagramConfig, sequenceDefaults),
+        activationWidth: (diagramConfig['activationWidth'] as num?)?.toDouble() ?? sequenceDefaults.activationWidth,
+        diagramMarginX: (diagramConfig['diagramMarginX'] as num?)?.toDouble() ?? sequenceDefaults.diagramMarginX,
+        diagramMarginY: (diagramConfig['diagramMarginY'] as num?)?.toDouble() ?? sequenceDefaults.diagramMarginY,
+        actorMargin: (diagramConfig['actorMargin'] as num?)?.toDouble() ?? sequenceDefaults.actorMargin,
+        actorWidth: (diagramConfig['width'] as num?)?.toDouble() ?? sequenceDefaults.actorWidth,
+        actorHeight: (diagramConfig['height'] as num?)?.toDouble() ?? sequenceDefaults.actorHeight,
+        boxMargin: (diagramConfig['boxMargin'] as num?)?.toDouble() ?? sequenceDefaults.boxMargin,
+        boxTextMargin: (diagramConfig['boxTextMargin'] as num?)?.toDouble() ?? sequenceDefaults.boxTextMargin,
+        noteMargin: (diagramConfig['noteMargin'] as num?)?.toDouble() ?? sequenceDefaults.noteMargin,
+        messageMargin: (diagramConfig['messageMargin'] as num?)?.toDouble() ?? sequenceDefaults.messageMargin,
+        mirrorActors: diagramConfig['mirrorActors'] as bool? ?? sequenceDefaults.mirrorActors,
+        bottomMarginAdjustment:
+            (diagramConfig['bottomMarginAdj'] as num?)?.toDouble() ?? sequenceDefaults.bottomMarginAdjustment,
+        showSequenceNumbers: diagramConfig['showSequenceNumbers'] as bool? ?? sequenceDefaults.showSequenceNumbers,
+        actorFontSize: (diagramConfig['actorFontSize'] as num?)?.toDouble() ?? sequenceDefaults.actorFontSize,
+        noteFontSize: (diagramConfig['noteFontSize'] as num?)?.toDouble() ?? sequenceDefaults.noteFontSize,
+        messageFontSize: (diagramConfig['messageFontSize'] as num?)?.toDouble() ?? sequenceDefaults.messageFontSize,
+        wrapPadding: (diagramConfig['wrapPadding'] as num?)?.toDouble() ?? sequenceDefaults.wrapPadding,
+        labelBoxWidth: (diagramConfig['labelBoxWidth'] as num?)?.toDouble() ?? sequenceDefaults.labelBoxWidth,
+        labelBoxHeight: (diagramConfig['labelBoxHeight'] as num?)?.toDouble() ?? sequenceDefaults.labelBoxHeight,
       ),
       treeView: TreeViewRenderOptions(
         useWidth: _configuredUseWidth(diagramConfig, treeViewDefaults),
@@ -761,6 +786,7 @@ const _fixtureOptionNames = {
   DiagramType.railroadAbnf: 'railroadOptions',
   DiagramType.railroadEbnf: 'railroadOptions',
   DiagramType.railroadPeg: 'railroadOptions',
+  DiagramType.sequence: 'sequenceOptions',
   DiagramType.treeView: 'treeViewOptions',
   DiagramType.treemap: 'treemapOptions',
   DiagramType.wardley: 'wardleyOptions',
@@ -781,6 +807,7 @@ const _mermaidConfigNames = {
   DiagramType.railroadAbnf: 'railroad',
   DiagramType.railroadEbnf: 'railroad',
   DiagramType.railroadPeg: 'railroad',
+  DiagramType.sequence: 'sequence',
   DiagramType.treeView: 'treeView',
   DiagramType.treemap: 'treemap',
   DiagramType.wardley: 'wardley-beta',
@@ -817,6 +844,7 @@ Map<String, Object> _diagramConfig(Map<Object?, Object?> json, DiagramType type)
     DiagramType.railroadAbnf ||
     DiagramType.railroadEbnf ||
     DiagramType.railroadPeg => _railroadConfig(value),
+    DiagramType.sequence => _sequenceConfig(value),
     DiagramType.treeView => _treeViewConfig(value),
     DiagramType.treemap => _treemapConfig(value),
     DiagramType.wardley => _wardleyConfig(value),
@@ -850,6 +878,69 @@ Map<String, Object> _flowchartConfig(Object? value) {
             _ => null,
           };
     if (valid == null) throw const FormatException('Invalid fixture flowchartOptions');
+    result[key] = valid;
+  }
+  return Map.unmodifiable(result);
+}
+
+const _sequenceConfigKeys = {
+  ..._baseDiagramConfigKeys,
+  'activationWidth',
+  'diagramMarginX',
+  'diagramMarginY',
+  'actorMargin',
+  'width',
+  'height',
+  'boxMargin',
+  'boxTextMargin',
+  'noteMargin',
+  'messageMargin',
+  'mirrorActors',
+  'bottomMarginAdj',
+  'showSequenceNumbers',
+  'actorFontSize',
+  'noteFontSize',
+  'messageFontSize',
+  'wrapPadding',
+  'labelBoxWidth',
+  'labelBoxHeight',
+};
+
+Map<String, Object> _sequenceConfig(Object? value) {
+  if (value is! Map<String, Object?> || value.isEmpty || value.keys.any((key) => !_sequenceConfigKeys.contains(key))) {
+    throw const FormatException('Invalid fixture sequenceOptions');
+  }
+  final result = <String, Object>{};
+  for (final MapEntry(:key, :value) in value.entries) {
+    final valid = _baseDiagramConfigKeys.contains(key)
+        ? _baseDiagramConfigValue(key, value)
+        : switch ((key, value)) {
+            ('mirrorActors' || 'showSequenceNumbers', final bool option) => option,
+            (
+              'activationWidth' ||
+                  'diagramMarginX' ||
+                  'diagramMarginY' ||
+                  'actorMargin' ||
+                  'width' ||
+                  'height' ||
+                  'boxMargin' ||
+                  'boxTextMargin' ||
+                  'noteMargin' ||
+                  'messageMargin' ||
+                  'bottomMarginAdj' ||
+                  'actorFontSize' ||
+                  'noteFontSize' ||
+                  'messageFontSize' ||
+                  'wrapPadding' ||
+                  'labelBoxWidth' ||
+                  'labelBoxHeight',
+              final num option,
+            )
+                when option >= 0 =>
+              option,
+            _ => null,
+          };
+    if (valid == null) throw const FormatException('Invalid fixture sequenceOptions');
     result[key] = valid;
   }
   return Map.unmodifiable(result);
@@ -1637,17 +1728,26 @@ const _linePaintProperties = <String, String>{
 String _paintSignature(XmlElement element, String transform, String styleSheets) {
   final geometry = _geometrySignature(element, transform, styleSheets);
   final properties = element.name.local == 'line' ? _linePaintProperties : _paintProperties;
+  final htmlText = element.name.local == 'foreignObject';
+  final paintElement = element.name.local == 'text' || htmlText
+      ? _firstVisibleTextElement(element) ?? element
+      : element;
+  final htmlColor = htmlText ? _htmlTextColor(paintElement, element, styleSheets) : null;
   final normalized = {
     for (final MapEntry(:key, :value) in properties.entries)
       key: _normalizedPaintValue(
         key,
-        _inheritedPresentationValue(element, key, styleSheets) ?? value,
-        element,
+        htmlText && key == 'fill'
+            ? htmlColor ?? _inheritedPresentationValue(element, key, styleSheets) ?? value
+            : htmlColor != null && key == 'stroke'
+            ? 'none'
+            : _inheritedPresentationValue(paintElement, key, styleSheets) ?? value,
+        paintElement,
         styleSheets,
       ),
   };
-  final fillOpacity = _effectiveChannelOpacity(element, 'fill-opacity', styleSheets);
-  final strokeOpacity = _effectiveChannelOpacity(element, 'stroke-opacity', styleSheets);
+  final fillOpacity = _effectiveChannelOpacity(paintElement, 'fill-opacity', styleSheets);
+  final strokeOpacity = _effectiveChannelOpacity(paintElement, 'stroke-opacity', styleSheets);
   if (fillOpacity == '0') normalized['fill'] = 'none';
   if (strokeOpacity == '0') normalized['stroke'] = 'none';
   final values = <String>[
@@ -1656,6 +1756,15 @@ String _paintSignature(XmlElement element, String transform, String styleSheets)
     if (normalized['stroke'] != 'none') 'stroke-opacity=$strokeOpacity',
   ];
   return '$geometry|${values.join('|')}';
+}
+
+String? _htmlTextColor(XmlElement element, XmlElement foreignObject, String styleSheets) {
+  for (XmlElement? current = element; current != null; current = current.parentElement) {
+    final color = _localPresentationValue(current, 'color', styleSheets);
+    if (color != null && color != 'inherit') return color;
+    if (current == foreignObject) break;
+  }
+  return null;
 }
 
 String? _inheritedPresentationValue(XmlElement element, String name, String styleSheets) {
@@ -1884,12 +1993,17 @@ bool _isComparableGeometryElement(XmlElement element, XmlElement root) {
     final classes = (ancestor.getAttribute('class') ?? '').split(RegExp(r'\s+'));
     if (ancestor.name.local == 'svg' ||
         ancestor.name.local == 'defs' ||
+        ancestor.name.local == 'marker' ||
         ancestor.name.local == 'clipPath' ||
         _isDisplayNone(ancestor) ||
         ancestor.getAttribute('data-role') == 'icon' ||
         classes.contains('treemapSectionHeader') ||
         classes.contains('wardley-link-arrow') ||
         classes.contains('wardley-trend-arrow') ||
+        classes.contains('flowchart-arrowhead') ||
+        classes.contains('flowchart-node-stadium') ||
+        (ancestor.name.local == 'g' && classes.contains('outer-path')) ||
+        classes.contains('sequence-message-marker') ||
         classes.contains('em-arrowhead')) {
       return false;
     }
@@ -2193,7 +2307,7 @@ String? _stylesheetValue(XmlElement element, String styleSheets, RegExp declarat
 }
 
 bool _matchesSimpleSelector(XmlElement element, String selector) {
-  final parts = selector.split(RegExp(r'\s+'));
+  final parts = selector.replaceAll('>', ' > ').trim().split(RegExp(r'\s+'));
   // Mermaid scopes generated rules under the root SVG ID. Ignore that scope
   // only for descendant selectors; a standalone ID selector still targets the
   // root element and must not match every descendant.
@@ -2201,12 +2315,22 @@ bool _matchesSimpleSelector(XmlElement element, String selector) {
   if (parts.isEmpty) return true;
   if (!_matchesSelectorPart(element, parts.last)) return false;
   var ancestor = element.parentElement;
-  for (var index = parts.length - 2; index >= 0; index--) {
+  for (var index = parts.length - 2; index >= 0;) {
+    if (parts[index] == '>') {
+      index--;
+      if (index < 0 || ancestor == null || !_matchesSelectorPart(ancestor, parts[index])) {
+        return false;
+      }
+      ancestor = ancestor.parentElement;
+      index--;
+      continue;
+    }
     while (ancestor != null && !_matchesSelectorPart(ancestor, parts[index])) {
       ancestor = ancestor.parentElement;
     }
     if (ancestor == null) return false;
     ancestor = ancestor.parentElement;
+    index--;
   }
   return true;
 }
@@ -2248,9 +2372,11 @@ String _translatedPoints(String points, _Translation? translation) {
 String _translatedPolygonPoints(String points, _Translation? translation) {
   final translated = _translatedPoints(points, translation).split(' ');
   if (translated.length < 2) return translated.join(' ');
+  final reversed = translated.reversed.toList();
   final rotations = [
-    for (var offset = 0; offset < translated.length; offset++)
-      [...translated.skip(offset), ...translated.take(offset)].join(' '),
+    for (final orientation in [translated, reversed])
+      for (var offset = 0; offset < orientation.length; offset++)
+        [...orientation.skip(offset), ...orientation.take(offset)].join(' '),
   ]..sort();
   return rotations.first;
 }
@@ -2314,7 +2440,7 @@ String _canonicalAxisAlignedCommands(String path) {
       command = tokens[cursor++];
       consumedMove = false;
       if (command.toUpperCase() == 'Z') {
-        result.add(command);
+        result.add('Z');
         currentX = subpathX;
         currentY = subpathY;
         continue;
@@ -2328,35 +2454,36 @@ String _canonicalAxisAlignedCommands(String path) {
     final relative = command == command.toLowerCase();
     if (upper == 'H') {
       final x = relative ? currentX + values.single : values.single;
-      result.addAll([
-        relative ? 'l' : 'L',
-        relative ? values.single.toString() : x.toString(),
-        relative ? '0' : currentY.toString(),
-      ]);
+      result.addAll(['L', x.toString(), currentY.toString()]);
       currentX = x;
       continue;
     }
     if (upper == 'V') {
       final y = relative ? currentY + values.single : values.single;
-      result.addAll([
-        relative ? 'l' : 'L',
-        relative ? '0' : currentX.toString(),
-        relative ? values.single.toString() : y.toString(),
-      ]);
+      result.addAll(['L', currentX.toString(), y.toString()]);
       currentY = y;
       continue;
     }
-    final emittedCommand = upper == 'M' && consumedMove ? (relative ? 'l' : 'L') : command;
+    final absoluteValues = relative
+        ? switch (upper) {
+            'M' || 'L' || 'T' || 'C' || 'S' || 'Q' => [
+              for (var index = 0; index < values.length; index++) values[index] + (index.isEven ? currentX : currentY),
+            ],
+            'A' => [...values.take(5), values[5] + currentX, values[6] + currentY],
+            _ => values,
+          }
+        : values;
+    final emittedCommand = upper == 'M' && consumedMove ? 'L' : upper;
     result.add(emittedCommand);
-    result.addAll(values.map((value) => value.toString()));
+    result.addAll(absoluteValues.map((value) => value.toString()));
     final end = switch (upper) {
-      'M' || 'L' || 'T' => (values[arity - 2], values[arity - 1]),
-      'C' || 'S' || 'Q' => (values[arity - 2], values[arity - 1]),
-      'A' => (values[5], values[6]),
+      'M' || 'L' || 'T' => (absoluteValues[arity - 2], absoluteValues[arity - 1]),
+      'C' || 'S' || 'Q' => (absoluteValues[arity - 2], absoluteValues[arity - 1]),
+      'A' => (absoluteValues[5], absoluteValues[6]),
       _ => (currentX, currentY),
     };
-    currentX = relative ? currentX + end.$1 : end.$1;
-    currentY = relative ? currentY + end.$2 : end.$2;
+    currentX = end.$1;
+    currentY = end.$2;
     if (upper == 'M' && !consumedMove) {
       subpathX = currentX;
       subpathY = currentY;

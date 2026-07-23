@@ -76,6 +76,16 @@ void main() {
           edges: const [FlowchartEdgeAst(from: 'A', to: 'B')],
         ),
       ),
+      (
+        SequenceAst(
+          participants: const [SequenceParticipantAst(id: 'A', label: 'Actor A')],
+          statements: const [SequenceMessageAst(from: 'A', to: 'B', text: 'Hello')],
+        ),
+        SequenceAst(
+          participants: const [SequenceParticipantAst(id: 'A', label: 'Actor A')],
+          statements: const [SequenceMessageAst(from: 'A', to: 'B', text: 'Hello')],
+        ),
+      ),
     ];
 
     for (final (left, right) in pairs) {

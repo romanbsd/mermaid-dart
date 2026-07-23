@@ -535,6 +535,7 @@ disk2:T -- B:db
         DiagramType.railroadAbnf: 'railroad-abnf-beta',
         DiagramType.railroadEbnf: 'railroad-ebnf-beta',
         DiagramType.railroadPeg: 'railroad-peg-beta',
+        DiagramType.sequence: 'sequenceDiagram',
         DiagramType.treeView: 'treeView-beta',
         DiagramType.treemap: 'treemap-beta',
         DiagramType.wardley: 'wardley-beta',

@@ -15,6 +15,7 @@ import 'railroad_abnf_parser.dart';
 import 'railroad_ebnf_parser.dart';
 import 'railroad_parser.dart';
 import 'railroad_peg_parser.dart';
+import 'sequence_parser.dart';
 import 'tree_view_parser.dart';
 import 'treemap_parser.dart';
 import 'wardley_parser.dart';
@@ -39,6 +40,7 @@ DiagramAst parse(DiagramType diagramType, String source) => switch (diagramType)
   DiagramType.railroadAbnf => parseRailroadAbnf(source),
   DiagramType.railroadEbnf => parseRailroadEbnf(source),
   DiagramType.railroadPeg => parseRailroadPeg(source),
+  DiagramType.sequence => parseSequence(source),
   DiagramType.treeView => parseTreeView(source),
   DiagramType.treemap => parseTreemap(source),
   DiagramType.wardley => parseWardley(source),

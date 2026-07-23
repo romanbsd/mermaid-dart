@@ -9,11 +9,11 @@ scene graph, and can serialize the scene as accessible SVG.
 
 ## Status
 
-The parity suite currently covers 73 representative diagrams. All 73 pass
+The parity suite currently covers 81 representative diagrams. All 81 pass
 visual comparison against the pinned Mermaid.js 11.16.0 renderer:
 
 ```text
-Result: 0 exact, 73 visual, 0 different, 0 errors
+Result: 0 exact, 81 visual, 0 different, 0 errors
 ```
 
 “Visual parity” means the viewport, visible text, element counts, geometry, and
@@ -41,6 +41,7 @@ for every diagram family available in Mermaid.js.
 | Railroad ABNF | `railroadAbnf` | `railroad-abnf-beta` |
 | Railroad EBNF | `railroadEbnf` | `railroad-ebnf-beta` |
 | Railroad PEG | `railroadPeg` | `railroad-peg-beta` |
+| Sequence | `sequence` | `sequenceDiagram` |
 | Tree View | `treeView` | `treeView-beta` |
 | Treemap | `treemap` | `treemap`, `treemap-beta` |
 | Wardley Map | `wardley` | `wardley-beta` |
@@ -236,8 +237,9 @@ final svg = renderDiagramSvg(
 ```
 
 `RenderOptions` exposes dedicated configuration objects for Architecture,
-Cynefin, Event Modeling, Git Graph, Info, Packet, Pie, Radar, Railroad, Tree
-View, Treemap, and Wardley Map renderers. Theme and renderer defaults follow
+Cynefin, Event Modeling, Flowchart, Gantt, Git Graph, Info, Kanban, Packet,
+Pie, Radar, Railroad, Sequence, Tree View, Treemap, and Wardley Map renderers.
+Theme and renderer defaults follow
 the corresponding Mermaid.js 11.16.0 behavior.
 
 ## Text measurement and icons

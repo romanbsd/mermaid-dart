@@ -33,6 +33,7 @@ part 'layout/packet.dart';
 part 'layout/pie.dart';
 part 'layout/radar.dart';
 part 'layout/railroad.dart';
+part 'layout/sequence.dart';
 part 'layout/tree_view.dart';
 part 'layout/treemap.dart';
 part 'layout/wardley.dart';
@@ -87,7 +88,7 @@ DiagramScene layoutDiagram(
     FlowchartAst ast => (
       content: _layoutFlowchart(ast, context),
       diagramOptions: options.optionsFor(const FlowchartRenderOptions()),
-      rendererHandlesTitle: false,
+      rendererHandlesTitle: true,
     ),
     GanttAst ast => (
       content: _layoutGantt(ast, context),
@@ -127,6 +128,11 @@ DiagramScene layoutDiagram(
     RailroadAst ast => (
       content: _layoutRailroad(ast, context),
       diagramOptions: options.optionsFor(const RailroadRenderOptions()),
+      rendererHandlesTitle: false,
+    ),
+    SequenceAst ast => (
+      content: _layoutSequence(ast, context),
+      diagramOptions: options.optionsFor(const SequenceRenderOptions()),
       rendererHandlesTitle: false,
     ),
     TreeViewAst ast => (

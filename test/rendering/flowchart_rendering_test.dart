@@ -74,6 +74,18 @@ void main() {
         _flatten(scene.elements).where((element) => element.cssClasses.contains('flowchart-subgraph')),
         hasLength(1),
       );
+      final title = _flatten(
+        scene.elements,
+      ).whereType<SceneText>().singleWhere((element) => element.cssClasses.contains('flowchart-title'));
+      final edges = _flatten(
+        scene.elements,
+      ).whereType<ScenePath>().where((element) => element.cssClasses.contains('flowchart-edge'));
+
+      expect(scene.bounds.top, -50);
+      expect(title.position.y, -25);
+      expect(title.baseline, TextBaseline.alphabetic);
+      expect(title.style.fontSize, 18);
+      expect(edges.where((edge) => edge.commands.any((command) => command is CubicTo)), isNotEmpty);
       expectSvgGolden('flowchart_request_lifecycle', renderSvg(scene));
     });
   });

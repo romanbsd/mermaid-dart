@@ -2477,6 +2477,91 @@ final class FlowchartRenderOptions extends DiagramRenderOptions {
   final double edgeWidth;
 }
 
+/// Typed Mermaid sequence-diagram layout configuration.
+final class SequenceRenderOptions extends DiagramRenderOptions {
+  /// Creates sequence options with Mermaid.js 11.16 spacing defaults.
+  const SequenceRenderOptions({
+    super.useWidth,
+    super.useMaxWidth = true,
+    this.activationWidth = 10,
+    this.diagramMarginX = 50,
+    this.diagramMarginY = 10,
+    this.actorMargin = 50,
+    this.actorWidth = 150,
+    this.actorHeight = 65,
+    this.boxMargin = 10,
+    this.boxTextMargin = 5,
+    this.noteMargin = 10,
+    this.messageMargin = 35,
+    this.mirrorActors = true,
+    this.bottomMarginAdjustment = 1,
+    this.showSequenceNumbers = false,
+    this.actorFontSize = 16,
+    this.noteFontSize = 16,
+    this.messageFontSize = 16,
+    this.wrapPadding = 10,
+    this.labelBoxWidth = 50,
+    this.labelBoxHeight = 20,
+  });
+
+  /// Width of activation rectangles.
+  final double activationWidth;
+
+  /// Horizontal outer margin.
+  final double diagramMarginX;
+
+  /// Vertical outer margin.
+  final double diagramMarginY;
+
+  /// Gap between adjacent participant boxes.
+  final double actorMargin;
+
+  /// Minimum participant width.
+  final double actorWidth;
+
+  /// Participant box height.
+  final double actorHeight;
+
+  /// Padding around grouping boxes and sequence frames.
+  final double boxMargin;
+
+  /// Padding around frame labels.
+  final double boxTextMargin;
+
+  /// Padding around notes.
+  final double noteMargin;
+
+  /// Minimum vertical distance allocated to messages.
+  final double messageMargin;
+
+  /// Whether participant boxes are repeated below the diagram.
+  final bool mirrorActors;
+
+  /// Additional lifeline length below the last statement.
+  final double bottomMarginAdjustment;
+
+  /// Whether messages are numbered without an `autonumber` statement.
+  final bool showSequenceNumbers;
+
+  /// Participant-label font size.
+  final double actorFontSize;
+
+  /// Note-label font size.
+  final double noteFontSize;
+
+  /// Message-label font size.
+  final double messageFontSize;
+
+  /// Horizontal padding used by wrapped labels.
+  final double wrapPadding;
+
+  /// Width of a frame's kind label.
+  final double labelBoxWidth;
+
+  /// Height of a frame's kind label.
+  final double labelBoxHeight;
+}
+
 /// Top-level configuration for layout and rendering.
 ///
 /// [theme] supplies global Mermaid variables, while each diagram-specific
@@ -2499,6 +2584,7 @@ final class RenderOptions {
     this.pie = const PieRenderOptions(),
     this.radar = const RadarRenderOptions(),
     this.railroad = const RailroadRenderOptions(),
+    this.sequence = const SequenceRenderOptions(),
     this.treeView = const TreeViewRenderOptions(),
     this.treemap = const TreemapRenderOptions(),
     this.wardley = const WardleyRenderOptions(),
@@ -2547,6 +2633,9 @@ final class RenderOptions {
   /// Shared railroad, ABNF, EBNF, and PEG renderer configuration.
   final RailroadRenderOptions railroad;
 
+  /// Sequence renderer configuration.
+  final SequenceRenderOptions sequence;
+
   /// Tree View renderer configuration.
   final TreeViewRenderOptions treeView;
 
@@ -2579,6 +2668,7 @@ final class RenderOptions {
           PieRenderOptions() => pie,
           RadarRenderOptions() => radar,
           RailroadRenderOptions() => railroad,
+          SequenceRenderOptions() => sequence,
           TreeViewRenderOptions() => treeView,
           TreemapRenderOptions() => treemap,
           WardleyRenderOptions() => wardley,

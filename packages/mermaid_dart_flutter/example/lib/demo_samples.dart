@@ -244,6 +244,28 @@ rule <- ("yes" / "no") value? ;
 ''',
   ),
   DemoSample(
+    type: DiagramType.sequence,
+    title: 'Sequence',
+    description:
+        'Participants, messages, activations, alternatives, notes, and automatic numbering.',
+    source: '''
+sequenceDiagram
+autonumber
+actor Client
+participant API
+participant Database
+Client->>+API: Request
+alt cached
+  API-->>Client: Cached response
+else query
+  API->>Database: Read
+  Database-->>API: Result
+  API-->>-Client: Response
+end
+Note right of API: Validates access
+''',
+  ),
+  DemoSample(
     type: DiagramType.treeView,
     title: 'Tree View',
     description: 'Nested directories, files, descriptions, and Unicode.',

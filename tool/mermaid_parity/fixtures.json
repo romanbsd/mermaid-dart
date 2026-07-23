@@ -935,6 +935,36 @@
         "denied": { "width": 48.594, "height": 24 },
         "Denied": { "width": 49.484, "height": 24 }
       }
+    },
+    {
+      "id": "sequence-request-response",
+      "type": "sequence",
+      "source": "sequenceDiagram\nparticipant Client\nparticipant API\nClient->>API: Request\nAPI-->>Client: Response\n",
+      "textMeasurements": {
+        "Client": { "width": 38.891, "height": 17 },
+        "API": { "width": 21.781, "height": 17 },
+        "Request": { "width": 57.813, "height": 19 },
+        "Response": { "width": 69.359, "height": 19 }
+      }
+    },
+    {
+      "id": "sequence-demo",
+      "type": "sequence",
+      "source": "sequenceDiagram\nautonumber\nactor Client\nparticipant API\nparticipant Database\nClient->>+API: Request\nalt cached\n  API-->>Client: Cached response\nelse query\n  API->>Database: Read\n  Database-->>API: Result\n  API-->>-Client: Response\nend\nNote right of API: Validates access\n",
+      "textMeasurements": {
+        "Client": { "width": 42.672, "height": 19 },
+        "API": { "width": 22.813, "height": 19 },
+        "Database": { "width": 65.5, "height": 19 },
+        "Request": { "width": 56.594, "height": 19 },
+        "Cached response": { "width": 119.969, "height": 19 },
+        "Read": { "width": 34.719, "height": 19 },
+        "Result": { "width": 43.672, "height": 19 },
+        "Response": { "width": 65.313, "height": 19 },
+        "alt": { "width": 19.469, "height": 19 },
+        "[cached]": { "width": 62.391, "height": 19 },
+        "[query]": { "width": 52.25, "height": 19 },
+        "Validates access": { "width": 115.453, "height": 19 }
+      }
     }
   ]
 }
