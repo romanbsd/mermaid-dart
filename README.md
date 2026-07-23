@@ -31,6 +31,7 @@ for every diagram family available in Mermaid.js.
 | Architecture | `architecture` | `architecture-beta` |
 | Cynefin | `cynefin` | `cynefin-beta` |
 | Event Modeling | `eventModeling` | `eventmodeling` |
+| Flowchart | `flowchart` | `flowchart`, `graph` |
 | Git Graph | `gitGraph` | `gitGraph` |
 | Info | `info` | `info` |
 | Packet | `packet` | `packet`, `packet-beta` |
@@ -116,6 +117,53 @@ The resulting `DiagramScene` contains absolute geometry, bounds, paths,
 transforms, resolved paint and text styles, stable element IDs, semantic roles,
 clip paths, viewport policy, and accessibility metadata. It is intentionally
 independent of SVG so it can also be consumed by custom drawing backends.
+
+## Flutter Canvas rendering
+
+The companion package in
+[`packages/mermaid_dart_flutter`](packages/mermaid_dart_flutter) paints a
+`DiagramScene` directly with Flutter `Canvas`, `Paint`, `Path`, and
+`TextPainter`; it does not create SVG. Keeping the adapter in a separate
+package means `mermaid_dart` itself remains usable in Dart-only environments.
+
+```dart
+import 'package:flutter/widgets.dart';
+import 'package:mermaid_dart/mermaid_dart.dart';
+import 'package:mermaid_dart_flutter/mermaid_dart_flutter.dart';
+
+const diagram = MermaidDiagram(
+  diagramType: DiagramType.pie,
+  source: '''
+pie
+title Pets
+  "Dogs": 60
+  "Cats": 40
+''',
+);
+```
+
+Choose the Flutter API based on where your application enters the pipeline:
+
+- `MermaidDiagram` accepts source and performs parsing, layout, and painting.
+- `MermaidSceneView` displays a scene that the application parsed, configured,
+  or cached itself.
+- `MermaidScenePainter` provides direct `CustomPaint` sizing, alignment, and
+  composition control.
+
+Constructing the scene yourself is useful for handling parse errors outside the
+widget build, inspecting the typed AST, caching layout, injecting render options
+or icons, and sharing one scene between Flutter and SVG output. Use
+`FlutterTextMeasurer` during that layout so text geometry matches Flutter's
+`TextPainter`. Its default is left-to-right, so ordinary LTR applications can
+use `const FlutterTextMeasurer()` without passing a context. Only RTL,
+bidirectional text, or application text scaling requires explicitly sharing
+the ambient direction or scaler between measurement and painting.
+
+The [Flutter companion README](packages/mermaid_dart_flutter/README.md)
+contains examples for all three API levels.
+
+Its [demo gallery](packages/mermaid_dart_flutter/example) exercises every
+supported diagram grammar and can be launched with Flutter Web.
 
 ## Typed parsing
 
@@ -204,12 +252,79 @@ injected `IconResolver`. The core package does not depend on an icon asset
 system; unresolved icons use deterministic placeholder geometry.
 
 ```dart
-final scene = layoutDiagram(
-  ast,
-  textMeasurer: platformTextMeasurer,
-  iconResolver: applicationIconResolver,
+final class ApplicationIconResolver implements IconResolver {
+  const ApplicationIconResolver();
+
+  static const _cache = IconGeometry(
+    // Bounds describe the icon's local coordinate system. The renderer scales
+    // this 24-by-24 geometry to the size required by the diagram.
+    bounds: Bounds(left: 0, top: 0, width: 24, height: 24),
+    styledPaths: [
+      IconPath(
+        commands: [
+          MoveTo(Point(12, 1)),
+          LineTo(Point(23, 12)),
+          LineTo(Point(12, 23)),
+          LineTo(Point(1, 12)),
+          ClosePath(),
+        ],
+        fill: SolidFill(Color(99, 102, 241)),
+        stroke: SceneStroke(
+          color: Color(49, 46, 129),
+          width: 1.5,
+          join: StrokeJoin.round,
+        ),
+      ),
+    ],
+  );
+
+  @override
+  IconGeometry? resolve(String reference) => switch (reference) {
+    'acme:cache' => _cache,
+    // Returning null lets bundled Mermaid icons and the placeholder resolver
+    // handle references that this application does not own.
+    _ => null,
+  };
+}
+
+final svg = renderDiagramSvg(
+  DiagramType.architecture,
+  '''
+architecture-beta
+service cache(acme:cache)[Application cache]
+service api(server)[API]
+cache:R -- L:api
+''',
+  iconResolver: const ApplicationIconResolver(),
 );
 ```
+
+The resolver receives the reference exactly as it appears inside the icon
+parentheses. Tree View may qualify unqualified names with its configured icon
+pack, so resolvers for that renderer should normally recognize references such
+as `acme:cache`.
+
+Resolution happens in this order:
+
+1. the injected `IconResolver`;
+2. Mermaid-Dart's bundled Architecture icons;
+3. the deterministic crossed-box placeholder.
+
+Use `IconGeometry.paths` for monochrome paths that should inherit the
+`SceneIcon` paint. Use `styledPaths` when individual paths need their own fill
+or stroke, as in the example. Keep every command inside `bounds`; those bounds
+are used to scale the icon into the diagram.
+
+`resolve` is synchronous. If icons come from files, a network service, or an
+SVG package, load and convert them before layout and keep the resulting
+`IconGeometry` objects in a map-backed resolver.
+
+Flutter applications can also resolve references to `IconData` with the
+companion package's `FlutterIconDataResolver`. It reserves backend-neutral
+geometry during layout and paints the font glyph directly on Flutter Canvas.
+See the
+[Flutter companion README](packages/mermaid_dart_flutter/README.md#flutter-icondata)
+for source-to-widget and prebuilt-scene examples.
 
 Use the same measurer and resolver across rendering backends when their
 geometry must remain identical.
