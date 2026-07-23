@@ -11,8 +11,8 @@ void main() {
     final manifest = ParityManifest.load(File('tool/mermaid_parity/fixtures.json'));
 
     expect(manifest.mermaidVersion, '11.16.0');
-    expect(manifest.fixtures.map((fixture) => fixture.id), hasLength(52));
-    expect(manifest.fixtures.map((fixture) => fixture.id).toSet(), hasLength(52));
+    expect(manifest.fixtures.map((fixture) => fixture.id), hasLength(53));
+    expect(manifest.fixtures.map((fixture) => fixture.id).toSet(), hasLength(53));
     expect(
       manifest.fixtures.map((fixture) => fixture.id),
       containsAll([
@@ -40,6 +40,7 @@ void main() {
         'git-special-commits-tb',
         'git-special-commits-bt',
         'tree-highlighted-styles',
+        'tree-custom-layout',
         'tree-unicode-invalid-icon',
         'pie-donut',
         'pie-bottom-legend',
@@ -653,6 +654,50 @@ void main() {
         'type': 'radar',
         'source': 'radar-beta\naxis speed\ncurve current { 1 }',
         'radarOptions': {'width': 0},
+      }),
+      throwsFormatException,
+    );
+  });
+
+  test('fixture tree view options are typed and tree-view-only', () {
+    final configured = ParityFixture.fromJson({
+      'id': 'configured',
+      'type': 'treeView',
+      'source': 'treeView-beta\nsrc/\n',
+      'treeViewOptions': {'rowIndent': 24, 'paddingX': 8, 'paddingY': 7, 'lineThickness': 3},
+    });
+
+    expect(configured.renderOptions.treeView.rowIndent, 24);
+    expect(configured.renderOptions.treeView.paddingX, 8);
+    expect(configured.renderOptions.treeView.paddingY, 7);
+    expect(configured.renderOptions.treeView.lineThickness, 3);
+    expect(configured.mermaidConfig, {
+      'treeView': {'rowIndent': 24, 'paddingX': 8, 'paddingY': 7, 'lineThickness': 3},
+    });
+    expect(
+      () => ParityFixture.fromJson({
+        'id': 'configured',
+        'type': 'info',
+        'source': 'info',
+        'treeViewOptions': {'rowIndent': 24},
+      }),
+      throwsFormatException,
+    );
+    expect(
+      () => ParityFixture.fromJson({
+        'id': 'configured',
+        'type': 'treeView',
+        'source': 'treeView-beta\nsrc/\n',
+        'treeViewOptions': {'paddingX': -1},
+      }),
+      throwsFormatException,
+    );
+    expect(
+      () => ParityFixture.fromJson({
+        'id': 'configured',
+        'type': 'treeView',
+        'source': 'treeView-beta\nsrc/\n',
+        'treeViewOptions': {'lineThickness': 0},
       }),
       throwsFormatException,
     );

@@ -376,6 +376,23 @@
       }
     },
     {
+      "id": "tree-custom-layout",
+      "type": "treeView",
+      "source": "treeView-beta\nsrc/\n    index.js\n    app.dart\n",
+      "treeViewOptions": {
+        "rowIndent": 24,
+        "paddingX": 8,
+        "paddingY": 7,
+        "lineThickness": 3
+      },
+      "textMeasurements": {
+        "/": { "width": 5, "height": 19 },
+        "src": { "width": 21, "height": 19 },
+        "index.js": { "width": 56, "height": 19 },
+        "app.dart": { "width": 62, "height": 19 }
+      }
+    },
+    {
       "id": "tree-unicode-invalid-icon",
       "type": "treeView",
       "source": "treeView-beta\n\"café 👩‍💻.dart\" icon(missing:unknown) ## é Unicode\n",

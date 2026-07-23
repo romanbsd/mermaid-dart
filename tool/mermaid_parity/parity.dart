@@ -78,6 +78,7 @@ final class ParityFixture {
     const packetDefaults = PacketRenderOptions();
     const pieDefaults = PieRenderOptions();
     const radarDefaults = RadarRenderOptions();
+    const treeViewDefaults = TreeViewRenderOptions();
     return RenderOptions(
       padding: 0,
       architecture: ArchitectureRenderOptions(
@@ -110,6 +111,12 @@ final class ParityFixture {
         axisLabelFactor: (diagramConfig['axisLabelFactor'] as num?)?.toDouble() ?? radarDefaults.axisLabelFactor,
         curveTension: (diagramConfig['curveTension'] as num?)?.toDouble() ?? radarDefaults.curveTension,
       ),
+      treeView: TreeViewRenderOptions(
+        rowIndent: (diagramConfig['rowIndent'] as num?)?.toDouble() ?? treeViewDefaults.rowIndent,
+        paddingX: (diagramConfig['paddingX'] as num?)?.toDouble() ?? treeViewDefaults.paddingX,
+        paddingY: (diagramConfig['paddingY'] as num?)?.toDouble() ?? treeViewDefaults.paddingY,
+        lineThickness: (diagramConfig['lineThickness'] as num?)?.toDouble() ?? treeViewDefaults.lineThickness,
+      ),
     );
   }
 }
@@ -119,6 +126,7 @@ const _fixtureOptionNames = {
   DiagramType.packet: 'packetOptions',
   DiagramType.pie: 'pieOptions',
   DiagramType.radar: 'radarOptions',
+  DiagramType.treeView: 'treeViewOptions',
 };
 
 const _mermaidConfigNames = {
@@ -126,6 +134,7 @@ const _mermaidConfigNames = {
   DiagramType.packet: 'packet',
   DiagramType.pie: 'pie',
   DiagramType.radar: 'radar',
+  DiagramType.treeView: 'treeView',
 };
 
 Map<String, Object> _diagramConfig(Map<Object?, Object?> json, DiagramType type) {
@@ -141,8 +150,30 @@ Map<String, Object> _diagramConfig(Map<Object?, Object?> json, DiagramType type)
     DiagramType.packet => _packetConfig(value),
     DiagramType.pie => _pieConfig(value),
     DiagramType.radar => _radarConfig(value),
+    DiagramType.treeView => _treeViewConfig(value),
     _ => throw FormatException('$expected are not supported for ${type.name} fixtures'),
   };
+}
+
+const _treeViewConfigKeys = {'rowIndent', 'paddingX', 'paddingY', 'lineThickness'};
+
+Map<String, Object> _treeViewConfig(Object? value) {
+  if (value is! Map<String, Object?> || value.isEmpty || value.keys.any((key) => !_treeViewConfigKeys.contains(key))) {
+    throw const FormatException('Invalid fixture treeViewOptions');
+  }
+  final result = <String, Object>{};
+  for (final MapEntry(:key, :value) in value.entries) {
+    final valid = switch ((key, value)) {
+      ('rowIndent' || 'paddingX' || 'paddingY', final num option) when option >= 0 => option,
+      ('lineThickness', final num option) when option > 0 => option,
+      _ => null,
+    };
+    if (valid == null) {
+      throw const FormatException('Invalid fixture treeViewOptions');
+    }
+    result[key] = valid;
+  }
+  return Map.unmodifiable(result);
 }
 
 const _radarConfigKeys = {
