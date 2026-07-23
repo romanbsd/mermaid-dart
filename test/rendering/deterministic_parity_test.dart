@@ -407,9 +407,19 @@ void main() {
         (element) => element.cssClasses.contains('cynefinConfusion'),
       );
       final badges = elements.whereType<SceneRect>().where((element) => element.cssClasses.contains('cynefinItem'));
+      final overflowBadge = elements.whereType<SceneRect>().singleWhere(
+        (element) => element.cssClasses.contains('cynefinItemOverflow'),
+      );
       final domainLabels = elements.whereType<SceneText>().where(
         (element) => element.cssClasses.contains('cynefinDomainLabel'),
       );
+      final arrowHead = elements.whereType<ScenePolygon>().singleWhere(
+        (element) => element.cssClasses.contains('cynefinArrowHead'),
+      );
+      final arrowCurve = arrow.commands.whereType<QuadraticTo>().single;
+      final arrowBaseLeft = arrowHead.points[1];
+      final arrowBaseRight = arrowHead.points[2];
+      final arrowBase = Point((arrowBaseLeft.x + arrowBaseRight.x) / 2, (arrowBaseLeft.y + arrowBaseRight.y) / 2);
 
       expect(scene.bounds, const Bounds(left: 0, top: 0, width: 880, height: 680));
       expect(boundaries, hasLength(2));
@@ -428,6 +438,18 @@ void main() {
         hasLength(4),
       );
       expect(arrow.commands.whereType<QuadraticTo>(), hasLength(1));
+      expect(arrowCurve.control, const Point(440, 250));
+      expect(arrowHead.points.first, arrowCurve.end);
+      expect(
+        (arrowCurve.end.x - arrowBase.x) * (arrowCurve.end.x - arrowBase.x) +
+            (arrowCurve.end.y - arrowBase.y) * (arrowCurve.end.y - arrowBase.y),
+        closeTo(81, 1e-9),
+      );
+      expect(
+        (arrowBaseLeft.x - arrowBaseRight.x) * (arrowBaseLeft.x - arrowBaseRight.x) +
+            (arrowBaseLeft.y - arrowBaseRight.y) * (arrowBaseLeft.y - arrowBaseRight.y),
+        closeTo(64, 1e-9),
+      );
       expect(confusion.stroke?.width, 1.5);
       expect(confusion.stroke?.dashes, const [4, 2]);
       expect(
@@ -442,6 +464,23 @@ void main() {
       expect(
         elements.whereType<SceneRect>().where((element) => element.cssClasses.contains('cynefinItemOverflow')),
         hasLength(1),
+      );
+      expect(badges.map((badge) => (badge.bounds.top, badge.bounds.height, badge.radiusX, badge.radiusY)), const [
+        (215, 26, 4, 4),
+        (362, 26, 4, 4),
+        (392, 26, 4, 4),
+        (422, 26, 4, 4),
+      ]);
+      expect(
+        (overflowBadge.bounds.top, overflowBadge.bounds.height, overflowBadge.radiusX, overflowBadge.radiusY),
+        const (452, 26, 4, 4),
+      );
+      expect(
+        elements
+            .whereType<SceneText>()
+            .singleWhere((element) => element.cssClasses.contains('cynefinArrowLabel'))
+            .position,
+        const Point(440, 244),
       );
       expect(title.position, const Point(440, 20));
       expect(domainLabels.map((label) => label.style.color), everyElement(const Color(19, 19, 0)));

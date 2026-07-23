@@ -22,6 +22,16 @@ void main() {
       }
     });
 
+    test('boundary offsets and endpoints remain axis-specific', () {
+      final fold = generateCynefinFoldPath(400, 300, 42, amplitude: 12, offsetX: 5, offsetY: 7);
+      final horizontal = generateCynefinHorizontalPath(400, 300, 42, amplitude: 12, offsetX: 5, offsetY: 7);
+
+      expect((fold.first as MoveTo).point.y, 7);
+      expect((fold.last as CubicTo).end.y, 307);
+      expect((horizontal.first as MoveTo).point.x, 5);
+      expect((horizontal.last as CubicTo).end.x, 405);
+    });
+
     test('zero amplitude produces straight centered boundaries', () {
       final fold = generateCynefinFoldPath(400, 300, 42, amplitude: 0);
       final horizontal = generateCynefinHorizontalPath(400, 300, 42, amplitude: 0);

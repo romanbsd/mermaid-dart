@@ -5,8 +5,30 @@ part of '../layout.dart';
 // renderer's typography, badge sizing, and boundary stroke rules.
 const _cynefinDefaultSvgId = 'my-svg';
 const _cynefinBadgeHorizontalPadding = 16.0;
+const _cynefinBadgeHeight = 26.0;
+const _cynefinBadgeCornerRadius = 4.0;
 const _cynefinConfusionStrokeWidth = 1.5;
 const _cynefinBadgeStrokeWidth = 1.0;
+const _cynefinConfusionBoundsInsetScale = .7;
+const _cynefinConfusionBoundsSizeScale = .6;
+const _cynefinConfusionRadiusScale = .15;
+const _cynefinHorizontalBoundarySeedOffset = 100;
+const _cynefinDomainLabelOffset = 30.0;
+const _cynefinConfusionLabelOffset = 10.0;
+const _cynefinSubtitleFontReduction = 1.0;
+const _cynefinModelSubtitleOffset = -10.0;
+const _cynefinPracticeSubtitleOffset = 5.0;
+const _cynefinConfusionPracticeSubtitleOffset = 8.0;
+const _cynefinMaximumConfusionItems = 3;
+const _cynefinItemSpacing = 30.0;
+const _cynefinDomainItemOffset = 15.0;
+const _cynefinDescribedDomainItemOffset = 25.0;
+const _cynefinConfusionItemOffset = 14.0;
+const _cynefinDescribedConfusionItemOffset = 22.0;
+const _cynefinTransitionBendScale = .15;
+const _cynefinTransitionArrowLength = 9.0;
+const _cynefinTransitionArrowHalfWidth = 4.0;
+const _cynefinTransitionLabelOffset = 6.0;
 // Mermaid applies these opacities in renderer CSS, independently of the
 // configured theme color. Keeping them here preserves that behavior for every
 // scene backend instead of baking alpha into only the default theme values.
@@ -36,10 +58,10 @@ _LayoutResult _layoutCynefin(CynefinAst ast, _LayoutContext context) {
       height: halfHeight,
     ),
     CynefinDomain.confusion: Bounds(
-      left: padding + halfWidth * .7,
-      top: padding + halfHeight * .7,
-      width: halfWidth * .6,
-      height: halfHeight * .6,
+      left: padding + halfWidth * _cynefinConfusionBoundsInsetScale,
+      top: padding + halfHeight * _cynefinConfusionBoundsInsetScale,
+      width: halfWidth * _cynefinConfusionBoundsSizeScale,
+      height: halfHeight * _cynefinConfusionBoundsSizeScale,
     ),
   };
   final colors = <CynefinDomain, Color>{
@@ -68,8 +90,8 @@ _LayoutResult _layoutCynefin(CynefinAst ast, _LayoutContext context) {
 
   final seed = config.seed == 0 ? cynefinHashString(_cynefinDefaultSvgId) : config.seed;
   elements.addAll([
-    ScenePath(
-      id: context.id('cynefin-boundary'),
+    _cynefinBoundary(
+      context,
       commands: generateCynefinFoldPath(
         width,
         height,
@@ -78,25 +100,21 @@ _LayoutResult _layoutCynefin(CynefinAst ast, _LayoutContext context) {
         offsetX: padding,
         offsetY: padding,
       ),
-      fill: const NoFill(),
-      stroke: SceneStroke(color: theme.boundaryColor, width: theme.boundaryWidth, dashes: config.boundaryDashes),
-      role: SemanticRole.edge,
-      cssClasses: const ['cynefinBoundary'],
+      config: config,
+      theme: theme,
     ),
-    ScenePath(
-      id: context.id('cynefin-boundary'),
+    _cynefinBoundary(
+      context,
       commands: generateCynefinHorizontalPath(
         width,
         height,
-        seed + 100,
+        seed + _cynefinHorizontalBoundarySeedOffset,
         amplitude: config.boundaryAmplitude,
         offsetX: padding,
         offsetY: padding,
       ),
-      fill: const NoFill(),
-      stroke: SceneStroke(color: theme.boundaryColor, width: theme.boundaryWidth, dashes: config.boundaryDashes),
-      role: SemanticRole.edge,
-      cssClasses: const ['cynefinBoundary'],
+      config: config,
+      theme: theme,
     ),
     ScenePath(
       id: context.id('cynefin-cliff'),
@@ -108,7 +126,12 @@ _LayoutResult _layoutCynefin(CynefinAst ast, _LayoutContext context) {
     ),
     ScenePath(
       id: context.id('cynefin-confusion'),
-      commands: generateCynefinConfusionPath(padding + width / 2, padding + height / 2, width * .15, height * .15),
+      commands: generateCynefinConfusionPath(
+        padding + width / 2,
+        padding + height / 2,
+        width * _cynefinConfusionRadiusScale,
+        height * _cynefinConfusionRadiusScale,
+      ),
       fill: SolidFill(_colorWithOpacity(colors[CynefinDomain.confusion]!, _cynefinConfusionOpacity)),
       stroke: SceneStroke(
         color: theme.boundaryColor,
@@ -138,7 +161,10 @@ _LayoutResult _layoutCynefin(CynefinAst ast, _LayoutContext context) {
         context,
         '${domain.name[0].toUpperCase()}${domain.name.substring(1)}',
         center.x,
-        center.y - (config.showDomainDescriptions ? (isConfusion ? 10 : 30) : 0),
+        center.y -
+            (config.showDomainDescriptions
+                ? (isConfusion ? _cynefinConfusionLabelOffset : _cynefinDomainLabelOffset)
+                : 0),
         anchor: TextAnchor.middle,
         baseline: TextBaseline.middle,
         role: SemanticRole.title,
@@ -155,7 +181,7 @@ _LayoutResult _layoutCynefin(CynefinAst ast, _LayoutContext context) {
   if (config.showDomainDescriptions) {
     final subtitleStyle = SceneTextStyle(
       fontFamily: context.options.theme.fontFamily,
-      fontSize: theme.itemFontSize - 1,
+      fontSize: theme.itemFontSize - _cynefinSubtitleFontReduction,
       style: FontStyle.italic,
       color: theme.textColor,
     );
@@ -169,7 +195,7 @@ _LayoutResult _layoutCynefin(CynefinAst ast, _LayoutContext context) {
             context,
             model,
             center.x,
-            center.y - 10,
+            center.y + _cynefinModelSubtitleOffset,
             anchor: TextAnchor.middle,
             baseline: TextBaseline.middle,
             style: subtitleStyle,
@@ -182,7 +208,7 @@ _LayoutResult _layoutCynefin(CynefinAst ast, _LayoutContext context) {
           context,
           practice,
           center.x,
-          center.y + (isConfusion ? 8 : 5),
+          center.y + (isConfusion ? _cynefinConfusionPracticeSubtitleOffset : _cynefinPracticeSubtitleOffset),
           anchor: TextAnchor.middle,
           baseline: TextBaseline.middle,
           style: subtitleStyle,
@@ -202,30 +228,34 @@ _LayoutResult _layoutCynefin(CynefinAst ast, _LayoutContext context) {
     if (items.isEmpty) continue;
     final center = positions[domain]!.center;
     final isConfusion = domain == CynefinDomain.confusion;
-    final renderedItems = isConfusion && items.length > 3 ? items.take(3).toList() : items;
+    final renderedItems = isConfusion && items.length > _cynefinMaximumConfusionItems
+        ? items.take(_cynefinMaximumConfusionItems).toList()
+        : items;
     final startY =
         center.y +
-        (isConfusion ? (config.showDomainDescriptions ? 22 : 14) : (config.showDomainDescriptions ? 25 : 15));
+        (isConfusion
+            ? (config.showDomainDescriptions ? _cynefinDescribedConfusionItemOffset : _cynefinConfusionItemOffset)
+            : (config.showDomainDescriptions ? _cynefinDescribedDomainItemOffset : _cynefinDomainItemOffset));
     for (var i = 0; i < renderedItems.length; i++) {
       _addCynefinBadge(
         context,
         elements,
         renderedItems[i].label,
         center.x,
-        startY + i * 30,
+        startY + i * _cynefinItemSpacing,
         colors[domain]!,
         theme.boundaryColor,
         itemStyle,
         overflow: false,
       );
     }
-    if (isConfusion && items.length > 3) {
+    if (isConfusion && items.length > _cynefinMaximumConfusionItems) {
       _addCynefinBadge(
         context,
         elements,
-        '+${items.length - 3} more',
+        '+${items.length - _cynefinMaximumConfusionItems} more',
         center.x,
-        startY + renderedItems.length * 30,
+        startY + renderedItems.length * _cynefinItemSpacing,
         colors[domain]!,
         theme.boundaryColor,
         itemStyle,
@@ -240,10 +270,9 @@ _LayoutResult _layoutCynefin(CynefinAst ast, _LayoutContext context) {
     final end = positions[transition.to]!.center;
     final dx = end.x - start.x;
     final dy = end.y - start.y;
-    final length = math.sqrt(dx * dx + dy * dy);
-    if (length == 0) continue;
+    if (dx == 0 && dy == 0) continue;
     final middle = Point((start.x + end.x) / 2, (start.y + end.y) / 2);
-    final control = Point(middle.x - dy / length * length * .15, middle.y + dx / length * length * .15);
+    final control = Point(middle.x - dy * _cynefinTransitionBendScale, middle.y + dx * _cynefinTransitionBendScale);
     elements.add(
       ScenePath(
         id: context.id('cynefin-arrow'),
@@ -254,18 +283,16 @@ _LayoutResult _layoutCynefin(CynefinAst ast, _LayoutContext context) {
         cssClasses: const ['cynefinArrowLine'],
       ),
     );
-    final tangentX = end.x - control.x;
-    final tangentY = end.y - control.y;
-    final tangentLength = math.sqrt(tangentX * tangentX + tangentY * tangentY);
-    final unitX = tangentX / tangentLength;
-    final unitY = tangentY / tangentLength;
-    final base = Point(end.x - unitX * 9, end.y - unitY * 9);
     elements.add(
-      ScenePolygon(
-        id: context.id('cynefin-arrow-head'),
-        points: [end, Point(base.x - unitY * 4, base.y + unitX * 4), Point(base.x + unitY * 4, base.y - unitX * 4)],
-        fill: SolidFill(theme.arrowColor),
-        role: SemanticRole.edge,
+      _triangleArrow(
+        context,
+        tip: end,
+        tail: control,
+        length: _cynefinTransitionArrowLength,
+        halfWidth: _cynefinTransitionArrowHalfWidth,
+        color: theme.arrowColor,
+        idPrefix: 'cynefin',
+        idSuffix: 'arrow-head',
         cssClasses: const ['cynefinArrowHead'],
       ),
     );
@@ -275,7 +302,7 @@ _LayoutResult _layoutCynefin(CynefinAst ast, _LayoutContext context) {
           context,
           label,
           control.x,
-          control.y - 6,
+          control.y - _cynefinTransitionLabelOffset,
           anchor: TextAnchor.middle,
           style: itemStyle,
           cssClasses: const ['cynefinArrowLabel'],
@@ -311,15 +338,14 @@ void _addCynefinBadge(
   SceneTextStyle style, {
   required bool overflow,
 }) {
-  const height = 26.0;
   final width = context.measurer.measure(label, style).width + _cynefinBadgeHorizontalPadding;
-  final bounds = Bounds(left: centerX - width / 2, top: top, width: width, height: height);
+  final bounds = Bounds(left: centerX - width / 2, top: top, width: width, height: _cynefinBadgeHeight);
   elements.add(
     SceneRect(
       id: context.id(overflow ? 'cynefin-item-overflow' : 'cynefin-item'),
       bounds: bounds,
-      radiusX: 4,
-      radiusY: 4,
+      radiusX: _cynefinBadgeCornerRadius,
+      radiusY: _cynefinBadgeCornerRadius,
       fill: SolidFill(_colorWithOpacity(fill, overflow ? _cynefinOverflowOpacity : _cynefinItemOpacity)),
       stroke: SceneStroke(color: strokeColor, width: _cynefinBadgeStrokeWidth),
       role: SemanticRole.node,
@@ -332,10 +358,24 @@ void _addCynefinBadge(
       context,
       label,
       centerX,
-      top + height / 2,
+      top + _cynefinBadgeHeight / 2,
       anchor: TextAnchor.middle,
       style: style,
       cssClasses: const ['cynefinItemText'],
     ),
   );
 }
+
+ScenePath _cynefinBoundary(
+  _LayoutContext context, {
+  required List<PathCommand> commands,
+  required CynefinRenderOptions config,
+  required CynefinTheme theme,
+}) => ScenePath(
+  id: context.id('cynefin-boundary'),
+  commands: commands,
+  fill: const NoFill(),
+  stroke: SceneStroke(color: theme.boundaryColor, width: theme.boundaryWidth, dashes: config.boundaryDashes),
+  role: SemanticRole.edge,
+  cssClasses: const ['cynefinBoundary'],
+);
