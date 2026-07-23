@@ -509,6 +509,51 @@ rule <- "a" b? ;
       expect(measurer.measure('a\nb', style).height, greaterThan(measurer.measure('a', style).height));
     });
 
+    test('renderer text emphasis matches Mermaid semantics', () {
+      final cynefinTexts = _flatten(
+        layoutDiagram(parse(DiagramType.cynefin, 'cynefin-beta\ncomplex "Probe"\n')).elements,
+      ).whereType<SceneText>();
+      expect(
+        cynefinTexts.where((text) => text.cssClasses.contains('cynefinSubtitle')).map((text) => text.style.style),
+        everyElement(FontStyle.italic),
+      );
+
+      final gitTexts = _flatten(
+        layoutDiagram(
+          parse(DiagramType.gitGraph, 'gitGraph\ncommit id: "A"\nbranch develop\ncheckout develop\ncommit id: "B"\n'),
+        ).elements,
+      ).whereType<SceneText>();
+      expect(
+        gitTexts.where((text) => text.cssClasses.contains('git-branch-label')).map((text) => text.style.weight),
+        everyElement(FontWeight.normal),
+      );
+
+      final treeTexts = _flatten(
+        layoutDiagram(
+          parse(DiagramType.treeView, 'treeView-beta\n"café 👩‍💻.dart" icon(missing:unknown) ## é Unicode\n'),
+        ).elements,
+      ).whereType<SceneText>();
+      expect(
+        treeTexts.where((text) => text.cssClasses.contains('treeView-node-dir')).map((text) => text.style.weight),
+        everyElement(FontWeight.bold),
+      );
+      expect(
+        treeTexts
+            .where(
+              (text) =>
+                  text.cssClasses.contains('treeView-node-label') && !text.cssClasses.contains('treeView-node-dir'),
+            )
+            .map((text) => text.style.weight),
+        everyElement(FontWeight.normal),
+      );
+      expect(
+        treeTexts
+            .where((text) => text.cssClasses.contains('treeView-node-description'))
+            .map((text) => text.style.style),
+        everyElement(FontStyle.italic),
+      );
+    });
+
     test('single-section pies use two arcs to form a complete circle', () {
       final scene = layoutDiagram(const PieAst(sections: [PieSectionAst(label: 'all', value: 1)]));
       final path = _flatten(scene.elements).whereType<ScenePath>().single;

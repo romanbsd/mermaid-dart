@@ -156,6 +156,7 @@ _LayoutResult _layoutCynefin(CynefinAst ast, _LayoutContext context) {
     final subtitleStyle = SceneTextStyle(
       fontFamily: context.options.theme.fontFamily,
       fontSize: theme.itemFontSize - 1,
+      style: FontStyle.italic,
       color: theme.textColor,
     );
     for (final domain in domainOrder) {

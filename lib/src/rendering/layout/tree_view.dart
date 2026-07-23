@@ -11,11 +11,18 @@ const _treeDescriptionGap = 16.0;
 const _treeHighlightVerticalInset = 1.0;
 const _treeHighlightRightOverflow = 8.0;
 const _treeHighlightStrokeAllowance = 2.0;
-SceneTextStyle _treeTextStyle(_LayoutContext context, Color color) => SceneTextStyle(
+SceneTextStyle _treeTextStyle(
+  _LayoutContext context,
+  Color color, {
+  FontWeight weight = FontWeight.normal,
+  FontStyle style = FontStyle.normal,
+}) => SceneTextStyle(
   fontFamily: context.textStyle.fontFamily,
   // Both label and description selectors fix their size at 16px, overriding
   // the global SVG font size while still inheriting its font family.
   fontSize: _treeLabelFontSize,
+  weight: weight,
+  style: style,
   color: color,
   lineHeight: context.textStyle.lineHeight,
 );
@@ -63,7 +70,8 @@ String? _treeIconReference({
 _LayoutResult _layoutTree(TreeViewAst ast, _LayoutContext context) {
   final config = context.options.optionsFor(const TreeViewRenderOptions());
   final textStyle = _treeTextStyle(context, config.labelColor);
-  final descriptionStyle = _treeTextStyle(context, config.descriptionColor);
+  final directoryStyle = _treeTextStyle(context, config.labelColor, weight: FontWeight.bold);
+  final descriptionStyle = _treeTextStyle(context, config.descriptionColor, style: FontStyle.italic);
   final elements = <SceneElement>[];
   final indentStack = <int>[];
   final depths = <int>[];
@@ -97,7 +105,8 @@ _LayoutResult _layoutTree(TreeViewAst ast, _LayoutContext context) {
   for (var i = 0; i < nodes.length; i++) {
     final node = nodes[i];
     final x = node.depth * (config.rowIndent + config.paddingX);
-    final measured = context.measurer.measure(node.name, textStyle);
+    final labelStyle = node.directory ? directoryStyle : textStyle;
+    final measured = context.measurer.measure(node.name, labelStyle);
     final height = measured.height + config.paddingY * 2;
     final centerY = totalHeight + height / 2;
     final children = <SceneElement>[];
@@ -130,7 +139,7 @@ _LayoutResult _layoutTree(TreeViewAst ast, _LayoutContext context) {
         labelX,
         centerY,
         baseline: TextBaseline.middle,
-        style: textStyle,
+        style: labelStyle,
         cssClasses: [
           'treeView-node-label',
           if (node.directory) 'treeView-node-dir',

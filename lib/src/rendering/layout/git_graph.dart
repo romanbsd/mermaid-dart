@@ -55,7 +55,6 @@ _LayoutResult _layoutGitGraph(GitGraphAst ast, _LayoutContext context) {
   final branchStyle = SceneTextStyle(
     fontFamily: context.options.theme.fontFamily,
     fontSize: context.options.theme.fontSize,
-    weight: FontWeight.bold,
     color: context.options.theme.primaryText,
   );
   final commitStyle = SceneTextStyle(

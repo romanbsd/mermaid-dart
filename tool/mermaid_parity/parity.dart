@@ -1708,7 +1708,7 @@ List<String> _foreignObjectGeometryValues(XmlElement element, _Translation? tran
     '16',
     'middle',
     'central',
-    _fontFamilyGeometryValue(element, styleSheets),
+    ..._typographyGeometryValues(element, styleSheets),
   ];
 }
 
@@ -1773,16 +1773,54 @@ List<String> _textGeometryValues(
     _formatNumber(fontSize),
     anchor,
     baseline,
-    _fontFamilyGeometryValue(element, styleSheets),
+    ..._typographyGeometryValues(element, styleSheets),
   ];
 }
 
-String _fontFamilyGeometryValue(XmlElement element, String styleSheets) {
-  final family = _inheritedPresentationValue(element, 'font-family', styleSheets) ?? 'sans-serif';
-  return family
-      .split(',')
-      .map((part) => part.trim().replaceAllMapped(RegExp(r'''^(['"])(.*)\1$'''), (match) => match[2]!).toLowerCase())
-      .join(',');
+// CSS's computed equivalents for the keyword font weights. Keeping the
+// normalized signature numeric makes keyword and SVG-attribute forms equal.
+const _normalFontWeight = '400';
+const _boldFontWeight = '700';
+const _normalFontStyle = 'normal';
+
+List<String> _typographyGeometryValues(XmlElement element, String styleSheets) {
+  final textElement = _firstVisibleTextElement(element) ?? element;
+  final family = _inheritedPresentationValue(textElement, 'font-family', styleSheets) ?? 'sans-serif';
+  return [
+    family
+        .split(',')
+        .map((part) => part.trim().replaceAllMapped(RegExp(r'''^(['"])(.*)\1$'''), (match) => match[2]!).toLowerCase())
+        .join(','),
+    _normalizedFontWeight(textElement, styleSheets),
+    _normalizedFontStyle(textElement, styleSheets),
+  ];
+}
+
+XmlElement? _firstVisibleTextElement(XmlElement element) =>
+    element.descendants.whereType<XmlText>().where((node) => node.value.trim().isNotEmpty).firstOrNull?.parentElement;
+
+String _normalizedFontWeight(XmlElement element, String styleSheets) {
+  for (XmlElement? current = element; current != null; current = current.parentElement) {
+    final value = _localPresentationValue(current, 'font-weight', styleSheets);
+    if (value != null && value != 'inherit') {
+      return switch (value.trim().toLowerCase()) {
+        'normal' => _normalFontWeight,
+        'bold' => _boldFontWeight,
+        final weight => weight,
+      };
+    }
+    if (current.name.local case 'b' || 'strong') return _boldFontWeight;
+  }
+  return _normalFontWeight;
+}
+
+String _normalizedFontStyle(XmlElement element, String styleSheets) {
+  for (XmlElement? current = element; current != null; current = current.parentElement) {
+    final value = _localPresentationValue(current, 'font-style', styleSheets);
+    if (value != null && value != 'inherit') return value.trim().toLowerCase();
+    if (current.name.local case 'i' || 'em') return 'italic';
+  }
+  return _normalFontStyle;
 }
 
 String? _inheritedAttribute(XmlElement element, String name) {

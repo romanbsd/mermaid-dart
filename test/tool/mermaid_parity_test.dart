@@ -289,7 +289,7 @@ void main() {
     );
     final svgText = SvgSnapshot.fromSvg(
       '<svg><text x="60" y="40" font-size="16" text-anchor="middle" '
-      'dominant-baseline="central">Updated\n\na: b</text></svg>',
+      'dominant-baseline="central" font-weight="700">Updated\n\na: b</text></svg>',
     );
 
     final comparison = SvgComparison.compare(svgText, htmlText);
@@ -343,6 +343,47 @@ void main() {
 
     expect(SvgComparison.compare(inherited, equivalent).sameGeometry, isTrue);
     expect(SvgComparison.compare(inherited, different).sameGeometry, isFalse);
+  });
+
+  test('compares normalized inherited font weight and style as visual text geometry', () {
+    final inherited = SvgSnapshot.fromSvg(
+      '<svg style="font-weight: bold; font-style: italic">'
+      '<text x="1" y="2">Label</text></svg>',
+    );
+    final equivalent = SvgSnapshot.fromSvg(
+      '<svg><text x="1" y="2" font-weight="700" font-style="ITALIC">Label</text></svg>',
+    );
+    final differentWeight = SvgSnapshot.fromSvg(
+      '<svg><text x="1" y="2" font-weight="400" font-style="italic">Label</text></svg>',
+    );
+    final differentStyle = SvgSnapshot.fromSvg(
+      '<svg><text x="1" y="2" font-weight="700" font-style="normal">Label</text></svg>',
+    );
+
+    expect(SvgComparison.compare(inherited, equivalent).sameGeometry, isTrue);
+    expect(SvgComparison.compare(inherited, differentWeight).sameGeometry, isFalse);
+    expect(SvgComparison.compare(inherited, differentStyle).sameGeometry, isFalse);
+  });
+
+  test('normalizes semantic HTML typography in foreignObject labels', () {
+    final html = SvgSnapshot.fromSvg(
+      '<svg><foreignObject x="0" y="0" width="2" height="4">'
+      '<div><strong><em>Label</em></strong></div>'
+      '</foreignObject></svg>',
+    );
+    final svg = SvgSnapshot.fromSvg(
+      '<svg><text x="1" y="2" text-anchor="middle" '
+      'dominant-baseline="central" font-size="16" '
+      'font-weight="700" font-style="italic">Label</text></svg>',
+    );
+    final plainHtml = SvgSnapshot.fromSvg(
+      '<svg><foreignObject x="0" y="0" width="2" height="4">'
+      '<div>Label</div>'
+      '</foreignObject></svg>',
+    );
+
+    expect(SvgComparison.compare(html, svg).sameGeometry, isTrue);
+    expect(SvgComparison.compare(plainHtml, svg).sameGeometry, isFalse);
   });
 
   test('normalizes Mermaid createText wrappers to positioned SVG text', () {
