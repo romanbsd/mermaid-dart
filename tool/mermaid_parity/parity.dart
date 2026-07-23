@@ -1274,6 +1274,7 @@ final class SvgSnapshot {
 
   factory SvgSnapshot.fromSvg(String svg) {
     final sourceDocument = XmlDocument.parse(svg);
+    final comparisonViewport = _comparisonViewport(sourceDocument.rootElement);
     final canonicalSvg = canonicalizeSvgForComparison(svg);
     final document = XmlDocument.parse(canonicalSvg);
     const elementNames = {'circle', 'ellipse', 'line', 'path', 'polygon', 'polyline', 'rect', 'text'};
@@ -1289,7 +1290,7 @@ final class SvgSnapshot {
       // Read the viewport from the source document. Canonical SVG intentionally
       // rounds attributes for stable structural output, which would otherwise
       // introduce a second rounding step before visual comparison.
-      viewBox: _normalizedNumberList(sourceDocument.rootElement.getAttribute('viewBox')),
+      viewBox: comparisonViewport.size,
       text: [for (final element in textElements) _normalizedVisibleText(element)]..sort(),
       elementCounts: {
         for (final name in elementNames)
@@ -1300,8 +1301,8 @@ final class SvgSnapshot {
       // Preserve source precision while flattening transforms. Canonicalizing
       // first can round local coordinates and their translation separately,
       // moving the final absolute point across a comparison boundary.
-      geometry: _geometrySignatures(sourceDocument.rootElement),
-      paint: _paintSignatures(sourceDocument.rootElement),
+      geometry: _geometrySignatures(sourceDocument.rootElement, initialTransform: comparisonViewport.originTransform),
+      paint: _paintSignatures(sourceDocument.rootElement, initialTransform: comparisonViewport.originTransform),
     );
   }
 
@@ -1324,7 +1325,7 @@ final class SvgComparison {
   });
 
   factory SvgComparison.compare(SvgSnapshot dart, SvgSnapshot mermaid) {
-    final sameGeometry = _listEquals(dart.geometry, mermaid.geometry);
+    final sameGeometry = _signatureListsEqual(dart.geometry, mermaid.geometry);
     return SvgComparison(
       exact: dart.canonicalSvg == mermaid.canonicalSvg,
       sameViewport: dart.viewBox == null || mermaid.viewBox == null || dart.viewBox == mermaid.viewBox,
@@ -1333,7 +1334,7 @@ final class SvgComparison {
       sameGeometry: sameGeometry,
       // Paint is paired with normalized geometry. If geometry differs, the
       // paint comparison has no reliable element correspondence of its own.
-      samePaint: !sameGeometry || _listEquals(dart.paint, mermaid.paint),
+      samePaint: !sameGeometry || _signatureListsEqual(dart.paint, mermaid.paint),
     );
   }
 
@@ -1359,14 +1360,28 @@ final class SvgComparison {
 
 const _visibleElements = {'circle', 'ellipse', 'foreignObject', 'line', 'path', 'polygon', 'polyline', 'rect', 'text'};
 
-List<String> _geometrySignatures(XmlElement root) => _elementSignatures(root, _geometrySignature);
+({String? size, String originTransform}) _comparisonViewport(XmlElement root) {
+  final raw = root.getAttribute('viewBox');
+  if (raw == null) return (size: null, originTransform: '');
+  final values = raw.trim().split(RegExp(r'[\s,]+')).where((value) => value.isNotEmpty).map(double.tryParse).toList();
+  if (values.length != 4 || values.any((value) => value == null)) {
+    return (size: _normalizedNumberList(raw), originTransform: '');
+  }
+  final [left, top, width, height] = values.cast<double>();
+  return (size: '${_formatNumber(width)} ${_formatNumber(height)}', originTransform: 'translate(${-left}, ${-top})');
+}
 
-List<String> _paintSignatures(XmlElement root) => _elementSignatures(root, _paintSignature);
+List<String> _geometrySignatures(XmlElement root, {String initialTransform = ''}) =>
+    _elementSignatures(root, _geometrySignature, initialTransform: initialTransform);
+
+List<String> _paintSignatures(XmlElement root, {String initialTransform = ''}) =>
+    _elementSignatures(root, _paintSignature, initialTransform: initialTransform);
 
 List<String> _elementSignatures(
   XmlElement root,
-  String Function(XmlElement element, String transform, String styleSheets) signature,
-) {
+  String Function(XmlElement element, String transform, String styleSheets) signature, {
+  String initialTransform = '',
+}) {
   final signatures = <String>[];
   final styleSheets = root.descendants
       .whereType<XmlElement>()
@@ -1389,7 +1404,7 @@ List<String> _elementSignatures(
     }
   }
 
-  visit(root, '');
+  visit(root, initialTransform);
   return signatures..sort();
 }
 
@@ -1870,13 +1885,32 @@ extension on String {
   String? get nullIfEmpty => isEmpty ? null : this;
 }
 
-String _normalizedTransform(String transform) => _transformFunction
-    .allMatches(transform)
-    .map((match) {
-      final values = _pathToken.allMatches(match[2]!).map((value) => _formatNumber(double.parse(value[0]!))).join(' ');
-      return '${match[1]!.toLowerCase()}($values)';
-    })
-    .join(' ');
+String _normalizedTransform(String transform) {
+  final result = <String>[];
+  var translateX = 0.0;
+  var translateY = 0.0;
+
+  void flushTranslation() {
+    if (translateX == 0 && translateY == 0) return;
+    result.add('translate(${_formatNumber(translateX)} ${_formatNumber(translateY)})');
+    translateX = 0;
+    translateY = 0;
+  }
+
+  for (final match in _transformFunction.allMatches(transform)) {
+    final name = match[1]!.toLowerCase();
+    final values = _pathToken.allMatches(match[2]!).map((value) => double.parse(value[0]!)).toList();
+    if (name == 'translate') {
+      translateX += values.first;
+      translateY += values.length > 1 ? values[1] : 0;
+      continue;
+    }
+    flushTranslation();
+    result.add('$name(${values.map(_formatNumber).join(' ')})');
+  }
+  flushTranslation();
+  return result.join(' ');
+}
 
 final class _Translation {
   const _Translation(this.dx, this.dy);
@@ -1904,7 +1938,9 @@ final _translate = RegExp(
   caseSensitive: false,
 );
 final _pathToken = RegExp(r'[A-Za-z]|-?(?:\d+\.?\d*|\.\d+)(?:e[+-]?\d+)?', caseSensitive: false);
+final _signatureNumber = RegExp(r'[-+]?(?:\d+\.?\d*|\.\d+)(?:e[+-]?\d+)?', caseSensitive: false);
 final _transformFunction = RegExp(r'([A-Za-z]+)\s*\(([^)]*)\)');
+const _geometryComparisonTolerance = 0.011;
 
 String _translatedNumber(String value, double offset) => _formatNumber(double.parse(value) + offset);
 
@@ -2143,6 +2179,33 @@ bool _listEquals<T>(List<T> left, List<T> right) {
     if (left[index] != right[index]) return false;
   }
   return true;
+}
+
+bool _signatureListsEqual(List<String> left, List<String> right) {
+  if (left.length != right.length) return false;
+  for (var index = 0; index < left.length; index++) {
+    if (!_signaturesEqual(left[index], right[index])) return false;
+  }
+  return true;
+}
+
+bool _signaturesEqual(String left, String right) {
+  if (left == right) return true;
+  final leftNumbers = _signatureNumber.allMatches(left).toList();
+  final rightNumbers = _signatureNumber.allMatches(right).toList();
+  if (leftNumbers.length != rightNumbers.length) return false;
+  var leftEnd = 0;
+  var rightEnd = 0;
+  for (var index = 0; index < leftNumbers.length; index++) {
+    final leftNumber = leftNumbers[index];
+    final rightNumber = rightNumbers[index];
+    if (left.substring(leftEnd, leftNumber.start) != right.substring(rightEnd, rightNumber.start)) return false;
+    final delta = (double.parse(leftNumber.group(0)!) - double.parse(rightNumber.group(0)!)).abs();
+    if (delta > _geometryComparisonTolerance) return false;
+    leftEnd = leftNumber.end;
+    rightEnd = rightNumber.end;
+  }
+  return left.substring(leftEnd) == right.substring(rightEnd);
 }
 
 bool _mapEquals<K, V>(Map<K, V> left, Map<K, V> right) {

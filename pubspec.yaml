@@ -10,6 +10,8 @@ environment:
 dependencies:
   characters: ^1.4.1
   collection: ^1.19.1
+  fcose:
+    path: ../fcose
   petitparser: ^7.0.2
   xml: ^7.0.1
   yaml: ^3.1.3

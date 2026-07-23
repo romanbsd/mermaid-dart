@@ -1,227 +1,10 @@
 import 'dart:math' as math;
 
+import 'package:fcose/fcose.dart' as fcose;
+
 import '../../parser/ast.dart';
 import '../options.dart';
 import '../scene.dart';
-
-// Cytoscape/fCoSE adds a small proof-quality separation remainder after the
-// configured compound padding has been applied. Mermaid 11.16's deterministic
-// default layout produces this stable remainder for sibling service nodes.
-const _architectureCompoundProofSpacingAllowance = 5.68656576118505;
-
-// A four-service orthogonal tree inside one compound settles as a 2x2 frame.
-// fCoSE leaves slightly different proof remainders on each axis.
-const _architectureOrthogonalTreeHorizontalProofSpacingAllowance = 6.82715103496474;
-const _architectureOrthogonalTreeVerticalProofSpacingAllowance = 5.92263355778473;
-const _architectureOrthogonalTreeNodeCount = 4;
-
-// Mermaid's explicit seed-42 regression fixture settles its three-service
-// compound chain at a reproducible fCoSE equilibrium.
-const _architectureCompoundChainSeed = 42;
-const _architectureSeededCompoundNodeCount = 3;
-const _architectureSeededCompoundGroupCount = 3;
-// The seeded compound fixture keeps Cytoscape's fixed browser-frame residual
-// instead of scaling it with service icon geometry.
-const _architectureSeededCompoundHorizontalFrameOffset = -1.5;
-const _architectureSeededCompoundMemberCounts = {1, 2};
-const _architectureSeededCompoundCrossGroupEdgeCount = 1;
-const _architectureSeededCompoundNestedMemberGroupCount = 1;
-
-// fCoSE's compound forces do not scale linearly with icon size because its
-// fixed node-separation constraint remains active alongside icon-relative
-// ideal edge lengths. These browser-measured Mermaid 11.16 equilibria at
-// 64px, 80px, and 96px provide a quadratic interpolation around the supported
-// default rather than treating the default-size remainder as a fixed offset.
-const _architectureSeededCompoundCalibrationIconSize = 80.0;
-const _architectureSeededCompoundCalibrationStep = 16.0;
-const _architectureSeededCompoundSameGroupDistances = (
-  lower: 161.17629397100372,
-  center: 200.751964903962,
-  upper: 240.4892957195506,
-);
-const _architectureSeededCompoundCrossGroupDistances = (
-  lower: 286.95732591662544,
-  center: 305.9209822701608,
-  upper: 320.814644439779,
-);
-// Padding participates in compound non-overlap forces rather than adding a
-// direct border offset to service centers. These adjustments are the
-// corresponding 32px/40px/48px equilibria measured with the 64px calibration
-// icon; the center is zero because padding 40 is already represented above.
-const _architectureSeededCompoundCalibrationPadding = 40.0;
-const _architectureSeededCompoundPaddingCalibrationStep = 8.0;
-const _architectureSeededCompoundSameGroupPaddingAdjustments = (
-  lower: -0.02149922531058,
-  center: 0.0,
-  upper: 0.03040633192424,
-);
-const _architectureSeededCompoundCrossGroupPaddingAdjustments = (
-  lower: -19.8500358538932,
-  center: 0.0,
-  upper: 27.8117577072608,
-);
-// The proof solver's ideal-length and elasticity controls interact. These
-// bilinear coefficients reproduce the Mermaid 11.16 response at multiplier
-// 1.2 and elasticity 0.35 relative to their 1.5/0.45 defaults. nodeSeparation
-// and numIter do not move this already-converged three-service equilibrium.
-const _architectureSeededCompoundCalibrationIdealMultiplier = 1.2;
-const _architectureSeededCompoundCalibrationElasticity = 0.35;
-const _architectureSeededCompoundSameGroupSolverAdjustments = (
-  ideal: -18.63796872928879,
-  elasticity: 0.31980201399706,
-  interaction: 0.14419856832221,
-);
-const _architectureSeededCompoundCrossGroupSolverAdjustments = (
-  ideal: -0.57322691174948,
-  elasticity: -0.49716536016031,
-  interaction: -0.59871307816965,
-);
-
-// A four-service compound connected vertically to one ungrouped gateway is
-// relaxed differently from a closed compound tree. These Mermaid 11.16 proof
-// residuals preserve the two internal axes, cross-boundary edge, and export
-// frame independently.
-const _architectureExternalGatewayHorizontalProofSpacingAllowance = 7.21424871593146;
-const _architectureExternalGatewayVerticalProofSpacingAllowance = 5.89606074229714;
-const _architectureExternalGatewayCrossGroupSpacingRatio = 1.0577801858370812;
-const _architectureExternalGatewayVerticalFrameRatio = 0.025;
-const _architectureExternalGatewayGroupedNodeCount = 4;
-const _architectureExternalGatewayUngroupedNodeCount = 1;
-const _architectureExternalGatewayInternalEdgeCount = 3;
-const _architectureExternalGatewayCrossGroupEdgeCount = 1;
-
-// Three iconless services joined as a right-angle fan settle at the same
-// proof distance on both axes. The remainder follows configured base spacing
-// and padding, while existing frame ratios reproduce Mermaid's export origin.
-const _architecturePlainServiceElbowProofSpacingAllowance = 5.92563261830128;
-const _architecturePlainServiceElbowNodeCount = 3;
-const _architecturePlainServiceElbowEdgeCount = 2;
-const _architecturePlainServiceElbowVerticalEdgeCount = 1;
-
-// Seeded fCoSE proof layout leaves these scale-relative residuals when an edge
-// is constrained within or across compound boundaries. They are expressed as
-// icon-size ratios so custom architecture sizes preserve Mermaid's layout
-// proportions.
-const _architectureNestedSameGroupSpacingRatio = 0.007624642307904625;
-const _architectureNestedSiblingGroupSpacingRatio = 1.2521559071984768;
-const _architectureNestedParentChildSpacingRatio = 0.8456279412989119;
-const _architectureTopLevelSiblingGroupSpacingRatio = 1.8162155093693997;
-const _architectureHorizontalJunctionSpacingRatio = 0.00563391197044325;
-const _architectureVerticalJunctionSpacingRatio = 0.001489728721259098;
-
-// An ungrouped pair of junctions with cardinal service branches settles at a
-// wider proof distance than the breadth-first seed. Mermaid 11.16/fCoSE leaves
-// distinct residuals for the junction spine and its horizontal/vertical arms.
-const _architectureJunctionPairGapRatio = 2.5361130752540495;
-const _architectureJunctionPairHorizontalArmRatio = 2.514298889430605;
-const _architectureJunctionPairVerticalArmRatio = 2.5129801379395497;
-
-// The expanded junction pair is normalized with the deterministic frame
-// residuals that Cytoscape applies to a sparse cardinal component.
-const _architectureJunctionPairHorizontalFrameRatio = 0.26875;
-const _architectureJunctionPairVerticalFrameRatio = 0.053125;
-
-// A pure ungrouped service chain exposes fCoSE's ideal-edge-length control
-// without compound forces. The proof solver retains a small residual beyond
-// one icon width plus the configured ideal length. These are the Mermaid 11.16
-// residuals at its default multiplier and the upstream multiplier-3 fixture;
-// intermediate configurations interpolate the seeded solver remainder.
-const _architectureLinearChainDefaultResidualRatio = 0.008581598080943501;
-const _architectureLinearChainTripleResidualRatio = 0.0021664388280855;
-const _architectureLinearChainTripleMultiplier = 3.0;
-const _architectureLinearChainMinimumNodes = 3;
-
-// Mermaid's chain export is normalized around Cytoscape's browser frame after
-// labels are excluded from node dimensions. Keep that frame icon-relative.
-const _architectureLinearChainHorizontalFrameRatio = 0.259375;
-
-// Ungrouped service icons are vertically normalized without label dimensions,
-// leaving this shared Cytoscape browser-frame residual for both a standalone
-// service and a pure service chain.
-const _architectureUngroupedServiceVerticalFrameRatio = -0.09375;
-
-// Service-to-service edges explicitly attached to sibling group boundaries
-// settle closer than junction-mediated compound edges. Seeded fCoSE leaves a
-// small leading/trailing asymmetry according to the source port direction.
-const _architectureLeadingGroupEdgeSpacingRatio = 1.09970950151044;
-const _architectureTrailingGroupEdgeSpacingRatio = 1.0795028502252908;
-
-// In a component containing cross-axis edges, fCoSE aligns the shared rank
-// while relaxing horizontal, vertical, and elbow constraints independently.
-// Mermaid 11.16's seeded proof layout produces these icon-relative distances.
-const _architectureMixedAxisHorizontalSpacingRatio = 2.335483156229662;
-const _architectureMixedAxisTopElbowSpacingRatio = 1.5828032777182664;
-const _architectureMixedAxisBottomElbowSpacingRatio = 1.5849245641753044;
-const _architectureMixedAxisVerticalSpacingRatio = 2.507311653708842;
-const _architectureMixedAxisHorizontalFrameRatio = 0.26875;
-
-// Dense cross-axis meshes settle into a symmetric cardinal arrangement rather
-// than the sparse mixed-axis ranks above. The tiny frame residual is fCoSE's
-// deterministic centering remainder for Mermaid's five-service mesh.
-const _architectureDenseMixedAxisSpacingRatio = 2.2146398925991226;
-const _architectureDenseMixedAxisFrameResidualRatio = 0.002209708691208;
-
-// Cytoscape's edge-label layer shifts the otherwise identical architecture
-// mesh before export. Keep the browser-derived offset scale-relative.
-const _architectureEdgeLabelHorizontalFrameRatio = 0.128125;
-const _architectureEdgeLabelVerticalFrameRatio = 0.053125;
-
-// Mermaid's reasonable-height topology forms a horizontal junction spine.
-// Seeded fCoSE relaxes successive left and right constraints by different
-// proof residuals while keeping every database branch at one shared depth.
-const _architectureJunctionSpineLeftGapRatios = [2.3810325587493617, 2.32401589163952, 2.4087558354748757];
-const _architectureJunctionSpineRightGapRatios = [2.2389523606713064, 2.29991084992959, 2.39728551313949];
-const _architectureJunctionSpineBranchGapRatio = 2.5210290244364226;
-const _architectureJunctionSpineUpperServiceGapRatio = 2.6104418310518644;
-const _architectureJunctionSpineCompanionServiceGapRatio = 2.511237485601325;
-const _architectureJunctionSpineGroupGapRatio = 1.4755572394020315;
-
-// The companion group's long edge-service label extends its compound width
-// beyond the icon by this browser-measured amount in Mermaid 11.16.
-const _architectureJunctionSpineCompanionLabelOverflow = 6.5;
-
-// Proof-quality fCoSE slightly relaxes declared alignment gaps and the
-// orthogonal fan-in distance. The seeded residuals are icon-scaled so row and
-// column constraints remain symmetric for custom icon sizes.
-const _architectureAlignmentLeadingGapRatio = 1.5845073273032955;
-const _architectureAlignmentTrailingGapRatio = 1.5994651042572028;
-const _architectureAlignmentFanInDriftRatio = 0.009185656542127774;
-const _architectureAlignmentOrthogonalSpacingRatio = 0.3962705726689144;
-const _architectureAlignmentAxisFrameRatio = 0.01875;
-const _architectureAlignmentOrthogonalFrameRatio = 0.053125;
-
-// A grid that constrains rows inside sibling compound groups makes fCoSE
-// expand both axes to satisfy compound non-overlap alongside the declared
-// relative-placement constraints. These seeded Mermaid 11.16 ratios preserve
-// that proof-layout expansion instead of treating each hint independently.
-const _architectureCompoundGridRowGapRatio = 1.9702540506595483;
-const _architectureCompoundGridColumnGapRatio = 3.1359174033300945;
-
-// Deeply nested architecture graphs combine several compound constraints that
-// cannot be represented by independent edge lengths. These coordinates are
-// the seeded fCoSE equilibrium from Mermaid 11.16, expressed relative to the
-// branching service at the end of the innermost three-service chain. Keeping
-// them icon-scaled preserves the proof layout when iconSize is customized.
-const _architectureDeepCompoundChainNearXRatio = -2.847592704141243;
-const _architectureDeepCompoundChainFarXRatio = -5.522416443202269;
-const _architectureDeepCompoundUpperYRatio = -4.16243317624153;
-const _architectureDeepCompoundLowerYRatio = 2.3574022472462843;
-const _architectureDeepCompoundSiblingXRatio = 3.1250455603838874;
-const _architectureDeepCompoundSiblingYRatio = 3.205629886432461;
-const _architectureDeepCompoundStorageXRatio = 5.313784736653543;
-const _architectureDeepCompoundLowerRankYRatio = 5.202933887494794;
-const _architectureDeepCompoundBusXRatio = 3.785465259027479;
-const _architectureDeepCompoundIsolatedXRatio = 4.864672325313609;
-const _architectureDeepCompoundIsolatedYRatio = -0.7450667157075372;
-const _architectureDeepCompoundRemoteXRatio = -9.850563998491044;
-const _architectureDeepCompoundUngroupedXRatio = 8.66872505627764;
-const _architectureDeepCompoundUngroupedYRatio = 1.875780167224093;
-
-// Cytoscape normalizes the deep compound component around a slightly shifted
-// export frame after including its isolated root service. These Mermaid 11.16
-// browser offsets are icon-relative and independent of text measurement.
-const _architectureDeepCompoundHorizontalFrameRatio = -0.04375;
-const _architectureDeepCompoundVerticalFrameRatio = 0.01875;
 
 // Cytoscape's compound-node bounding box includes half of its rendered border
 // on the top and horizontal sides. The bottom uses the service-label extent and
@@ -235,21 +18,18 @@ const _architectureNestedCompoundBorderAllowance = 1.5;
 
 // Cytoscape reserves four pixels between a service icon and its label line.
 const _architectureServiceLabelLineGap = 4.0;
+const _architectureLabelMeasurementStepsPerPixel = 2.0;
+const _architectureGroupLabelInset = 4.0;
+const _architectureGroupIconScale = 0.75;
 const _architectureGroupEndpointPaddingAllowance = 4.0;
 const _architectureGroupBottomLabelAllowance = 18.0;
 
-// Cytoscape's browser-measured ungrouped service extent includes this
-// font-relative overflow below the icon. Compound groups already account for
-// labels while computing their own bounds.
-const _architectureUngroupedLabelOverflowRatio = 1.51171875;
+// Mermaid's browser text box is 1.0234375 times the configured architecture
+// font size. An ungrouped label starts one font size below the icon and extends
+// by half that measured line box around its baseline.
+const _architectureServiceLabelLineHeightRatio = 1.0234375;
 
 enum ArchitectureNodeKind { service, junction }
-
-enum _ArchitectureRoutingProfile { standard, sparseMixedAxis, denseMixedAxis }
-
-enum _ArchitectureSeedProfile { standard, compoundChain42 }
-
-enum _ArchitectureLayoutProfile { standard, orthogonalTree, externalGateway, plainServiceElbow }
 
 final class ArchitectureNodeLayout {
   const ArchitectureNodeLayout({
@@ -330,115 +110,111 @@ ArchitectureLayout layoutArchitectureModel(
       bounds: Bounds(left: 0, top: 0, width: 1, height: 1),
     );
   }
-  final hasDeepCompoundHierarchy = _hasDeepArchitectureCompoundHierarchy(nodes, ast.groups);
-  final hasJunctionPair = _hasArchitectureJunctionPairTopology(nodes, ast.groups, ast.edges);
-  final hasLinearChain = _hasArchitectureLinearChainTopology(nodes, ast.groups, ast.edges);
-  final hasStandaloneIconService =
-      ast.groups.isEmpty &&
-      nodes.length == 1 &&
-      nodes.single.kind == ArchitectureNodeKind.service &&
-      nodes.single.icon != null;
-  final seedProfile = _architectureSeedProfile(nodes, ast.groups, ast.edges, ast.alignments, options);
-  final layoutProfile = _architectureLayoutProfile(nodes, ast.groups, ast.edges, ast.alignments);
-  final centers = _positionArchitectureNodes(
-    nodes,
-    ast.groups,
-    ast.edges,
-    ast.alignments,
-    options,
-    seedProfile,
-    layoutProfile,
-  );
+  final textStyle = SceneTextStyle(fontFamily: fontFamily, fontSize: options.fontSize);
+
+  final centers = _layoutArchitectureWithFcose(ast, nodes, options);
   var laidOutNodes = _layoutArchitectureNodes(nodes, centers, options.iconSize);
   var laidOutGroups = _layoutArchitectureGroups(
     ast.groups,
     laidOutNodes,
     options,
-    hasDeepCompoundHierarchy: hasDeepCompoundHierarchy,
+    textMeasurer: textMeasurer,
+    textStyle: textStyle,
   );
+
+  // fCoSE geometry is translation-invariant. Keep the renderer output stable
+  // with one topology-independent origin while the viewBox follows the final,
+  // label-aware content bounds.
   final positioningBounds = _architectureContentBounds(
     laidOutNodes,
     laidOutGroups,
     options,
     textMeasurer: textMeasurer,
-    fontFamily: fontFamily,
+    textStyle: textStyle,
     includeUngroupedLabels: false,
   );
-  final hasRowAlignment = ast.alignments.any((alignment) => alignment.direction == ArchitectureAlignmentDirection.row);
-  final hasColumnAlignment = ast.alignments.any(
-    (alignment) => alignment.direction == ArchitectureAlignmentDirection.column,
-  );
-  final routingProfile = _architectureRoutingProfile(ast.groups, ast.services.length + ast.junctions.length, ast.edges);
-  final hasMixedAxisRouting = routingProfile != _ArchitectureRoutingProfile.standard;
-  final hasEdgeLabels = ast.edges.any((edge) => edge.title != null);
-  final horizontalFrameRatio = ast.groups.isNotEmpty
-      ? 0
-      : (hasMixedAxisRouting
-                ? _architectureMixedAxisHorizontalFrameRatio
-                : hasColumnAlignment
-                ? _architectureAlignmentOrthogonalFrameRatio
-                : hasRowAlignment
-                ? _architectureAlignmentAxisFrameRatio
-                : 0) +
-            (hasEdgeLabels ? _architectureEdgeLabelHorizontalFrameRatio : 0) +
-            (hasJunctionPair ? _architectureJunctionPairHorizontalFrameRatio : 0) +
-            (hasLinearChain ? _architectureLinearChainHorizontalFrameRatio : 0);
-  final verticalFrameRatio = ast.groups.isNotEmpty
-      ? 0
-      : (hasMixedAxisRouting
-                ? _architectureAlignmentOrthogonalFrameRatio +
-                      (routingProfile == _ArchitectureRoutingProfile.denseMixedAxis
-                          ? _architectureDenseMixedAxisFrameResidualRatio
-                          : 0)
-                : hasRowAlignment
-                ? _architectureAlignmentOrthogonalFrameRatio
-                : hasColumnAlignment
-                ? _architectureAlignmentAxisFrameRatio
-                : 0) +
-            (hasEdgeLabels ? _architectureEdgeLabelVerticalFrameRatio : 0) +
-            (hasJunctionPair ? _architectureJunctionPairVerticalFrameRatio : 0) +
-            (hasLinearChain || hasStandaloneIconService ? _architectureUngroupedServiceVerticalFrameRatio : 0);
-  final targetContentCenterX =
-      options.iconSize / 2 +
-      options.iconSize *
-          (horizontalFrameRatio +
-              (hasDeepCompoundHierarchy ? _architectureDeepCompoundHorizontalFrameRatio : 0) +
-              (layoutProfile == _ArchitectureLayoutProfile.plainServiceElbow
-                  ? _architectureLinearChainHorizontalFrameRatio
-                  : 0)) +
-      (seedProfile == _ArchitectureSeedProfile.compoundChain42 ? _architectureSeededCompoundHorizontalFrameOffset : 0);
-  final offsetX = targetContentCenterX - positioningBounds.center.x;
-  final labelExtent = options.fontSize + _architectureServiceLabelLineGap;
-  final targetContentCenterY =
-      options.iconSize / 2 +
-      options.fontSize +
-      labelExtent / 2 -
-      _architectureCompoundBottomInset +
-      options.iconSize *
-          (verticalFrameRatio +
-              (hasDeepCompoundHierarchy ? _architectureDeepCompoundVerticalFrameRatio : 0) +
-              switch (layoutProfile) {
-                _ArchitectureLayoutProfile.externalGateway => _architectureExternalGatewayVerticalFrameRatio,
-                _ArchitectureLayoutProfile.plainServiceElbow => _architectureAlignmentOrthogonalFrameRatio,
-                _ => 0,
-              });
-  final offsetY = targetContentCenterY - positioningBounds.center.y;
-  laidOutNodes = [for (final node in laidOutNodes) node.translated(offsetX, offsetY)];
-  laidOutGroups = [for (final group in laidOutGroups) group.translated(offsetX, offsetY)];
   final contentBounds = _architectureContentBounds(
     laidOutNodes,
     laidOutGroups,
     options,
     textMeasurer: textMeasurer,
-    fontFamily: fontFamily,
+    textStyle: textStyle,
   );
+  final offsetX = -positioningBounds.left;
+  final offsetY = -positioningBounds.top;
+  laidOutNodes = [for (final node in laidOutNodes) node.translated(offsetX, offsetY)];
+  laidOutGroups = [for (final group in laidOutGroups) group.translated(offsetX, offsetY)];
 
   return ArchitectureLayout(
     nodes: laidOutNodes,
     groups: laidOutGroups,
     edges: _routeArchitectureEdges(ast.edges, laidOutNodes, options),
-    bounds: contentBounds,
+    bounds: contentBounds.translated(offsetX, offsetY),
   );
+}
+
+fcose.MermaidArchitectureDirection _fcoseDirection(ArchitectureDirection direction) => switch (direction) {
+  ArchitectureDirection.left => fcose.MermaidArchitectureDirection.left,
+  ArchitectureDirection.right => fcose.MermaidArchitectureDirection.right,
+  ArchitectureDirection.top => fcose.MermaidArchitectureDirection.top,
+  ArchitectureDirection.bottom => fcose.MermaidArchitectureDirection.bottom,
+};
+
+Map<String, Point> _layoutArchitectureWithFcose(
+  ArchitectureAst ast,
+  List<_NodeSeed> nodes,
+  ArchitectureRenderOptions options,
+) {
+  final graph = fcose.FcoseGraph(
+    nodes: [
+      for (final group in ast.groups)
+        fcose.FcoseNode(id: group.id, parentId: group.parent, position: fcose.Offset.zero),
+      for (final node in nodes)
+        fcose.FcoseNode(
+          id: node.id,
+          width: options.iconSize,
+          height: options.iconSize,
+          parentId: node.parent,
+          position: fcose.Offset.zero,
+        ),
+    ],
+    edges: [
+      for (final (index, edge) in ast.edges.indexed)
+        fcose.FcoseEdge(id: 'architecture-edge-$index', source: edge.leftId, target: edge.rightId),
+    ],
+  );
+  final result =
+      fcose.MermaidFcoseAdapter(
+            iconSize: options.iconSize,
+            idealEdgeLengthMultiplier: options.idealEdgeLengthMultiplier,
+            edgeElasticity: options.edgeElasticity,
+            padding: options.padding,
+            nodeSeparation: math.max(options.nodeSeparation, double.minPositive),
+            numIter: options.numIter,
+            randomize: options.randomize,
+            seed: options.seed,
+          )
+          .configureArchitecture(
+            graph,
+            directionalEdges: [
+              for (final edge in ast.edges)
+                fcose.MermaidDirectionalEdge(
+                  source: edge.leftId,
+                  sourceDirection: _fcoseDirection(edge.leftDirection),
+                  target: edge.rightId,
+                  targetDirection: _fcoseDirection(edge.rightDirection),
+                ),
+            ],
+            layoutHints: [
+              for (final alignment in ast.alignments)
+                fcose.MermaidAlignmentHint(switch (alignment.direction) {
+                  ArchitectureAlignmentDirection.row => fcose.MermaidAlignmentDirection.row,
+                  ArchitectureAlignmentDirection.column => fcose.MermaidAlignmentDirection.column,
+                }, alignment.members),
+            ],
+          )
+          .runMermaidArchitecture();
+  return {for (final node in nodes) node.id: Point(result.positionOf(node.id).x, result.positionOf(node.id).y)};
 }
 
 List<_NodeSeed> _architectureNodes(ArchitectureAst ast) => [
@@ -454,868 +230,6 @@ List<_NodeSeed> _architectureNodes(ArchitectureAst ast) => [
   for (final junction in ast.junctions)
     _NodeSeed(id: junction.id, kind: ArchitectureNodeKind.junction, parent: junction.parent),
 ];
-
-Map<String, Point> _positionArchitectureNodes(
-  List<_NodeSeed> nodes,
-  List<ArchitectureGroupAst> groups,
-  List<ArchitectureEdgeAst> edges,
-  List<ArchitectureAlignmentAst> alignments,
-  ArchitectureRenderOptions options,
-  _ArchitectureSeedProfile seedProfile,
-  _ArchitectureLayoutProfile layoutProfile,
-) {
-  final spacing = math.max(
-    options.iconSize + options.nodeSeparation,
-    options.iconSize * options.idealEdgeLengthMultiplier,
-  );
-  final nodesById = {for (final node in nodes) node.id: node};
-  final groupParents = {for (final group in groups) group.id: group.parent};
-  final nodeIds = {for (final node in nodes) node.id};
-  final adjacency = <String, List<({ArchitectureEdgeAst edge, bool forward})>>{};
-  final routingProfile = _architectureRoutingProfile(groups, nodes.length, edges);
-  for (final edge in edges) {
-    if (!nodeIds.contains(edge.leftId) || !nodeIds.contains(edge.rightId)) continue;
-    (adjacency[edge.leftId] ??= []).add((edge: edge, forward: true));
-    (adjacency[edge.rightId] ??= []).add((edge: edge, forward: false));
-  }
-  final centers = <String, Point>{};
-  final hasRowAlignment = alignments.any((alignment) => alignment.direction == ArchitectureAlignmentDirection.row);
-  final hasColumnAlignment = alignments.any(
-    (alignment) => alignment.direction == ArchitectureAlignmentDirection.column,
-  );
-  final isCompoundGrid = groups.isNotEmpty && hasRowAlignment && hasColumnAlignment;
-  var component = 0;
-  for (final root in nodes) {
-    if (centers.containsKey(root.id)) continue;
-    centers[root.id] = Point(0, component++ * spacing * 1.5);
-    final queue = <String>[root.id];
-    for (var cursor = 0; cursor < queue.length; cursor++) {
-      final currentId = queue[cursor];
-      final current = centers[currentId]!;
-      for (final relation in adjacency[currentId] ?? const []) {
-        final edge = relation.edge;
-        final nextId = relation.forward ? edge.rightId : edge.leftId;
-        if (centers.containsKey(nextId)) continue;
-        final compoundSpacing = _architectureEdgeSpacing(
-          spacing,
-          edge,
-          nodesById[edge.leftId],
-          nodesById[edge.rightId],
-          groupParents,
-          options,
-          sameGroupProofSpacingAllowance: switch (layoutProfile) {
-            _ArchitectureLayoutProfile.orthogonalTree =>
-              edge.leftDirection.isVertical
-                  ? _architectureOrthogonalTreeVerticalProofSpacingAllowance
-                  : _architectureOrthogonalTreeHorizontalProofSpacingAllowance,
-            _ArchitectureLayoutProfile.externalGateway =>
-              edge.leftDirection.isVertical
-                  ? _architectureExternalGatewayVerticalProofSpacingAllowance
-                  : _architectureExternalGatewayHorizontalProofSpacingAllowance,
-            _ArchitectureLayoutProfile.plainServiceElbow => _architecturePlainServiceElbowProofSpacingAllowance,
-            _ArchitectureLayoutProfile.standard => _architectureCompoundProofSpacingAllowance,
-          },
-          seedProfile: seedProfile,
-          layoutProfile: layoutProfile,
-        );
-        final sameParent =
-            nodesById[edge.leftId]?.parent != null && nodesById[edge.leftId]?.parent == nodesById[edge.rightId]?.parent;
-        final includesJunction =
-            nodesById[edge.leftId]?.kind == ArchitectureNodeKind.junction ||
-            nodesById[edge.rightId]?.kind == ArchitectureNodeKind.junction;
-        final unadjustedDelta = _edgeDelta(
-          edge,
-          compoundSpacing,
-          routingProfile: routingProfile,
-          iconSize: options.iconSize,
-        );
-        final junctionAdjustment = sameParent && includesJunction
-            ? options.iconSize *
-                  (unadjustedDelta.x == 0
-                      ? _architectureVerticalJunctionSpacingRatio
-                      : _architectureHorizontalJunctionSpacingRatio)
-            : 0;
-        final delta = _edgeDelta(
-          edge,
-          compoundSpacing + junctionAdjustment,
-          routingProfile: routingProfile,
-          iconSize: options.iconSize,
-        );
-        centers[nextId] = current.translated(
-          relation.forward ? delta.x : -delta.x,
-          relation.forward ? delta.y : -delta.y,
-        );
-        queue.add(nextId);
-      }
-    }
-  }
-  _relaxArchitectureLinearChain(centers, nodes, groups, edges, options);
-  _relaxArchitectureJunctionPair(centers, nodes, groups, edges, options);
-  _relaxArchitectureDeepCompound(centers, nodes, groups, edges, options);
-  _relaxArchitectureJunctionSpine(centers, nodes, groups, edges, options);
-  for (final alignment in alignments) {
-    final members = alignment.members.where(centers.containsKey).toList();
-    if (members.length < 2) continue;
-    final origin = centers[members.first]!;
-    var alignedOffset = 0.0;
-    for (var index = 1; index < members.length; index++) {
-      alignedOffset += isCompoundGrid
-          ? options.iconSize *
-                switch (alignment.direction) {
-                  ArchitectureAlignmentDirection.row => _architectureCompoundGridRowGapRatio,
-                  ArchitectureAlignmentDirection.column => _architectureCompoundGridColumnGapRatio,
-                }
-          : _architectureAlignmentGap(index - 1, members.length - 1, options.iconSize);
-      centers[members[index]] = switch (alignment.direction) {
-        ArchitectureAlignmentDirection.row => origin.translated(alignedOffset, 0),
-        ArchitectureAlignmentDirection.column => origin.translated(0, alignedOffset),
-      };
-    }
-    final memberSet = members.toSet();
-    final commonNeighbors = <String>{
-      for (final relation in adjacency[members.first] ?? const [])
-        relation.forward ? relation.edge.rightId : relation.edge.leftId,
-    };
-    for (final member in members.skip(1)) {
-      final neighbors = {
-        for (final relation in adjacency[member] ?? const [])
-          relation.forward ? relation.edge.rightId : relation.edge.leftId,
-      };
-      commonNeighbors.retainAll(neighbors);
-    }
-    commonNeighbors.removeAll(memberSet);
-    final meanX = members.map((member) => centers[member]!.x).reduce((left, right) => left + right) / members.length;
-    final meanY = members.map((member) => centers[member]!.y).reduce((top, bottom) => top + bottom) / members.length;
-    final drift = options.iconSize * _architectureAlignmentFanInDriftRatio;
-    final orthogonalSpacing = spacing + options.iconSize * _architectureAlignmentOrthogonalSpacingRatio;
-    for (final neighbor in commonNeighbors) {
-      final previous = centers[neighbor]!;
-      centers[neighbor] = switch (alignment.direction) {
-        ArchitectureAlignmentDirection.row => Point(
-          meanX + drift,
-          origin.y + (previous.y < origin.y ? -orthogonalSpacing : orthogonalSpacing),
-        ),
-        ArchitectureAlignmentDirection.column => Point(
-          origin.x + (previous.x < origin.x ? -orthogonalSpacing : orthogonalSpacing),
-          meanY + drift,
-        ),
-      };
-    }
-  }
-  return centers;
-}
-
-_ArchitectureSeedProfile _architectureSeedProfile(
-  List<_NodeSeed> nodes,
-  List<ArchitectureGroupAst> groups,
-  List<ArchitectureEdgeAst> edges,
-  List<ArchitectureAlignmentAst> alignments,
-  ArchitectureRenderOptions options,
-) {
-  if (options.seed != _architectureCompoundChainSeed ||
-      options.randomize ||
-      nodes.length != _architectureSeededCompoundNodeCount ||
-      groups.length != _architectureSeededCompoundGroupCount ||
-      edges.length != nodes.length - 1 ||
-      alignments.isNotEmpty) {
-    return _ArchitectureSeedProfile.standard;
-  }
-  final groupParents = {for (final group in groups) group.id: group.parent};
-  final nodeParents = {for (final node in nodes) node.id: node.parent};
-  final memberCounts = <String, int>{};
-  for (final parent in nodeParents.values) {
-    if (parent == null) return _ArchitectureSeedProfile.standard;
-    memberCounts.update(parent, (count) => count + 1, ifAbsent: () => 1);
-  }
-  final actualMemberCounts = memberCounts.values.toSet();
-  if (actualMemberCounts.length != _architectureSeededCompoundMemberCounts.length ||
-      !actualMemberCounts.containsAll(_architectureSeededCompoundMemberCounts)) {
-    return _ArchitectureSeedProfile.standard;
-  }
-  final crossGroupEdges = edges.where((edge) => nodeParents[edge.leftId] != nodeParents[edge.rightId]).length;
-  final nestedMemberGroups = memberCounts.keys.where((group) => groupParents[group] != null).length;
-  return crossGroupEdges == _architectureSeededCompoundCrossGroupEdgeCount &&
-          nestedMemberGroups == _architectureSeededCompoundNestedMemberGroupCount
-      ? _ArchitectureSeedProfile.compoundChain42
-      : _ArchitectureSeedProfile.standard;
-}
-
-_ArchitectureLayoutProfile _architectureLayoutProfile(
-  List<_NodeSeed> nodes,
-  List<ArchitectureGroupAst> groups,
-  List<ArchitectureEdgeAst> edges,
-  List<ArchitectureAlignmentAst> alignments,
-) {
-  if (_isPlainServiceElbow(nodes, groups, edges, alignments)) {
-    return _ArchitectureLayoutProfile.plainServiceElbow;
-  }
-  if (_isSingleCompoundOrthogonalTree(nodes, groups, edges, alignments)) {
-    return _ArchitectureLayoutProfile.orthogonalTree;
-  }
-  if (_isExternalGatewayCompound(nodes, groups, edges, alignments)) {
-    return _ArchitectureLayoutProfile.externalGateway;
-  }
-  return _ArchitectureLayoutProfile.standard;
-}
-
-bool _isPlainServiceElbow(
-  List<_NodeSeed> nodes,
-  List<ArchitectureGroupAst> groups,
-  List<ArchitectureEdgeAst> edges,
-  List<ArchitectureAlignmentAst> alignments,
-) {
-  if (groups.isNotEmpty ||
-      alignments.isNotEmpty ||
-      nodes.length != _architecturePlainServiceElbowNodeCount ||
-      edges.length != _architecturePlainServiceElbowEdgeCount ||
-      nodes.any(
-        (node) =>
-            node.kind != ArchitectureNodeKind.service ||
-            node.parent != null ||
-            node.icon != null ||
-            node.iconText != null,
-      ) ||
-      edges.any((edge) => edge.leftDirection.isVertical != edge.rightDirection.isVertical)) {
-    return false;
-  }
-  final verticalEdgeCount = edges.where((edge) => edge.leftDirection.isVertical).length;
-  final incidentNodeIds = {for (final edge in edges) edge.leftId, for (final edge in edges) edge.rightId};
-  return verticalEdgeCount == _architecturePlainServiceElbowVerticalEdgeCount && incidentNodeIds.length == nodes.length;
-}
-
-bool _isExternalGatewayCompound(
-  List<_NodeSeed> nodes,
-  List<ArchitectureGroupAst> groups,
-  List<ArchitectureEdgeAst> edges,
-  List<ArchitectureAlignmentAst> alignments,
-) {
-  if (groups.length != 1 || alignments.isNotEmpty || nodes.any((node) => node.kind != ArchitectureNodeKind.service)) {
-    return false;
-  }
-  final groupId = groups.single.id;
-  final grouped = nodes.where((node) => node.parent == groupId).map((node) => node.id).toSet();
-  final ungrouped = nodes.where((node) => node.parent == null).map((node) => node.id).toSet();
-  if (grouped.length != _architectureExternalGatewayGroupedNodeCount ||
-      ungrouped.length != _architectureExternalGatewayUngroupedNodeCount) {
-    return false;
-  }
-  final internalEdges = edges.where((edge) => grouped.contains(edge.leftId) && grouped.contains(edge.rightId)).toList();
-  final crossGroupEdges = edges
-      .where(
-        (edge) =>
-            grouped.contains(edge.leftId) && ungrouped.contains(edge.rightId) ||
-            ungrouped.contains(edge.leftId) && grouped.contains(edge.rightId),
-      )
-      .toList();
-  return internalEdges.length == _architectureExternalGatewayInternalEdgeCount &&
-      internalEdges.every((edge) => edge.leftDirection.isVertical == edge.rightDirection.isVertical) &&
-      crossGroupEdges.length == _architectureExternalGatewayCrossGroupEdgeCount &&
-      crossGroupEdges.single.leftDirection.isVertical &&
-      crossGroupEdges.single.rightDirection.isVertical &&
-      edges.length == internalEdges.length + crossGroupEdges.length;
-}
-
-bool _isSingleCompoundOrthogonalTree(
-  List<_NodeSeed> nodes,
-  List<ArchitectureGroupAst> groups,
-  List<ArchitectureEdgeAst> edges,
-  List<ArchitectureAlignmentAst> alignments,
-) {
-  if (groups.length != 1 ||
-      nodes.length != _architectureOrthogonalTreeNodeCount ||
-      edges.length != nodes.length - 1 ||
-      alignments.isNotEmpty) {
-    return false;
-  }
-  final groupId = groups.single.id;
-  final nodeIds = nodes.map((node) => node.id).toSet();
-  if (nodes.any((node) => node.kind != ArchitectureNodeKind.service || node.parent != groupId) ||
-      edges.any(
-        (edge) =>
-            !nodeIds.contains(edge.leftId) ||
-            !nodeIds.contains(edge.rightId) ||
-            edge.leftDirection.isVertical != edge.rightDirection.isVertical,
-      )) {
-    return false;
-  }
-  final verticalEdgeCount = edges.where((edge) => edge.leftDirection.isVertical).length;
-  return verticalEdgeCount > 0 && verticalEdgeCount < edges.length;
-}
-
-void _relaxArchitectureLinearChain(
-  Map<String, Point> centers,
-  List<_NodeSeed> nodes,
-  List<ArchitectureGroupAst> groups,
-  List<ArchitectureEdgeAst> edges,
-  ArchitectureRenderOptions options,
-) {
-  if (!_hasArchitectureLinearChainTopology(nodes, groups, edges)) return;
-  final adjacency = <String, List<ArchitectureEdgeAst>>{};
-  for (final edge in edges) {
-    (adjacency[edge.leftId] ??= []).add(edge);
-    (adjacency[edge.rightId] ??= []).add(edge);
-  }
-  final endpoints = nodes.where((node) => adjacency[node.id]?.length == 1);
-  final start =
-      endpoints.where((node) {
-        final edge = adjacency[node.id]!.single;
-        return _architectureDirectionAt(edge, node.id).axisSign > 0;
-      }).firstOrNull ??
-      endpoints.first;
-
-  final gap = _architectureLinearChainGap(options);
-  var currentId = start.id;
-  String? previousId;
-  var current = const Point(0, 0);
-  centers[currentId] = current;
-  while (true) {
-    final nextEdge = (adjacency[currentId] ?? const [])
-        .where((edge) => _architectureOtherEnd(edge, currentId) != previousId)
-        .firstOrNull;
-    if (nextEdge == null) break;
-    final nextId = _architectureOtherEnd(nextEdge, currentId);
-    final direction = _architectureDirectionAt(nextEdge, currentId);
-    current = current.translated(direction.axisSign * gap, 0);
-    centers[nextId] = current;
-    previousId = currentId;
-    currentId = nextId;
-  }
-}
-
-double _architectureLinearChainGap(ArchitectureRenderOptions options) {
-  final defaultMultiplier = const ArchitectureRenderOptions().idealEdgeLengthMultiplier;
-  final progress =
-      ((options.idealEdgeLengthMultiplier - defaultMultiplier) /
-              (_architectureLinearChainTripleMultiplier - defaultMultiplier))
-          .clamp(0.0, 1.0);
-  final residual =
-      _architectureLinearChainDefaultResidualRatio +
-      (_architectureLinearChainTripleResidualRatio - _architectureLinearChainDefaultResidualRatio) * progress;
-  return options.iconSize * (1 + options.idealEdgeLengthMultiplier + residual);
-}
-
-bool _hasArchitectureLinearChainTopology(
-  List<_NodeSeed> nodes,
-  List<ArchitectureGroupAst> groups,
-  List<ArchitectureEdgeAst> edges,
-) {
-  if (groups.isNotEmpty ||
-      nodes.length < _architectureLinearChainMinimumNodes ||
-      nodes.any((node) => node.kind != ArchitectureNodeKind.service) ||
-      edges.length != nodes.length - 1 ||
-      edges.any((edge) => edge.leftDirection.isVertical || edge.rightDirection.isVertical)) {
-    return false;
-  }
-  final degrees = {for (final node in nodes) node.id: 0};
-  for (final edge in edges) {
-    if (!degrees.containsKey(edge.leftId) || !degrees.containsKey(edge.rightId)) return false;
-    degrees[edge.leftId] = degrees[edge.leftId]! + 1;
-    degrees[edge.rightId] = degrees[edge.rightId]! + 1;
-  }
-  if (degrees.values.where((degree) => degree == 1).length != 2 ||
-      !degrees.values.every((degree) => degree == 1 || degree == 2)) {
-    return false;
-  }
-  final adjacency = <String, Set<String>>{};
-  for (final edge in edges) {
-    (adjacency[edge.leftId] ??= <String>{}).add(edge.rightId);
-    (adjacency[edge.rightId] ??= <String>{}).add(edge.leftId);
-  }
-  final visited = <String>{nodes.first.id};
-  final queue = <String>[nodes.first.id];
-  for (var cursor = 0; cursor < queue.length; cursor++) {
-    for (final neighbor in adjacency[queue[cursor]] ?? const <String>{}) {
-      if (visited.add(neighbor)) queue.add(neighbor);
-    }
-  }
-  return visited.length == nodes.length;
-}
-
-void _relaxArchitectureJunctionPair(
-  Map<String, Point> centers,
-  List<_NodeSeed> nodes,
-  List<ArchitectureGroupAst> groups,
-  List<ArchitectureEdgeAst> edges,
-  ArchitectureRenderOptions options,
-) {
-  if (!_hasArchitectureJunctionPairTopology(nodes, groups, edges)) return;
-  final nodesById = {for (final node in nodes) node.id: node};
-  final junctionIds = {
-    for (final node in nodes)
-      if (node.kind == ArchitectureNodeKind.junction) node.id,
-  };
-  final pairEdges = edges.where((edge) => junctionIds.contains(edge.leftId) && junctionIds.contains(edge.rightId));
-  final pairEdge = pairEdges.single;
-
-  final branchEdges = edges.where((edge) {
-    final leftJunction = junctionIds.contains(edge.leftId);
-    final rightJunction = junctionIds.contains(edge.rightId);
-    if (leftJunction == rightJunction) return false;
-    final serviceId = leftJunction ? edge.rightId : edge.leftId;
-    return nodesById[serviceId]?.kind == ArchitectureNodeKind.service;
-  }).toList();
-  final firstId = pairEdge.leftId;
-  final secondId = pairEdge.rightId;
-  final origin = const Point(0, 0);
-  centers[firstId] = origin;
-  centers[secondId] = origin.translated(
-    pairEdge.leftDirection.axisSign * options.iconSize * _architectureJunctionPairGapRatio,
-    0,
-  );
-  for (final edge in branchEdges) {
-    final junctionId = junctionIds.contains(edge.leftId) ? edge.leftId : edge.rightId;
-    final serviceId = _architectureOtherEnd(edge, junctionId);
-    final direction = _architectureDirectionAt(edge, junctionId);
-    final distance =
-        options.iconSize *
-        (direction.isVertical
-            ? _architectureJunctionPairVerticalArmRatio
-            : _architectureJunctionPairHorizontalArmRatio);
-    final junction = centers[junctionId]!;
-    centers[serviceId] = direction.isVertical
-        ? junction.translated(0, direction.axisSign * distance)
-        : junction.translated(direction.axisSign * distance, 0);
-  }
-}
-
-bool _hasArchitectureJunctionPairTopology(
-  List<_NodeSeed> nodes,
-  List<ArchitectureGroupAst> groups,
-  List<ArchitectureEdgeAst> edges,
-) {
-  if (groups.isNotEmpty) return false;
-  final junctionIds = {
-    for (final node in nodes)
-      if (node.kind == ArchitectureNodeKind.junction) node.id,
-  };
-  if (junctionIds.length != 2) return false;
-  final pairEdges = edges.where((edge) => junctionIds.contains(edge.leftId) && junctionIds.contains(edge.rightId));
-  if (pairEdges.length != 1) return false;
-  final pair = pairEdges.single;
-  if (pair.leftDirection.isVertical || pair.rightDirection.isVertical) return false;
-
-  final serviceIds = {
-    for (final node in nodes)
-      if (node.kind == ArchitectureNodeKind.service) node.id,
-  };
-  final branchedServiceIds = <String>{};
-  for (final edge in edges) {
-    final leftJunction = junctionIds.contains(edge.leftId);
-    final rightJunction = junctionIds.contains(edge.rightId);
-    if (leftJunction == rightJunction) continue;
-    final serviceId = leftJunction ? edge.rightId : edge.leftId;
-    if (serviceIds.contains(serviceId)) branchedServiceIds.add(serviceId);
-  }
-  return serviceIds.length >= 4 && branchedServiceIds.length == serviceIds.length;
-}
-
-void _relaxArchitectureDeepCompound(
-  Map<String, Point> centers,
-  List<_NodeSeed> nodes,
-  List<ArchitectureGroupAst> groups,
-  List<ArchitectureEdgeAst> edges,
-  ArchitectureRenderOptions options,
-) {
-  if (!_hasDeepArchitectureCompoundHierarchy(nodes, groups)) return;
-
-  final groupsById = {for (final group in groups) group.id: group};
-  final nodesById = {for (final node in nodes) node.id: node};
-  final nodesByParent = <String, List<_NodeSeed>>{};
-  for (final node in nodes) {
-    if (node.parent case final parent?) (nodesByParent[parent] ??= []).add(node);
-  }
-
-  int groupDepth(String id) {
-    var depth = 0;
-    var current = groupsById[id]?.parent;
-    final visited = <String>{id};
-    while (current != null && visited.add(current)) {
-      depth++;
-      current = groupsById[current]?.parent;
-    }
-    return depth;
-  }
-
-  String? topLevelGroup(_NodeSeed node) {
-    var current = node.parent;
-    if (current == null) return null;
-    final visited = <String>{};
-    while (visited.add(current!)) {
-      final parent = groupsById[current]?.parent;
-      if (parent == null) return current;
-      current = parent;
-    }
-    return current;
-  }
-
-  Iterable<ArchitectureEdgeAst> incident(String id) => edges.where((edge) => edge.leftId == id || edge.rightId == id);
-
-  final candidateGroups = groups.where((group) {
-    final members = nodesByParent[group.id] ?? const [];
-    if (groupDepth(group.id) < 3 || members.length != 3) return false;
-    final memberIds = members.map((node) => node.id).toSet();
-    final internalEdges = edges.where((edge) => memberIds.contains(edge.leftId) && memberIds.contains(edge.rightId));
-    return internalEdges.length == 2 &&
-        internalEdges.every((edge) => !edge.leftDirection.isVertical && !edge.rightDirection.isVertical);
-  });
-  final primaryGroup = candidateGroups.firstOrNull;
-  if (primaryGroup == null) return;
-
-  final primaryMembers = nodesByParent[primaryGroup.id]!;
-  final primaryIds = primaryMembers.map((node) => node.id).toSet();
-  final hub = primaryMembers.where((node) {
-    final outsideEdges = incident(node.id).where((edge) => !primaryIds.contains(_architectureOtherEnd(edge, node.id)));
-    return outsideEdges.length >= 2;
-  }).firstOrNull;
-  if (hub == null) return;
-
-  final internalNeighbors = incident(hub.id)
-      .where((edge) => primaryIds.contains(_architectureOtherEnd(edge, hub.id)))
-      .map((edge) => _architectureOtherEnd(edge, hub.id))
-      .toList();
-  if (internalNeighbors.length != 1) return;
-  final nearId = internalNeighbors.single;
-  final farId = incident(nearId)
-      .map((edge) => _architectureOtherEnd(edge, nearId))
-      .where((id) => primaryIds.contains(id) && id != hub.id)
-      .firstOrNull;
-  if (farId == null) return;
-
-  final hubOutsideEdges = incident(
-    hub.id,
-  ).where((edge) => !primaryIds.contains(_architectureOtherEnd(edge, hub.id))).toList();
-  final upperEdge = hubOutsideEdges
-      .where((edge) => _architectureDirectionAt(edge, hub.id) == ArchitectureDirection.top)
-      .firstOrNull;
-  final lowerEdge = hubOutsideEdges
-      .where((edge) => _architectureDirectionAt(edge, hub.id) == ArchitectureDirection.bottom)
-      .firstOrNull;
-  final siblingEdge = hubOutsideEdges
-      .where((edge) => _architectureDirectionAt(edge, hub.id) == ArchitectureDirection.right)
-      .firstOrNull;
-  if (upperEdge == null || lowerEdge == null || siblingEdge == null) return;
-
-  final upperId = _architectureOtherEnd(upperEdge, hub.id);
-  final lowerId = _architectureOtherEnd(lowerEdge, hub.id);
-  final siblingId = _architectureOtherEnd(siblingEdge, hub.id);
-  final lowerTopLevel = topLevelGroup(nodesById[lowerId]!);
-  final siblingTopLevel = topLevelGroup(nodesById[siblingId]!);
-  if (lowerTopLevel == null || lowerTopLevel != siblingTopLevel) return;
-
-  final storageEdge = incident(siblingId)
-      .where((edge) => _architectureOtherEnd(edge, siblingId) != hub.id)
-      .where((edge) => topLevelGroup(nodesById[_architectureOtherEnd(edge, siblingId)]!) == siblingTopLevel)
-      .firstOrNull;
-  if (storageEdge == null) return;
-  final storageId = _architectureOtherEnd(storageEdge, siblingId);
-  final containerEdge = incident(
-    storageId,
-  ).where((edge) => _architectureOtherEnd(edge, storageId) != siblingId).firstOrNull;
-  if (containerEdge == null) return;
-  final containerId = _architectureOtherEnd(containerEdge, storageId);
-
-  final lowerNeighbors = incident(
-    lowerId,
-  ).map((edge) => _architectureOtherEnd(edge, lowerId)).where((id) => id != hub.id).toList();
-  final busId = lowerNeighbors.where((id) => topLevelGroup(nodesById[id]!) == lowerTopLevel).firstOrNull;
-  final remoteId = lowerNeighbors.where((id) => topLevelGroup(nodesById[id]!) != lowerTopLevel).firstOrNull;
-  if (busId == null || remoteId == null) return;
-
-  final commonParent = nodesById[storageId]?.parent;
-  final isolatedId = (nodesByParent[commonParent] ?? const [])
-      .where((node) => incident(node.id).isEmpty)
-      .map((node) => node.id)
-      .firstOrNull;
-  final ungroupedId = nodes
-      .where((node) => node.parent == null && incident(node.id).isEmpty)
-      .map((node) => node.id)
-      .firstOrNull;
-  if (isolatedId == null || ungroupedId == null) return;
-
-  Point scaled(double xRatio, double yRatio) => Point(xRatio * options.iconSize, yRatio * options.iconSize);
-
-  centers[hub.id] = const Point(0, 0);
-  centers[nearId] = scaled(_architectureDeepCompoundChainNearXRatio, 0);
-  centers[farId] = scaled(_architectureDeepCompoundChainFarXRatio, 0);
-  centers[upperId] = scaled(0, _architectureDeepCompoundUpperYRatio);
-  centers[lowerId] = scaled(0, _architectureDeepCompoundLowerYRatio);
-  centers[siblingId] = scaled(_architectureDeepCompoundSiblingXRatio, _architectureDeepCompoundSiblingYRatio);
-  centers[storageId] = scaled(_architectureDeepCompoundStorageXRatio, _architectureDeepCompoundSiblingYRatio);
-  centers[containerId] = scaled(_architectureDeepCompoundStorageXRatio, _architectureDeepCompoundLowerRankYRatio);
-  centers[busId] = scaled(_architectureDeepCompoundBusXRatio, _architectureDeepCompoundLowerRankYRatio);
-  centers[isolatedId] = scaled(_architectureDeepCompoundIsolatedXRatio, _architectureDeepCompoundIsolatedYRatio);
-  centers[remoteId] = scaled(_architectureDeepCompoundRemoteXRatio, _architectureDeepCompoundLowerYRatio);
-  centers[ungroupedId] = scaled(_architectureDeepCompoundUngroupedXRatio, _architectureDeepCompoundUngroupedYRatio);
-}
-
-bool _hasDeepArchitectureCompoundHierarchy(List<_NodeSeed> nodes, List<ArchitectureGroupAst> groups) {
-  if (groups.length < 8 || nodes.any((node) => node.kind == ArchitectureNodeKind.junction)) return false;
-  final parents = {for (final group in groups) group.id: group.parent};
-  for (final group in groups) {
-    var depth = 0;
-    var parent = group.parent;
-    final visited = <String>{group.id};
-    while (parent != null && visited.add(parent)) {
-      depth++;
-      parent = parents[parent];
-    }
-    if (depth >= 3) return true;
-  }
-  return false;
-}
-
-void _relaxArchitectureJunctionSpine(
-  Map<String, Point> centers,
-  List<_NodeSeed> nodes,
-  List<ArchitectureGroupAst> groups,
-  List<ArchitectureEdgeAst> edges,
-  ArchitectureRenderOptions options,
-) {
-  final nodesById = {for (final node in nodes) node.id: node};
-  for (final group in groups) {
-    final junctionIds = {
-      for (final node in nodes)
-        if (node.parent == group.id && node.kind == ArchitectureNodeKind.junction) node.id,
-    };
-    if (junctionIds.length < 3) continue;
-
-    final spine = <String, List<({String neighbor, ArchitectureDirection direction})>>{};
-    for (final edge in edges) {
-      if (!junctionIds.contains(edge.leftId) || !junctionIds.contains(edge.rightId)) continue;
-      if (edge.leftDirection.isVertical || edge.rightDirection.isVertical) continue;
-      (spine[edge.leftId] ??= []).add((neighbor: edge.rightId, direction: edge.leftDirection));
-      (spine[edge.rightId] ??= []).add((neighbor: edge.leftId, direction: edge.rightDirection));
-    }
-    final centerId = junctionIds.where((id) {
-      if ((spine[id] ?? const []).length < 2) return false;
-      return edges.any((edge) {
-        if (edge.rightId == id && edge.rightDirection == ArchitectureDirection.top) {
-          return nodesById[edge.leftId]?.kind == ArchitectureNodeKind.service;
-        }
-        if (edge.leftId == id && edge.leftDirection == ArchitectureDirection.top) {
-          return nodesById[edge.rightId]?.kind == ArchitectureNodeKind.service;
-        }
-        return false;
-      });
-    }).firstOrNull;
-    if (centerId == null) continue;
-
-    final origin = centers[centerId]!;
-    final orderedSpine = <String>[centerId];
-    void placeSide(ArchitectureDirection direction, List<double> ratios) {
-      var currentId = centerId;
-      String? previousId;
-      var current = origin;
-      for (var depth = 0; depth < junctionIds.length; depth++) {
-        final relation = (spine[currentId] ?? const []).where(
-          (candidate) => candidate.neighbor != previousId && candidate.direction == direction,
-        );
-        if (relation.isEmpty) break;
-        final nextId = relation.first.neighbor;
-        final ratio = ratios[math.min(depth, ratios.length - 1)];
-        current = current.translated(direction.axisSign * options.iconSize * ratio, 0);
-        centers[nextId] = current;
-        orderedSpine.add(nextId);
-        previousId = currentId;
-        currentId = nextId;
-      }
-    }
-
-    placeSide(ArchitectureDirection.left, _architectureJunctionSpineLeftGapRatios);
-    placeSide(ArchitectureDirection.right, _architectureJunctionSpineRightGapRatios);
-
-    String? upperServiceId;
-    for (final junctionId in orderedSpine) {
-      final junction = centers[junctionId]!;
-      for (final edge in edges) {
-        final otherId = edge.leftId == junctionId
-            ? edge.rightId
-            : edge.rightId == junctionId
-            ? edge.leftId
-            : null;
-        if (otherId == null || nodesById[otherId]?.kind != ArchitectureNodeKind.service) continue;
-        final direction = edge.leftId == junctionId ? edge.leftDirection : edge.rightDirection;
-        if (!direction.isVertical) continue;
-        final isAbove = direction == ArchitectureDirection.top;
-        final distance =
-            options.iconSize *
-            (isAbove ? _architectureJunctionSpineUpperServiceGapRatio : _architectureJunctionSpineBranchGapRatio);
-        centers[otherId] = junction.translated(0, isAbove ? -distance : distance);
-        if (isAbove) upperServiceId = otherId;
-      }
-    }
-
-    if (upperServiceId case final upper?) {
-      final upperCenter = centers[upper]!;
-      for (final edge in edges) {
-        final otherId = edge.leftId == upper
-            ? edge.rightId
-            : edge.rightId == upper
-            ? edge.leftId
-            : null;
-        if (otherId == null || nodesById[otherId]?.kind != ArchitectureNodeKind.service) continue;
-        final direction = edge.leftId == upper ? edge.leftDirection : edge.rightDirection;
-        if (direction.isVertical) continue;
-        final distance = options.iconSize * _architectureJunctionSpineLeftGapRatios.first;
-        centers[otherId] = upperCenter.translated(direction.axisSign * distance, 0);
-      }
-    }
-
-    final hubNodeIds = {
-      for (final node in nodes)
-        if (node.parent == group.id) node.id,
-    };
-    final hubLeft =
-        hubNodeIds.map((id) => centers[id]!.x).reduce(math.min) -
-        options.iconSize / 2 -
-        options.padding -
-        _architectureCompoundBorderAllowance;
-    final hubTop = hubNodeIds.map((id) => centers[id]!.y).reduce(math.min);
-    for (final companion in groups.where((candidate) => candidate.id != group.id && candidate.parent == group.parent)) {
-      final companionNodes = nodes.where((node) => node.parent == companion.id).toList();
-      if (companionNodes.isEmpty || companionNodes.any((node) => node.kind == ArchitectureNodeKind.junction)) continue;
-      final companionIds = companionNodes.map((node) => node.id).toSet();
-      final companionEdges = edges.where(
-        (edge) => companionIds.contains(edge.leftId) && companionIds.contains(edge.rightId),
-      );
-      if (companionEdges.length == 1 && companionNodes.length == 2) {
-        final edge = companionEdges.single;
-        final leftId = centers[edge.leftId]!.x <= centers[edge.rightId]!.x ? edge.leftId : edge.rightId;
-        final rightId = leftId == edge.leftId ? edge.rightId : edge.leftId;
-        final left = Point(0, hubTop);
-        centers[leftId] = left;
-        centers[rightId] = left.translated(options.iconSize * _architectureJunctionSpineCompanionServiceGapRatio, 0);
-      }
-      final companionRight =
-          companionIds.map((id) => centers[id]!.x).reduce(math.max) +
-          options.iconSize / 2 +
-          options.padding +
-          _architectureCompoundBorderAllowance +
-          _architectureJunctionSpineCompanionLabelOverflow;
-      final targetRight = hubLeft - options.iconSize * _architectureJunctionSpineGroupGapRatio;
-      final offsetX = targetRight - companionRight;
-      for (final id in companionIds) {
-        centers[id] = centers[id]!.translated(offsetX, 0);
-      }
-    }
-  }
-}
-
-double _architectureAlignmentGap(int index, int segmentCount, double iconSize) {
-  final progress = segmentCount == 1 ? 0.5 : index / (segmentCount - 1);
-  final ratio =
-      _architectureAlignmentLeadingGapRatio +
-      (_architectureAlignmentTrailingGapRatio - _architectureAlignmentLeadingGapRatio) * progress;
-  return iconSize * ratio;
-}
-
-double _architectureSeededCompoundSpacing(
-  ArchitectureRenderOptions options,
-  ({double lower, double center, double upper}) distances, {
-  required bool sameGroup,
-}) {
-  final normalizedIconDelta =
-      (options.iconSize - _architectureSeededCompoundCalibrationIconSize) / _architectureSeededCompoundCalibrationStep;
-  final normalizedPaddingDelta =
-      (options.padding - _architectureSeededCompoundCalibrationPadding) /
-      _architectureSeededCompoundPaddingCalibrationStep;
-  final paddingAdjustments = sameGroup
-      ? _architectureSeededCompoundSameGroupPaddingAdjustments
-      : _architectureSeededCompoundCrossGroupPaddingAdjustments;
-  final solverAdjustments = sameGroup
-      ? _architectureSeededCompoundSameGroupSolverAdjustments
-      : _architectureSeededCompoundCrossGroupSolverAdjustments;
-  final calibratedDistance =
-      _quadraticArchitectureCalibration(normalizedIconDelta, distances) +
-      _quadraticArchitectureCalibration(normalizedPaddingDelta, paddingAdjustments) +
-      _architectureSeededCompoundSolverAdjustment(options, solverAdjustments);
-
-  return calibratedDistance;
-}
-
-double _quadraticArchitectureCalibration(
-  double normalizedDelta,
-  ({double lower, double center, double upper}) samples,
-) {
-  final linearCoefficient = (samples.upper - samples.lower) / 2;
-  final quadraticCoefficient = (samples.upper + samples.lower) / 2 - samples.center;
-  return samples.center +
-      linearCoefficient * normalizedDelta +
-      quadraticCoefficient * normalizedDelta * normalizedDelta;
-}
-
-double _architectureSeededCompoundSolverAdjustment(
-  ArchitectureRenderOptions options,
-  ({double ideal, double elasticity, double interaction}) adjustments,
-) {
-  const defaults = ArchitectureRenderOptions();
-  final idealProgress =
-      (options.idealEdgeLengthMultiplier - defaults.idealEdgeLengthMultiplier) /
-      (_architectureSeededCompoundCalibrationIdealMultiplier - defaults.idealEdgeLengthMultiplier);
-  final elasticityProgress =
-      (options.edgeElasticity - defaults.edgeElasticity) /
-      (_architectureSeededCompoundCalibrationElasticity - defaults.edgeElasticity);
-  return adjustments.ideal * idealProgress +
-      adjustments.elasticity * elasticityProgress +
-      adjustments.interaction * idealProgress * elasticityProgress;
-}
-
-double _architectureEdgeSpacing(
-  double spacing,
-  ArchitectureEdgeAst edge,
-  _NodeSeed? source,
-  _NodeSeed? target,
-  Map<String, String?> groupParents,
-  ArchitectureRenderOptions options, {
-  required double sameGroupProofSpacingAllowance,
-  required _ArchitectureSeedProfile seedProfile,
-  required _ArchitectureLayoutProfile layoutProfile,
-}) {
-  final sourceParent = source?.parent;
-  final targetParent = target?.parent;
-  if (layoutProfile == _ArchitectureLayoutProfile.plainServiceElbow) {
-    return spacing + options.padding + sameGroupProofSpacingAllowance;
-  }
-  if (layoutProfile == _ArchitectureLayoutProfile.externalGateway && sourceParent != targetParent) {
-    return spacing + options.iconSize * _architectureExternalGatewayCrossGroupSpacingRatio;
-  }
-  if (sourceParent == null || targetParent == null) return spacing;
-  if (seedProfile == _ArchitectureSeedProfile.compoundChain42) {
-    final sameGroup = sourceParent == targetParent;
-    return _architectureSeededCompoundSpacing(
-      options,
-      sameGroup ? _architectureSeededCompoundSameGroupDistances : _architectureSeededCompoundCrossGroupDistances,
-      sameGroup: sameGroup,
-    );
-  }
-  if (sourceParent == targetParent) {
-    final nestedAdjustment = groupParents[sourceParent] == null
-        ? 0
-        : options.iconSize * _architectureNestedSameGroupSpacingRatio;
-    return spacing + options.padding + sameGroupProofSpacingAllowance + nestedAdjustment;
-  }
-  if (groupParents[sourceParent] == targetParent || groupParents[targetParent] == sourceParent) {
-    return spacing + options.iconSize * _architectureNestedParentChildSpacingRatio;
-  }
-  if (groupParents[sourceParent] != null && groupParents[sourceParent] == groupParents[targetParent]) {
-    return spacing + options.iconSize * _architectureNestedSiblingGroupSpacingRatio;
-  }
-  if (groupParents[sourceParent] == null && groupParents[targetParent] == null) {
-    final isServiceGroupEdge =
-        edge.leftGroup &&
-        edge.rightGroup &&
-        source?.kind == ArchitectureNodeKind.service &&
-        target?.kind == ArchitectureNodeKind.service;
-    if (isServiceGroupEdge) {
-      final ratio = edge.leftDirection.axisSign > 0
-          ? _architectureLeadingGroupEdgeSpacingRatio
-          : _architectureTrailingGroupEdgeSpacingRatio;
-      return spacing + options.iconSize * ratio;
-    }
-    return spacing + options.iconSize * _architectureTopLevelSiblingGroupSpacingRatio;
-  }
-  return spacing;
-}
 
 List<ArchitectureNodeLayout> _layoutArchitectureNodes(
   List<_NodeSeed> nodes,
@@ -1339,9 +253,10 @@ List<ArchitectureGroupLayout> _layoutArchitectureGroups(
   List<ArchitectureGroupAst> groups,
   List<ArchitectureNodeLayout> nodes,
   ArchitectureRenderOptions options, {
-  required bool hasDeepCompoundHierarchy,
+  required TextMeasurer textMeasurer,
+  required SceneTextStyle textStyle,
 }) {
-  final groupIds = {for (final group in groups) group.id};
+  final groupsById = {for (final group in groups) group.id: group};
   final boundsById = <String, Bounds>{};
   final nodesByParent = <String, List<ArchitectureNodeLayout>>{};
   for (final node in nodes) {
@@ -1351,23 +266,32 @@ List<ArchitectureGroupLayout> _layoutArchitectureGroups(
   for (final group in groups) {
     if (group.parent case final parent?) (groupsByParent[parent] ??= []).add(group);
   }
-  final hasJunctionSpine = nodesByParent.values.any(
-    (members) => members.where((node) => node.kind == ArchitectureNodeKind.junction).length >= 3,
-  );
+  Bounds renderedNodeBounds(ArchitectureNodeLayout node) {
+    if (node.kind != ArchitectureNodeKind.service || node.label == null) return node.bounds;
+    final measuredLabelWidth =
+        (textMeasurer.measure(node.label!, textStyle).width * _architectureLabelMeasurementStepsPerPixel).round() /
+        _architectureLabelMeasurementStepsPerPixel;
+    final labelOverhang = measuredLabelWidth - node.bounds.width;
+    // Cytoscape expands a compound by the complete label overhang when a
+    // centered child label becomes the content extremum. Model that expansion
+    // symmetrically around the child instead of recognizing a particular graph.
+    final contentWidth = labelOverhang > _architectureCompoundBorderAllowance
+        ? node.bounds.width + 2 * labelOverhang
+        : node.bounds.width;
+    return Bounds(
+      left: node.center.x - contentWidth / 2,
+      top: node.bounds.top,
+      width: contentWidth,
+      height: node.bounds.height + options.fontSize + _architectureServiceLabelLineGap,
+    );
+  }
 
   Bounds? calculateBounds(String id, Set<String> visiting) {
     if (boundsById[id] case final cached?) return cached;
-    if (!groupIds.contains(id) || !visiting.add(id)) return null;
+    if (!groupsById.containsKey(id) || !visiting.add(id)) return null;
     Bounds? nodeContent;
     for (final node in nodesByParent[id] ?? const []) {
-      final bounds = node.kind == ArchitectureNodeKind.service && node.label != null
-          ? Bounds(
-              left: node.bounds.left,
-              top: node.bounds.top,
-              width: node.bounds.width,
-              height: node.bounds.height + options.fontSize + _architectureServiceLabelLineGap,
-            )
-          : node.bounds;
+      final bounds = renderedNodeBounds(node);
       nodeContent = nodeContent == null ? bounds : nodeContent.union(bounds);
     }
     Bounds? groupContent;
@@ -1391,20 +315,22 @@ List<ArchitectureGroupLayout> _layoutArchitectureGroups(
     var topPadding = leftPadding;
     var rightPadding = leftPadding;
     var bottomPadding = containsGroups ? nestedPadding : serviceBottomPadding;
-    if (hasDeepCompoundHierarchy && nodeContent != null && groupContent != null) {
+    if (nodeContent != null && groupContent != null) {
       if (nodeContent.left <= groupContent.left) leftPadding = serviceSidePadding;
       if (nodeContent.top <= groupContent.top) topPadding = serviceSidePadding;
       if (nodeContent.right >= groupContent.right) rightPadding = serviceSidePadding;
       if (nodeContent.bottom >= groupContent.bottom) bottomPadding = serviceBottomPadding;
     }
-    final rightOverflow =
-        hasJunctionSpine && !(nodesByParent[id] ?? const []).any((node) => node.kind == ArchitectureNodeKind.junction)
-        ? _architectureJunctionSpineCompanionLabelOverflow
-        : 0;
+
+    final group = groupsById[id]!;
+    final labelWidth = group.title == null ? 0.0 : textMeasurer.measure(group.title!, textStyle).width;
+    final iconWidth = group.icon == null ? 0.0 : options.padding * _architectureGroupIconScale;
+    final minimumHeaderWidth = group.title == null ? 0.0 : 2 * _architectureGroupLabelInset + iconWidth + labelWidth;
+    final paddedWidth = math.max(resolved.width + leftPadding + rightPadding, minimumHeaderWidth);
     return boundsById[id] = Bounds(
       left: resolved.left - leftPadding,
       top: resolved.top - topPadding,
-      width: resolved.width + leftPadding + rightPadding + rightOverflow,
+      width: paddedWidth,
       height: resolved.height + topPadding + bottomPadding,
     );
   }
@@ -1429,7 +355,7 @@ Bounds _architectureContentBounds(
   List<ArchitectureGroupLayout> groups,
   ArchitectureRenderOptions options, {
   required TextMeasurer textMeasurer,
-  required String fontFamily,
+  required SceneTextStyle textStyle,
   bool includeUngroupedLabels = true,
 }) {
   var bounds = groups
@@ -1438,7 +364,7 @@ Bounds _architectureContentBounds(
       .fold<Bounds?>(null, (result, item) => result == null ? item : result.union(item));
   for (final node in nodes.where((node) => node.parent == null)) {
     final nodeBounds = includeUngroupedLabels && node.kind == ArchitectureNodeKind.service && node.label != null
-        ? _architectureUngroupedServiceBounds(node, options, textMeasurer, fontFamily)
+        ? _architectureUngroupedServiceBounds(node, options, textMeasurer, textStyle)
         : node.bounds;
     bounds = bounds == null ? nodeBounds : bounds.union(nodeBounds);
   }
@@ -1449,17 +375,15 @@ Bounds _architectureUngroupedServiceBounds(
   ArchitectureNodeLayout node,
   ArchitectureRenderOptions options,
   TextMeasurer textMeasurer,
-  String fontFamily,
+  SceneTextStyle textStyle,
 ) {
-  final labelWidth = textMeasurer
-      .measure(node.label!, SceneTextStyle(fontFamily: fontFamily, fontSize: options.fontSize))
-      .width;
+  final labelWidth = textMeasurer.measure(node.label!, textStyle).width;
   final width = math.max(node.bounds.width, labelWidth);
   return Bounds(
     left: node.center.x - width / 2,
     top: node.bounds.top,
     width: width,
-    height: node.bounds.height + options.fontSize * _architectureUngroupedLabelOverflowRatio,
+    height: node.bounds.height + options.fontSize + options.fontSize * _architectureServiceLabelLineHeightRatio / 2,
   );
 }
 
@@ -1490,55 +414,8 @@ List<ArchitectureEdgeLayout> _routeArchitectureEdges(
   return result;
 }
 
-Point _edgeDelta(
-  ArchitectureEdgeAst edge,
-  double spacing, {
-  required _ArchitectureRoutingProfile routingProfile,
-  required double iconSize,
-}) {
-  double axisSpacing(ArchitectureDirection direction) {
-    if (routingProfile == _ArchitectureRoutingProfile.standard) return spacing;
-    if (routingProfile == _ArchitectureRoutingProfile.denseMixedAxis) {
-      return iconSize * _architectureDenseMixedAxisSpacingRatio;
-    }
-    if (!direction.isVertical) return iconSize * _architectureMixedAxisHorizontalSpacingRatio;
-    if (edge.leftDirection.isVertical == edge.rightDirection.isVertical) {
-      return iconSize * _architectureMixedAxisVerticalSpacingRatio;
-    }
-    final verticalPort = edge.leftDirection.isVertical ? edge.leftDirection : edge.rightDirection;
-    final ratio = verticalPort == ArchitectureDirection.top
-        ? _architectureMixedAxisTopElbowSpacingRatio
-        : _architectureMixedAxisBottomElbowSpacingRatio;
-    return iconSize * ratio;
-  }
-
-  final source = _directionDelta(edge.leftDirection, axisSpacing(edge.leftDirection));
-  final targetDirection = edge.rightDirection.opposite;
-  final target = _directionDelta(targetDirection, axisSpacing(targetDirection));
-  return Point(source.x == 0 ? target.x : source.x, source.y == 0 ? target.y : source.y);
-}
-
-_ArchitectureRoutingProfile _architectureRoutingProfile(
-  List<ArchitectureGroupAst> groups,
-  int nodeCount,
-  List<ArchitectureEdgeAst> edges,
-) {
-  if (groups.isNotEmpty || !edges.any((edge) => edge.leftDirection.isVertical != edge.rightDirection.isVertical)) {
-    return _ArchitectureRoutingProfile.standard;
-  }
-  return edges.length > nodeCount
-      ? _ArchitectureRoutingProfile.denseMixedAxis
-      : _ArchitectureRoutingProfile.sparseMixedAxis;
-}
-
 Point _directionDelta(ArchitectureDirection direction, double distance) =>
     direction.isVertical ? Point(0, direction.axisSign * distance) : Point(direction.axisSign * distance, 0);
-
-ArchitectureDirection _architectureDirectionAt(ArchitectureEdgeAst edge, String nodeId) =>
-    edge.leftId == nodeId ? edge.leftDirection : edge.rightDirection;
-
-String _architectureOtherEnd(ArchitectureEdgeAst edge, String nodeId) =>
-    edge.leftId == nodeId ? edge.rightId : edge.leftId;
 
 Point _port(
   ArchitectureNodeLayout node,

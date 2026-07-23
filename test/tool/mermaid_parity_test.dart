@@ -530,6 +530,42 @@ void main() {
     expect(comparison.exact, isFalse);
   });
 
+  test('treats a shared geometry and viewport translation as visual parity', () {
+    final original = SvgSnapshot.fromSvg(
+      '<svg viewBox="-10 -20 100 80">'
+      '<rect x="-5" y="-15" width="20" height="10"/>'
+      '<text x="5" y="10">Label</text>'
+      '</svg>',
+    );
+    final translated = SvgSnapshot.fromSvg(
+      '<svg viewBox="30 50 100 80">'
+      '<rect x="35" y="55" width="20" height="10"/>'
+      '<text x="45" y="80">Label</text>'
+      '</svg>',
+    );
+
+    final comparison = SvgComparison.compare(original, translated);
+    expect(comparison.sameViewport, isTrue);
+    expect(comparison.sameGeometry, isTrue);
+    expect(comparison.visualParity, isTrue);
+    expect(comparison.exact, isFalse);
+  });
+
+  test('combines equivalent translations before a rotation', () {
+    final combined = SvgSnapshot.fromSvg(
+      '<svg viewBox="-10 -20 100 80">'
+      '<text transform="translate(15 25) rotate(-90)">Label</text>'
+      '</svg>',
+    );
+    final split = SvgSnapshot.fromSvg(
+      '<svg viewBox="30 50 100 80">'
+      '<text transform="translate(20 30) translate(35 65) rotate(-90)">Label</text>'
+      '</svg>',
+    );
+
+    expect(SvgComparison.compare(combined, split).sameGeometry, isTrue);
+  });
+
   test('normalizes horizontal and vertical path commands to line segments', () {
     final axisCommands = SvgSnapshot.fromSvg('<svg><path d="M1 2H5V7h-2v-3Z"/></svg>');
     final lines = SvgSnapshot.fromSvg('<svg><path d="M1 2L5 2L5 7l-2 0l0-3Z"/></svg>');
@@ -569,10 +605,13 @@ void main() {
   test('tolerates sub-centipixel geometry differences', () {
     final left = SvgSnapshot.fromSvg('<svg><path d="M0 0L264.263 1"/></svg>');
     final right = SvgSnapshot.fromSvg('<svg><path d="M0 0L264.264 1"/></svg>');
+    final roundingBoundaryLeft = SvgSnapshot.fromSvg('<svg><path d="M0 0L1.994 1"/></svg>');
+    final roundingBoundaryRight = SvgSnapshot.fromSvg('<svg><path d="M0 0L2.001 1"/></svg>');
     final negativeLeft = SvgSnapshot.fromSvg('<svg><g transform="scale(1.05)"><path d="M0 0L-160.2147 1"/></g></svg>');
     final negativeRight = SvgSnapshot.fromSvg('<svg><g transform="scale(1.05)"><path d="M0 0L-160.215 1"/></g></svg>');
 
     expect(SvgComparison.compare(left, right).sameGeometry, isTrue);
+    expect(SvgComparison.compare(roundingBoundaryLeft, roundingBoundaryRight).sameGeometry, isTrue);
     expect(SvgComparison.compare(negativeLeft, negativeRight).sameGeometry, isTrue);
   });
 

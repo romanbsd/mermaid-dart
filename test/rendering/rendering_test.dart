@@ -191,7 +191,7 @@ void main() {
       expect(axisLabels.map((label) => label.style.fontSize), everyElement(14));
     });
 
-    test('architecture seed overrides select a reproducible layout variant', () {
+    test('architecture seed is deterministic and inert without randomization', () {
       const source = '''architecture-beta
 group sub1(cloud)[Subscription A]
 group vnet1(cloud)[VNet A] in sub1
@@ -231,8 +231,8 @@ web:R --> L:db
 
       expect(first.viewport, second.viewport);
       expect(first.elements, second.elements);
-      expect(first.bounds, isNot(defaultSeed.bounds));
-      expect(first.bounds.width, closeTo(713.1729471741228, 1e-9));
+      expect(first.bounds, defaultSeed.bounds);
+      expect(first.elements, defaultSeed.elements);
       expect(scaledPositions[1].x - scaledPositions[0].x, closeTo(265.4381847126528, 1e-9));
       expect(scaledPositions[2].x - scaledPositions[1].x, closeTo(142.98082659872362, 1e-9));
     });
@@ -717,7 +717,7 @@ rule <- "a" b? ;
                     .single
                 as Translate)
             .y,
-        58,
+        40,
       );
       expect(resolved.label, 'iconnamedoesntexist');
       expect(resolved.geometry, _TestIconResolver.geometry);
