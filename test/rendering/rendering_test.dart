@@ -80,6 +80,66 @@ void main() {
       expect(horizontalYCoordinates, everyElement(cynefinOptions.padding + cynefinOptions.height / 2));
     });
 
+    test('Railroad config controls shared layout geometry and paint', () {
+      final scene = layoutDiagram(
+        parse(
+          DiagramType.railroad,
+          'railroad-beta\n'
+          'rule = sequence(terminal("a"), nonterminal("b"), special("c")) ;\n',
+        ),
+        options: const RenderOptions(
+          padding: 0,
+          railroad: RailroadRenderOptions(
+            compactMode: true,
+            padding: 12,
+            verticalSeparation: 16,
+            horizontalSeparation: 18,
+            arcRadius: 6,
+            fontSize: 18,
+            fontFamily: 'monospace',
+            terminalFill: Color(17, 34, 51),
+            terminalStroke: Color(68, 85, 102),
+            terminalTextColor: Color(119, 136, 153),
+            nonTerminalFill: Color(170, 187, 204),
+            nonTerminalStroke: Color(221, 238, 255),
+            nonTerminalTextColor: Color(1, 35, 69),
+            lineColor: Color(103, 137, 171),
+            strokeWidth: 3,
+            markerFill: Color(205, 239, 18),
+            specialFill: Color(52, 86, 120),
+            specialStroke: Color(154, 188, 222),
+            ruleNameColor: Color(240, 225, 210),
+            showMarkers: true,
+            markerRadius: 7,
+          ),
+        ),
+      );
+      final elements = _flatten(scene.elements).toList();
+      final terminal = elements.whereType<SceneRect>().singleWhere((element) => element.label == 'a');
+      final nonTerminal = elements.whereType<SceneRect>().singleWhere((element) => element.label == 'b');
+      final special = elements.whereType<SceneRect>().singleWhere((element) => element.label == '? c ?');
+      final ruleName = elements.whereType<SceneText>().singleWhere((element) => element.text == 'rule =');
+      final markers = elements.whereType<SceneCircle>().toList();
+      final lines = elements.whereType<ScenePath>().where((element) => element.cssClasses.contains('railroad-line'));
+
+      expect(terminal.fill, const SolidFill(Color(17, 34, 51)));
+      expect(terminal.stroke?.color, const Color(68, 85, 102));
+      expect(terminal.radiusX, 10);
+      expect(nonTerminal.fill, const SolidFill(Color(170, 187, 204)));
+      expect(nonTerminal.stroke?.color, const Color(221, 238, 255));
+      expect(special.fill, const SolidFill(Color(52, 86, 120)));
+      expect(special.stroke?.color, const Color(154, 188, 222));
+      expect(special.stroke?.dashes, const [5, 3]);
+      expect(ruleName.style.color, const Color(240, 225, 210));
+      expect(ruleName.style.fontFamily, 'monospace');
+      expect(ruleName.style.fontSize, 18);
+      expect(lines.map((line) => line.stroke?.color), everyElement(const Color(103, 137, 171)));
+      expect(lines.map((line) => line.stroke?.width), everyElement(3));
+      expect(markers, hasLength(2));
+      expect(markers.map((marker) => marker.fill), everyElement(const SolidFill(Color(205, 239, 18))));
+      expect(markers.map((marker) => marker.radius), everyElement(7));
+    });
+
     test('Wardley config controls canvas, grid, nodes, labels, and typography', () {
       final scene = layoutDiagram(
         parse(DiagramType.wardley, 'wardley-beta\ncomponent API [0.6, 0.5]\n'),

@@ -340,6 +340,43 @@
       }
     },
     {
+      "id": "railroad-custom-config",
+      "type": "railroad",
+      "source": "railroad-beta\nrule = sequence(terminal(\"a\"), nonterminal(\"b\"), special(\"c\")) ;\n",
+      "railroadOptions": {
+        "compactMode": true,
+        "padding": 12,
+        "verticalSeparation": 16,
+        "horizontalSeparation": 18,
+        "arcRadius": 6,
+        "fontSize": 18,
+        "fontFamily": "monospace",
+        "terminalFill": "#112233",
+        "terminalStroke": "#445566",
+        "terminalTextColor": "#778899",
+        "nonTerminalFill": "#aabbcc",
+        "nonTerminalStroke": "#ddeeff",
+        "nonTerminalTextColor": "#012345",
+        "lineColor": "#6789ab",
+        "strokeWidth": 3,
+        "markerFill": "#cdef12",
+        "commentFill": "#345678",
+        "commentStroke": "#56789a",
+        "commentTextColor": "#789abc",
+        "specialFill": "#345678",
+        "specialStroke": "#9abcde",
+        "ruleNameColor": "#f0e1d2",
+        "showMarkers": true,
+        "markerRadius": 7
+      },
+      "textMeasurements": {
+        "a": { "width": 10.84375, "height": 21 },
+        "b": { "width": 10.84375, "height": 21 },
+        "? c ?": { "width": 54.1875, "height": 21 },
+        "rule =": { "width": 65.03125, "height": 21 }
+      }
+    },
+    {
       "id": "railroad-ebnf-sequence",
       "type": "railroadEbnf",
       "source": "railroad-ebnf-beta\nrule = \"a\" b? ;\n",

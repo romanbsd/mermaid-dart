@@ -11,8 +11,8 @@ void main() {
     final manifest = ParityManifest.load(File('tool/mermaid_parity/fixtures.json'));
 
     expect(manifest.mermaidVersion, '11.16.0');
-    expect(manifest.fixtures.map((fixture) => fixture.id), hasLength(57));
-    expect(manifest.fixtures.map((fixture) => fixture.id).toSet(), hasLength(57));
+    expect(manifest.fixtures.map((fixture) => fixture.id), hasLength(58));
+    expect(manifest.fixtures.map((fixture) => fixture.id).toSet(), hasLength(58));
     expect(
       manifest.fixtures.map((fixture) => fixture.id),
       containsAll([
@@ -54,6 +54,7 @@ void main() {
         'railroad-abnf-sequence',
         'railroad-abnf-bounded-repetition',
         'railroad-abnf-zero-or-more',
+        'railroad-custom-config',
         'railroad-ebnf-sequence',
         'railroad-ebnf-choice-repetition',
         'railroad-peg-sequence',
@@ -148,6 +149,13 @@ void main() {
     expect(comparison.samePaint, isFalse);
     expect(comparison.visualParity, isFalse);
     expect(comparison.summary, 'paint');
+  });
+
+  test('comparison normalizes equivalent stroke dash delimiters', () {
+    final spaces = SvgSnapshot.fromSvg('<svg><path d="M0 0L1 1" stroke="#000" stroke-dasharray="5 3"/></svg>');
+    final commas = SvgSnapshot.fromSvg('<svg><path d="M0 0L1 1" stroke="#000" stroke-dasharray="5,3"/></svg>');
+
+    expect(SvgComparison.compare(spaces, commas).samePaint, isTrue);
   });
 
   test('comparison resolves stylesheet scale into geometry transforms', () {
@@ -879,6 +887,104 @@ void main() {
         'type': 'cynefin',
         'source': 'cynefin-beta\ncomplex "Probe"\n',
         'cynefinOptions': {'boundaryAmplitude': -1},
+      }),
+      throwsFormatException,
+    );
+  });
+
+  test('fixture Railroad options are typed and shared by all four syntaxes', () {
+    const options = {
+      'compactMode': true,
+      'padding': 12,
+      'verticalSeparation': 16,
+      'horizontalSeparation': 18,
+      'arcRadius': 6,
+      'fontSize': 18,
+      'fontFamily': 'monospace',
+      'terminalFill': '#112233',
+      'terminalStroke': '#445566',
+      'terminalTextColor': '#778899',
+      'nonTerminalFill': '#aabbcc',
+      'nonTerminalStroke': '#ddeeff',
+      'nonTerminalTextColor': '#012345',
+      'lineColor': '#6789ab',
+      'strokeWidth': 3,
+      'markerFill': '#cdef12',
+      'commentFill': '#345678',
+      'commentStroke': '#56789a',
+      'commentTextColor': '#789abc',
+      'specialFill': '#345678',
+      'specialStroke': '#9abcde',
+      'ruleNameColor': '#f0e1d2',
+      'showMarkers': true,
+      'markerRadius': 7,
+    };
+    const syntaxes = {
+      'railroad': 'railroad-beta\nrule = terminal("a") ;\n',
+      'railroadEbnf': 'railroad-ebnf-beta\nrule = "a" ;\n',
+      'railroadAbnf': 'railroad-abnf-beta\nrule = "a" ;\n',
+      'railroadPeg': 'railroad-peg-beta\nrule <- "a" ;\n',
+    };
+
+    for (final MapEntry(key: type, value: source) in syntaxes.entries) {
+      final configured = ParityFixture.fromJson({
+        'id': 'configured-$type',
+        'type': type,
+        'source': source,
+        'railroadOptions': options,
+      });
+
+      expect(configured.renderOptions.railroad.compactMode, isTrue);
+      expect(configured.renderOptions.railroad.padding, 12);
+      expect(configured.renderOptions.railroad.verticalSeparation, 16);
+      expect(configured.renderOptions.railroad.horizontalSeparation, 18);
+      expect(configured.renderOptions.railroad.arcRadius, 6);
+      expect(configured.renderOptions.railroad.fontSize, 18);
+      expect(configured.renderOptions.railroad.fontFamily, 'monospace');
+      expect(configured.renderOptions.railroad.terminalFill, const Color(17, 34, 51));
+      expect(configured.renderOptions.railroad.terminalStroke, const Color(68, 85, 102));
+      expect(configured.renderOptions.railroad.terminalTextColor, const Color(119, 136, 153));
+      expect(configured.renderOptions.railroad.nonTerminalFill, const Color(170, 187, 204));
+      expect(configured.renderOptions.railroad.nonTerminalStroke, const Color(221, 238, 255));
+      expect(configured.renderOptions.railroad.nonTerminalTextColor, const Color(1, 35, 69));
+      expect(configured.renderOptions.railroad.lineColor, const Color(103, 137, 171));
+      expect(configured.renderOptions.railroad.strokeWidth, 3);
+      expect(configured.renderOptions.railroad.markerFill, const Color(205, 239, 18));
+      expect(configured.renderOptions.railroad.commentFill, const Color(52, 86, 120));
+      expect(configured.renderOptions.railroad.commentStroke, const Color(86, 120, 154));
+      expect(configured.renderOptions.railroad.commentTextColor, const Color(120, 154, 188));
+      expect(configured.renderOptions.railroad.specialFill, const Color(52, 86, 120));
+      expect(configured.renderOptions.railroad.specialStroke, const Color(154, 188, 222));
+      expect(configured.renderOptions.railroad.ruleNameColor, const Color(240, 225, 210));
+      expect(configured.renderOptions.railroad.showMarkers, isTrue);
+      expect(configured.renderOptions.railroad.markerRadius, 7);
+      expect(configured.mermaidConfig, {'railroad': options});
+    }
+
+    expect(
+      () => ParityFixture.fromJson({
+        'id': 'configured',
+        'type': 'info',
+        'source': 'info',
+        'railroadOptions': {'padding': 12},
+      }),
+      throwsFormatException,
+    );
+    expect(
+      () => ParityFixture.fromJson({
+        'id': 'configured',
+        'type': 'railroad',
+        'source': 'railroad-beta\nrule = terminal("a") ;\n',
+        'railroadOptions': {'padding': -1},
+      }),
+      throwsFormatException,
+    );
+    expect(
+      () => ParityFixture.fromJson({
+        'id': 'configured',
+        'type': 'railroad',
+        'source': 'railroad-beta\nrule = terminal("a") ;\n',
+        'railroadOptions': {'terminalFill': 'not a color'},
       }),
       throwsFormatException,
     );

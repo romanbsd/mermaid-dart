@@ -1,7 +1,12 @@
 part of '../layout.dart';
 
-// Mermaid renders special railroad nodes with a regular five-unit dash/gap.
+// Mermaid's railroad stylesheet uses `stroke-dasharray: 5,3`.
 const _railSpecialDashLength = 5.0;
+const _railSpecialGapLength = 3.0;
+
+// Mermaid terminals always use a fixed corner radius; arcRadius only controls
+// routing curves around choices, optional branches, and repetitions.
+const _railTerminalRadius = 10.0;
 
 final class _RailBox {
   const _RailBox(this.width, this.height, this.up, this.down, this.elements);
@@ -28,16 +33,16 @@ SceneTextStyle _railTextStyle(_LayoutContext context, {FontWeight weight = FontW
     fontFamily: config.fontFamily,
     fontSize: config.fontSize,
     weight: weight,
-    color: color ?? context.options.theme.primaryText,
+    color: color ?? config.nonTerminalTextColor,
   );
 }
 
 SceneStroke _railStroke(_LayoutContext context, {bool dashed = false, Color? color}) {
   final config = context.options.optionsFor(const RailroadRenderOptions());
   return SceneStroke(
-    color: color ?? context.options.theme.line,
+    color: color ?? config.lineColor,
     width: config.strokeWidth,
-    dashes: dashed ? const [_railSpecialDashLength, _railSpecialDashLength] : const [],
+    dashes: dashed ? const [_railSpecialDashLength, _railSpecialGapLength] : const [],
   );
 }
 
@@ -52,9 +57,17 @@ ScenePath _railPath(_LayoutContext context, List<PathCommand> commands) => Scene
 
 _RailBox _railLeaf(String label, _LayoutContext context, bool terminal, {bool special = false}) {
   final config = context.options.optionsFor(const RailroadRenderOptions());
-  final fillColor = terminal ? config.terminalFill : config.nonTerminalFill;
-  final borderColor = terminal ? config.terminalBorder : config.nonTerminalBorder;
-  final textColor = terminal ? config.terminalText : config.nonTerminalText;
+  final fillColor = terminal
+      ? config.terminalFill
+      : special
+      ? config.specialFill
+      : config.nonTerminalFill;
+  final borderColor = terminal
+      ? config.terminalStroke
+      : special
+      ? config.specialStroke
+      : config.nonTerminalStroke;
+  final textColor = terminal ? config.terminalTextColor : config.nonTerminalTextColor;
   final style = _railTextStyle(context, color: textColor);
   final measured = context.measurer.measure(label, style);
   final width = measured.width + config.padding * 2;
@@ -70,8 +83,8 @@ _RailBox _railLeaf(String label, _LayoutContext context, bool terminal, {bool sp
         SceneRect(
           id: context.id('railroad-node'),
           bounds: Bounds(left: 0, top: 0, width: width, height: height),
-          radiusX: terminal ? config.arcRadius : 0,
-          radiusY: terminal ? config.arcRadius : 0,
+          radiusX: terminal ? _railTerminalRadius : 0,
+          radiusY: terminal ? _railTerminalRadius : 0,
           fill: SolidFill(fillColor),
           stroke: _railStroke(context, dashed: special, color: borderColor),
           role: SemanticRole.node,
@@ -252,7 +265,7 @@ _LayoutResult _layoutRailroad(RailroadAst ast, _LayoutContext context) {
   final config = context.options.optionsFor(const RailroadRenderOptions());
   if (ast.rules.isEmpty) return const _LayoutResult(200, 100, []);
   final style = _railTextStyle(context);
-  final ruleStyle = _railTextStyle(context, weight: FontWeight.bold);
+  final ruleStyle = _railTextStyle(context, weight: FontWeight.bold, color: config.ruleNameColor);
   final elements = <SceneElement>[];
   var y = config.padding;
   var width = 0.0;
@@ -285,14 +298,14 @@ _LayoutResult _layoutRailroad(RailroadAst ast, _LayoutContext context) {
           id: context.id('railroad-start'),
           center: Point(nameWidth, baselineY),
           radius: config.markerRadius,
-          fill: SolidFill(context.options.theme.line),
+          fill: SolidFill(config.markerFill),
           cssClasses: const ['railroad-start'],
         ),
         SceneCircle(
           id: context.id('railroad-end'),
           center: Point(endX, baselineY),
           radius: config.markerRadius,
-          fill: SolidFill(context.options.theme.line),
+          fill: SolidFill(config.markerFill),
           cssClasses: const ['railroad-end'],
         ),
       ],

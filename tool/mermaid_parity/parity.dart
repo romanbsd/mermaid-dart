@@ -80,6 +80,7 @@ final class ParityFixture {
     const packetDefaults = PacketRenderOptions();
     const pieDefaults = PieRenderOptions();
     const radarDefaults = RadarRenderOptions();
+    const railroadDefaults = RailroadRenderOptions();
     const treeViewDefaults = TreeViewRenderOptions();
     const wardleyDefaults = WardleyRenderOptions();
     return RenderOptions(
@@ -128,6 +129,38 @@ final class ParityFixture {
         axisLabelFactor: (diagramConfig['axisLabelFactor'] as num?)?.toDouble() ?? radarDefaults.axisLabelFactor,
         curveTension: (diagramConfig['curveTension'] as num?)?.toDouble() ?? radarDefaults.curveTension,
       ),
+      railroad: RailroadRenderOptions(
+        compactMode: diagramConfig['compactMode'] as bool? ?? railroadDefaults.compactMode,
+        padding: (diagramConfig['padding'] as num?)?.toDouble() ?? railroadDefaults.padding,
+        verticalSeparation:
+            (diagramConfig['verticalSeparation'] as num?)?.toDouble() ?? railroadDefaults.verticalSeparation,
+        horizontalSeparation:
+            (diagramConfig['horizontalSeparation'] as num?)?.toDouble() ?? railroadDefaults.horizontalSeparation,
+        arcRadius: (diagramConfig['arcRadius'] as num?)?.toDouble() ?? railroadDefaults.arcRadius,
+        fontSize: (diagramConfig['fontSize'] as num?)?.toDouble() ?? railroadDefaults.fontSize,
+        fontFamily: diagramConfig['fontFamily'] as String? ?? railroadDefaults.fontFamily,
+        strokeWidth: (diagramConfig['strokeWidth'] as num?)?.toDouble() ?? railroadDefaults.strokeWidth,
+        showMarkers: diagramConfig['showMarkers'] as bool? ?? railroadDefaults.showMarkers,
+        markerRadius: (diagramConfig['markerRadius'] as num?)?.toDouble() ?? railroadDefaults.markerRadius,
+        terminalFill: _configuredColor(diagramConfig, 'terminalFill', railroadDefaults.terminalFill),
+        terminalStroke: _configuredColor(diagramConfig, 'terminalStroke', railroadDefaults.terminalStroke),
+        terminalTextColor: _configuredColor(diagramConfig, 'terminalTextColor', railroadDefaults.terminalTextColor),
+        nonTerminalFill: _configuredColor(diagramConfig, 'nonTerminalFill', railroadDefaults.nonTerminalFill),
+        nonTerminalStroke: _configuredColor(diagramConfig, 'nonTerminalStroke', railroadDefaults.nonTerminalStroke),
+        nonTerminalTextColor: _configuredColor(
+          diagramConfig,
+          'nonTerminalTextColor',
+          railroadDefaults.nonTerminalTextColor,
+        ),
+        lineColor: _configuredColor(diagramConfig, 'lineColor', railroadDefaults.lineColor),
+        markerFill: _configuredColor(diagramConfig, 'markerFill', railroadDefaults.markerFill),
+        commentFill: _configuredColor(diagramConfig, 'commentFill', railroadDefaults.commentFill),
+        commentStroke: _configuredColor(diagramConfig, 'commentStroke', railroadDefaults.commentStroke),
+        commentTextColor: _configuredColor(diagramConfig, 'commentTextColor', railroadDefaults.commentTextColor),
+        specialFill: _configuredColor(diagramConfig, 'specialFill', railroadDefaults.specialFill),
+        specialStroke: _configuredColor(diagramConfig, 'specialStroke', railroadDefaults.specialStroke),
+        ruleNameColor: _configuredColor(diagramConfig, 'ruleNameColor', railroadDefaults.ruleNameColor),
+      ),
       treeView: TreeViewRenderOptions(
         rowIndent: (diagramConfig['rowIndent'] as num?)?.toDouble() ?? treeViewDefaults.rowIndent,
         paddingX: (diagramConfig['paddingX'] as num?)?.toDouble() ?? treeViewDefaults.paddingX,
@@ -159,6 +192,10 @@ const _fixtureOptionNames = {
   DiagramType.packet: 'packetOptions',
   DiagramType.pie: 'pieOptions',
   DiagramType.radar: 'radarOptions',
+  DiagramType.railroad: 'railroadOptions',
+  DiagramType.railroadAbnf: 'railroadOptions',
+  DiagramType.railroadEbnf: 'railroadOptions',
+  DiagramType.railroadPeg: 'railroadOptions',
   DiagramType.treeView: 'treeViewOptions',
   DiagramType.wardley: 'wardleyOptions',
 };
@@ -170,12 +207,16 @@ const _mermaidConfigNames = {
   DiagramType.packet: 'packet',
   DiagramType.pie: 'pie',
   DiagramType.radar: 'radar',
+  DiagramType.railroad: 'railroad',
+  DiagramType.railroadAbnf: 'railroad',
+  DiagramType.railroadEbnf: 'railroad',
+  DiagramType.railroadPeg: 'railroad',
   DiagramType.treeView: 'treeView',
   DiagramType.wardley: 'wardley-beta',
 };
 
 Map<String, Object> _diagramConfig(Map<Object?, Object?> json, DiagramType type) {
-  final supplied = _fixtureOptionNames.values.where(json.containsKey).toList(growable: false);
+  final supplied = _fixtureOptionNames.values.toSet().where(json.containsKey).toList(growable: false);
   if (supplied.isEmpty) return const {};
   final expected = _fixtureOptionNames[type];
   if (supplied.length != 1 || supplied.single != expected) {
@@ -189,10 +230,105 @@ Map<String, Object> _diagramConfig(Map<Object?, Object?> json, DiagramType type)
     DiagramType.packet => _packetConfig(value),
     DiagramType.pie => _pieConfig(value),
     DiagramType.radar => _radarConfig(value),
+    DiagramType.railroad ||
+    DiagramType.railroadAbnf ||
+    DiagramType.railroadEbnf ||
+    DiagramType.railroadPeg => _railroadConfig(value),
     DiagramType.treeView => _treeViewConfig(value),
     DiagramType.wardley => _wardleyConfig(value),
     _ => throw FormatException('$expected are not supported for ${type.name} fixtures'),
   };
+}
+
+const _railroadConfigKeys = {
+  'compactMode',
+  'padding',
+  'verticalSeparation',
+  'horizontalSeparation',
+  'arcRadius',
+  'fontSize',
+  'fontFamily',
+  'terminalFill',
+  'terminalStroke',
+  'terminalTextColor',
+  'nonTerminalFill',
+  'nonTerminalStroke',
+  'nonTerminalTextColor',
+  'lineColor',
+  'strokeWidth',
+  'markerFill',
+  'commentFill',
+  'commentStroke',
+  'commentTextColor',
+  'specialFill',
+  'specialStroke',
+  'ruleNameColor',
+  'showMarkers',
+  'markerRadius',
+};
+
+const _railroadColorConfigKeys = {
+  'terminalFill',
+  'terminalStroke',
+  'terminalTextColor',
+  'nonTerminalFill',
+  'nonTerminalStroke',
+  'nonTerminalTextColor',
+  'lineColor',
+  'markerFill',
+  'commentFill',
+  'commentStroke',
+  'commentTextColor',
+  'specialFill',
+  'specialStroke',
+  'ruleNameColor',
+};
+
+final _fixtureHexColor = RegExp(r'^#[0-9a-f]{3,4}(?:[0-9a-f]{3,4})?$', caseSensitive: false);
+
+Map<String, Object> _railroadConfig(Object? value) {
+  if (value is! Map<String, Object?> || value.isEmpty || value.keys.any((key) => !_railroadConfigKeys.contains(key))) {
+    throw const FormatException('Invalid fixture railroadOptions');
+  }
+  final result = <String, Object>{};
+  for (final MapEntry(:key, :value) in value.entries) {
+    final valid = switch ((key, value)) {
+      ('compactMode' || 'showMarkers', final bool option) => option,
+      (
+        'padding' ||
+            'verticalSeparation' ||
+            'horizontalSeparation' ||
+            'arcRadius' ||
+            'fontSize' ||
+            'strokeWidth' ||
+            'markerRadius',
+        final num option,
+      )
+          when option >= 0 =>
+        option,
+      ('fontFamily', final String option) when option.trim().isNotEmpty => option.trim(),
+      (final String colorKey, final String option)
+          when _railroadColorConfigKeys.contains(colorKey) && _fixtureHexColor.hasMatch(option.trim()) =>
+        option.trim(),
+      _ => null,
+    };
+    if (valid == null) {
+      throw const FormatException('Invalid fixture railroadOptions');
+    }
+    result[key] = valid;
+  }
+  return Map.unmodifiable(result);
+}
+
+Color _configuredColor(Map<String, Object> config, String key, Color fallback) => switch (config[key]) {
+  final String value => _fixtureColor(value),
+  _ => fallback,
+};
+
+Color _fixtureColor(String value) {
+  final hex = value.substring(1);
+  final expanded = hex.length <= 4 ? [for (final digit in hex.split('')) '$digit$digit'].join() : hex;
+  return Color.fromHex(expanded);
 }
 
 const _cynefinConfigKeys = {'width', 'height', 'padding', 'showDomainDescriptions', 'boundaryAmplitude', 'seed'};
@@ -677,12 +813,26 @@ String _normalizedPaintValue(String name, String value, XmlElement element, Stri
     normalized = _inheritedPresentationValue(element, 'color', styleSheets) ?? 'black';
   }
   if (name == 'fill' || name == 'stroke') return _normalizedColor(normalized);
+  if (name == 'stroke-dasharray' && normalized != 'none') {
+    return normalized
+        .split(_svgNumericListSeparator)
+        .where((part) => part.isNotEmpty)
+        .map(
+          (part) => switch (double.tryParse(part)) {
+            final number? => _formatNumber(number),
+            null => part,
+          },
+        )
+        .join(' ');
+  }
   if (name == 'stroke-width' && normalized.endsWith('px')) {
     normalized = normalized.substring(0, normalized.length - 2);
   }
   final number = double.tryParse(normalized);
   return number == null ? normalized : _formatNumber(number);
 }
+
+final _svgNumericListSeparator = RegExp(r'[\s,]+');
 
 String _normalizedColor(String value) {
   final compact = value.replaceAll(' ', '');

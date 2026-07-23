@@ -467,13 +467,22 @@ final class RailroadRenderOptions extends DiagramRenderOptions {
     this.showMarkers = true,
     this.markerRadius = 5,
     this.terminalFill = const Color(255, 255, 222),
-    this.terminalBorder = const Color(238, 238, 188),
-    this.terminalText = const Color(0, 0, 33),
+    this.terminalStroke = const Color(238, 238, 188),
+    this.terminalTextColor = const Color(0, 0, 33),
     this.nonTerminalFill = const Color(236, 236, 255),
-    this.nonTerminalBorder = const Color(199, 199, 241),
-    this.nonTerminalText = const Color(19, 19, 0),
+    this.nonTerminalStroke = const Color(199, 199, 241),
+    this.nonTerminalTextColor = const Color(19, 19, 0),
+    this.lineColor = const Color(51, 51, 51),
+    this.markerFill = const Color(51, 51, 51),
+    this.commentFill = const Color(232, 232, 232),
+    this.commentStroke = const Color(136, 136, 136),
+    this.commentTextColor = const Color(102, 102, 102),
+    this.specialFill = const Color(236, 236, 255),
+    this.specialStroke = const Color(199, 199, 241),
+    this.ruleNameColor = const Color(51, 51, 51),
   });
 
+  /// Mermaid currently accepts this option but does not alter its renderer.
   final bool compactMode;
   final double padding;
   final double verticalSeparation;
@@ -485,11 +494,25 @@ final class RailroadRenderOptions extends DiagramRenderOptions {
   final bool showMarkers;
   final double markerRadius;
   final Color terminalFill;
-  final Color terminalBorder;
-  final Color terminalText;
+  final Color terminalStroke;
+  final Color terminalTextColor;
   final Color nonTerminalFill;
-  final Color nonTerminalBorder;
-  final Color nonTerminalText;
+  final Color nonTerminalStroke;
+  final Color nonTerminalTextColor;
+  final Color lineColor;
+  final Color markerFill;
+
+  /// Reserved for Mermaid rule comments, which its current renderer also omits.
+  final Color commentFill;
+
+  /// Reserved for Mermaid rule comments, which its current renderer also omits.
+  final Color commentStroke;
+
+  /// Reserved for Mermaid rule comments, which its current renderer also omits.
+  final Color commentTextColor;
+  final Color specialFill;
+  final Color specialStroke;
+  final Color ruleNameColor;
 }
 
 final class PacketRenderOptions extends DiagramRenderOptions {
