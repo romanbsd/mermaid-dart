@@ -364,7 +364,7 @@ _LayoutResult _layoutTreemap(TreemapAst ast, _LayoutContext context) {
   elements.add(
     SceneGroup(id: context.id('treemap-container'), children: container, cssClasses: const ['treemapContainer']),
   );
-  final geometryBounds = _sceneGeometryBounds(elements);
+  final geometryBounds = sceneGeometryBounds(elements, includeText: false);
   final contentBounds = switch ((geometryBounds, titleElement)) {
     (final geometry?, final title?) => geometry.union(title.bounds),
     (final geometry?, null) => geometry,

@@ -9,6 +9,7 @@ import 'geometry/architecture.dart';
 import 'geometry/cynefin.dart';
 import 'geometry/event_modeling.dart';
 import 'geometry/git_graph.dart';
+import 'geometry/scene_bounds.dart';
 import 'geometry/treemap.dart';
 import 'geometry/wardley.dart';
 import 'options.dart';
@@ -174,91 +175,6 @@ final class _LayoutResult {
   final Bounds? bounds;
   final double viewportPadding;
   final List<SceneClip> clips;
-}
-
-Bounds? _sceneGeometryBounds(Iterable<SceneElement> elements) {
-  Bounds? result;
-  for (final element in elements) {
-    final bounds = _sceneElementBounds(element);
-    if (bounds != null) result = result == null ? bounds : result.union(bounds);
-  }
-  return result;
-}
-
-Bounds? _sceneElementBounds(SceneElement element) => switch (element) {
-  SceneGroup(:final children, :final transforms) => switch (_sceneGeometryBounds(children)) {
-    final bounds? => _transformBounds(bounds, transforms),
-    null => null,
-  },
-  SceneLine(:final start, :final end) => _pointsBounds([start, end]),
-  SceneRect(:final bounds) => bounds,
-  SceneCircle(:final center, :final radius) => Bounds(
-    left: center.x - radius,
-    top: center.y - radius,
-    width: radius * 2,
-    height: radius * 2,
-  ),
-  SceneEllipse(:final center, :final radiusX, :final radiusY) => Bounds(
-    left: center.x - radiusX,
-    top: center.y - radiusY,
-    width: radiusX * 2,
-    height: radiusY * 2,
-  ),
-  ScenePolygon(:final points) || ScenePolyline(:final points) => _pointsBounds(points),
-  ScenePath(:final commands) => _pointsBounds([
-    for (final command in commands)
-      ...switch (command) {
-        MoveTo(:final point) || LineTo(:final point) => [point],
-        CubicTo(:final control1, :final control2, :final end) => [control1, control2, end],
-        QuadraticTo(:final control, :final end) => [control, end],
-        ArcTo(:final end) => [end],
-        ClosePath() => const <Point>[],
-      },
-  ]),
-  SceneText() => null,
-  SceneIcon(:final position, :final geometry) => geometry.bounds.translated(position.x, position.y),
-};
-
-Bounds _transformBounds(Bounds bounds, List<SceneTransform> transforms) => _pointsBounds(
-  [
-    Point(bounds.left, bounds.top),
-    Point(bounds.right, bounds.top),
-    Point(bounds.right, bounds.bottom),
-    Point(bounds.left, bounds.bottom),
-  ].map((point) => transforms.reversed.fold(point, _transformPoint)).toList(),
-)!;
-
-Point _transformPoint(Point point, SceneTransform transform) => switch (transform) {
-  Translate(:final x, :final y) => Point(point.x + x, point.y + y),
-  Scale(:final x, :final y) => Point(point.x * x, point.y * (y ?? x)),
-  Rotate(:final degrees, :final center) => () {
-    final origin = center ?? const Point(0, 0);
-    final radians = degrees * math.pi / 180;
-    final cosine = math.cos(radians);
-    final sine = math.sin(radians);
-    final x = point.x - origin.x;
-    final y = point.y - origin.y;
-    return Point(origin.x + x * cosine - y * sine, origin.y + x * sine + y * cosine);
-  }(),
-  MatrixTransform(:final a, :final b, :final c, :final d, :final e, :final f) => Point(
-    a * point.x + c * point.y + e,
-    b * point.x + d * point.y + f,
-  ),
-};
-
-Bounds? _pointsBounds(List<Point> points) {
-  if (points.isEmpty) return null;
-  var left = points.first.x;
-  var right = left;
-  var top = points.first.y;
-  var bottom = top;
-  for (final point in points.skip(1)) {
-    left = math.min(left, point.x);
-    right = math.max(right, point.x);
-    top = math.min(top, point.y);
-    bottom = math.max(bottom, point.y);
-  }
-  return Bounds(left: left, top: top, width: right - left, height: bottom - top);
 }
 
 SceneText _text(

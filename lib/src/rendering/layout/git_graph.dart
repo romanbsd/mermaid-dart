@@ -265,7 +265,7 @@ _LayoutResult _layoutGitGraph(GitGraphAst ast, _LayoutContext context) {
     _addGitTags(elements, context, commit.tags, point, axisPositions[commit.id]!, tagStyle, theme, direction);
   }
 
-  final untitledBounds = _sceneGeometryBounds(elements);
+  final untitledBounds = sceneGeometryBounds(elements, includeText: false);
   Bounds? titleBounds;
   if (ast.title case final title?) {
     final titleElement = _text(
