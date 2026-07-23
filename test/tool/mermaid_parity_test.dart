@@ -11,8 +11,8 @@ void main() {
     final manifest = ParityManifest.load(File('tool/mermaid_parity/fixtures.json'));
 
     expect(manifest.mermaidVersion, '11.16.0');
-    expect(manifest.fixtures.map((fixture) => fixture.id), hasLength(51));
-    expect(manifest.fixtures.map((fixture) => fixture.id).toSet(), hasLength(51));
+    expect(manifest.fixtures.map((fixture) => fixture.id), hasLength(52));
+    expect(manifest.fixtures.map((fixture) => fixture.id).toSet(), hasLength(52));
     expect(
       manifest.fixtures.map((fixture) => fixture.id),
       containsAll([
@@ -46,6 +46,7 @@ void main() {
         'pie-highlighted-slice',
         'pie-text-position',
         'packet-complex-no-bits',
+        'radar-custom-geometry',
         'railroad-abnf-sequence',
         'railroad-abnf-bounded-repetition',
         'railroad-abnf-zero-or-more',
@@ -592,6 +593,66 @@ void main() {
         'type': 'packet',
         'source': 'packet\n0: "Flag"',
         'packetOptions': {'showBits': 0},
+      }),
+      throwsFormatException,
+    );
+  });
+
+  test('fixture radar options are typed and radar-only', () {
+    final configured = ParityFixture.fromJson({
+      'id': 'configured',
+      'type': 'radar',
+      'source': 'radar-beta\naxis speed\ncurve current { 1 }',
+      'radarOptions': {
+        'width': 720,
+        'height': 480,
+        'marginTop': 40,
+        'marginRight': 60,
+        'marginBottom': 30,
+        'marginLeft': 50,
+        'axisScaleFactor': 0.85,
+        'axisLabelFactor': 1.15,
+        'curveTension': 0,
+      },
+    });
+
+    expect(configured.renderOptions.radar.width, 720);
+    expect(configured.renderOptions.radar.height, 480);
+    expect(configured.renderOptions.radar.marginTop, 40);
+    expect(configured.renderOptions.radar.marginRight, 60);
+    expect(configured.renderOptions.radar.marginBottom, 30);
+    expect(configured.renderOptions.radar.marginLeft, 50);
+    expect(configured.renderOptions.radar.axisScaleFactor, 0.85);
+    expect(configured.renderOptions.radar.axisLabelFactor, 1.15);
+    expect(configured.renderOptions.radar.curveTension, 0);
+    expect(configured.mermaidConfig, {
+      'radar': {
+        'width': 720,
+        'height': 480,
+        'marginTop': 40,
+        'marginRight': 60,
+        'marginBottom': 30,
+        'marginLeft': 50,
+        'axisScaleFactor': 0.85,
+        'axisLabelFactor': 1.15,
+        'curveTension': 0,
+      },
+    });
+    expect(
+      () => ParityFixture.fromJson({
+        'id': 'configured',
+        'type': 'pie',
+        'source': 'pie\n"Dogs": 1',
+        'radarOptions': {'width': 720},
+      }),
+      throwsFormatException,
+    );
+    expect(
+      () => ParityFixture.fromJson({
+        'id': 'configured',
+        'type': 'radar',
+        'source': 'radar-beta\naxis speed\ncurve current { 1 }',
+        'radarOptions': {'width': 0},
       }),
       throwsFormatException,
     );

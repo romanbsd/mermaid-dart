@@ -280,6 +280,22 @@
       "source": "radar-beta\naxis speed[\"Speed\"], quality, cost[\"Cost\"]\ncurve current[\"Current\"] { 3, 4, 2 }\n"
     },
     {
+      "id": "radar-custom-geometry",
+      "type": "radar",
+      "source": "radar-beta\naxis speed[\"Speed\"], quality, cost[\"Cost\"]\ncurve current[\"Current\"] { 3, 4, 2 }\n",
+      "radarOptions": {
+        "width": 720,
+        "height": 480,
+        "marginTop": 40,
+        "marginRight": 60,
+        "marginBottom": 30,
+        "marginLeft": 50,
+        "axisScaleFactor": 0.85,
+        "axisLabelFactor": 1.15,
+        "curveTension": 0
+      }
+    },
+    {
       "id": "railroad-sequence",
       "type": "railroad",
       "source": "railroad-beta\nrule = sequence(terminal(\"a\"), optional(nonterminal(\"b\"))) ;\n",

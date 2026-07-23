@@ -77,6 +77,7 @@ final class ParityFixture {
     const architectureDefaults = ArchitectureRenderOptions();
     const packetDefaults = PacketRenderOptions();
     const pieDefaults = PieRenderOptions();
+    const radarDefaults = RadarRenderOptions();
     return RenderOptions(
       padding: 0,
       architecture: ArchitectureRenderOptions(
@@ -98,6 +99,17 @@ final class ParityFixture {
           _ => pieDefaults.legendPosition,
         },
       ),
+      radar: RadarRenderOptions(
+        width: (diagramConfig['width'] as num?)?.toDouble() ?? radarDefaults.width,
+        height: (diagramConfig['height'] as num?)?.toDouble() ?? radarDefaults.height,
+        marginTop: (diagramConfig['marginTop'] as num?)?.toDouble() ?? radarDefaults.marginTop,
+        marginRight: (diagramConfig['marginRight'] as num?)?.toDouble() ?? radarDefaults.marginRight,
+        marginBottom: (diagramConfig['marginBottom'] as num?)?.toDouble() ?? radarDefaults.marginBottom,
+        marginLeft: (diagramConfig['marginLeft'] as num?)?.toDouble() ?? radarDefaults.marginLeft,
+        axisScaleFactor: (diagramConfig['axisScaleFactor'] as num?)?.toDouble() ?? radarDefaults.axisScaleFactor,
+        axisLabelFactor: (diagramConfig['axisLabelFactor'] as num?)?.toDouble() ?? radarDefaults.axisLabelFactor,
+        curveTension: (diagramConfig['curveTension'] as num?)?.toDouble() ?? radarDefaults.curveTension,
+      ),
     );
   }
 }
@@ -106,12 +118,14 @@ const _fixtureOptionNames = {
   DiagramType.architecture: 'architectureOptions',
   DiagramType.packet: 'packetOptions',
   DiagramType.pie: 'pieOptions',
+  DiagramType.radar: 'radarOptions',
 };
 
 const _mermaidConfigNames = {
   DiagramType.architecture: 'architecture',
   DiagramType.packet: 'packet',
   DiagramType.pie: 'pie',
+  DiagramType.radar: 'radar',
 };
 
 Map<String, Object> _diagramConfig(Map<Object?, Object?> json, DiagramType type) {
@@ -126,8 +140,40 @@ Map<String, Object> _diagramConfig(Map<Object?, Object?> json, DiagramType type)
     DiagramType.architecture => _architectureConfig(value),
     DiagramType.packet => _packetConfig(value),
     DiagramType.pie => _pieConfig(value),
+    DiagramType.radar => _radarConfig(value),
     _ => throw FormatException('$expected are not supported for ${type.name} fixtures'),
   };
+}
+
+const _radarConfigKeys = {
+  'width',
+  'height',
+  'marginTop',
+  'marginRight',
+  'marginBottom',
+  'marginLeft',
+  'axisScaleFactor',
+  'axisLabelFactor',
+  'curveTension',
+};
+
+Map<String, Object> _radarConfig(Object? value) {
+  if (value is! Map<String, Object?> || value.isEmpty || value.keys.any((key) => !_radarConfigKeys.contains(key))) {
+    throw const FormatException('Invalid fixture radarOptions');
+  }
+  final result = <String, Object>{};
+  for (final MapEntry(:key, :value) in value.entries) {
+    final valid = switch ((key, value)) {
+      ('width' || 'height', final num option) when option > 0 => option,
+      ('marginTop' || 'marginRight' || 'marginBottom' || 'marginLeft', final num option) when option >= 0 => option,
+      ('axisScaleFactor' || 'axisLabelFactor', final num option) when option > 0 => option,
+      ('curveTension', final num option) when option >= 0 && option <= 1 => option,
+      _ => null,
+    };
+    if (valid == null) throw const FormatException('Invalid fixture radarOptions');
+    result[key] = valid;
+  }
+  return Map.unmodifiable(result);
 }
 
 const _architectureConfigKeys = {'randomize', 'idealEdgeLengthMultiplier', 'edgeElasticity', 'numIter', 'seed'};
