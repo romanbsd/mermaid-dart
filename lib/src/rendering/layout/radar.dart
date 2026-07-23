@@ -10,6 +10,8 @@ const _radarAxisLabelOffset = 4.0;
 const _radarLegendTextOffset = 16.0;
 const _radarLegendRowHeight = 20.0;
 const _radarLegendPositionRatio = 3 / 4;
+// Mermaid 11.16 exposes radar.legendBoxSize but still draws 12px swatches.
+const _radarLegendBoxSize = 12.0;
 
 _LayoutResult _layoutRadar(RadarAst ast, _LayoutContext context) {
   final config = context.options.optionsFor(const RadarRenderOptions());
@@ -140,7 +142,7 @@ _LayoutResult _layoutRadar(RadarAst ast, _LayoutContext context) {
       elements.add(
         SceneRect(
           id: context.id('radar-legend-box'),
-          bounds: Bounds(left: legendX, top: y, width: theme.legendBoxSize, height: theme.legendBoxSize),
+          bounds: Bounds(left: legendX, top: y, width: _radarLegendBoxSize, height: _radarLegendBoxSize),
           fill: SolidFill(_colorWithOpacity(color, theme.curveOpacity)),
           stroke: SceneStroke(color: color, width: _radarLegendStrokeWidth),
           role: SemanticRole.legend,

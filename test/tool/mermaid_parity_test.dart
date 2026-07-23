@@ -6,13 +6,28 @@ import 'package:xml/xml.dart';
 
 import '../../tool/mermaid_parity/parity.dart';
 
+const _wardleyThemeTestKeys = {
+  'backgroundColor',
+  'axisColor',
+  'axisTextColor',
+  'gridColor',
+  'componentFill',
+  'componentStroke',
+  'componentLabelColor',
+  'linkStroke',
+  'evolutionStroke',
+  'annotationStroke',
+  'annotationTextColor',
+  'annotationFill',
+};
+
 void main() {
   test('fixture manifest is pinned and covers every renderer family', () {
     final manifest = ParityManifest.load(File('tool/mermaid_parity/fixtures.json'));
 
     expect(manifest.mermaidVersion, '11.16.0');
-    expect(manifest.fixtures.map((fixture) => fixture.id), hasLength(61));
-    expect(manifest.fixtures.map((fixture) => fixture.id).toSet(), hasLength(61));
+    expect(manifest.fixtures.map((fixture) => fixture.id), hasLength(65));
+    expect(manifest.fixtures.map((fixture) => fixture.id).toSet(), hasLength(65));
     expect(
       manifest.fixtures.map((fixture) => fixture.id),
       containsAll([
@@ -21,6 +36,7 @@ void main() {
         'architecture-fallback-icon',
         'architecture-title-accessibility',
         'architecture-seed-42',
+        'architecture-theme-variables',
         'architecture-align-row',
         'architecture-align-column',
         'architecture-junction-group-edge',
@@ -34,6 +50,9 @@ void main() {
         'architecture-no-icon-edge-lengths',
         'architecture-edge-length-3',
         'architecture-reasonable-height',
+        'event-modeling-theme-variables',
+        'radar-theme-variables',
+        'wardley-theme-variables',
         'architecture-deeply-nested',
         'cynefin-custom-config',
         'event-modeling-unicode-multiline',
@@ -643,6 +662,291 @@ void main() {
       }),
       throwsFormatException,
     );
+  });
+
+  test('fixture forwards every supported flat and nested theme variable as typed values', () {
+    const color = '#123456';
+    final variables = <String, Object>{
+      for (final key in [
+        'background',
+        'primaryColor',
+        'primaryBorderColor',
+        'primaryTextColor',
+        'lineColor',
+        'secondaryColor',
+        'tertiaryColor',
+        'secondaryBorderColor',
+        'tertiaryBorderColor',
+        'secondaryTextColor',
+        'tertiaryTextColor',
+        'textColor',
+        'titleColor',
+        'mainBkg',
+        'secondBkg',
+        'labelBackground',
+        'nodeBorder',
+        'archEdgeColor',
+        'archEdgeArrowColor',
+        'archGroupBorderColor',
+        'emUiFill',
+        'emUiStroke',
+        'emProcessorFill',
+        'emProcessorStroke',
+        'emReadModelFill',
+        'emReadModelStroke',
+        'emCommandFill',
+        'emCommandStroke',
+        'emEventFill',
+        'emEventStroke',
+        'emSwimlaneBackgroundOdd',
+        'emSwimlaneBackgroundStroke',
+        'emArrowhead',
+        'emRelationStroke',
+        'tagLabelColor',
+        'tagLabelBackground',
+        'tagLabelBorder',
+        'commitLabelColor',
+        'commitLabelBackground',
+        'commitLineColor',
+        'filterColor',
+        'gradientStart',
+        'gradientStop',
+        'pieTitleTextColor',
+        'pieSectionTextColor',
+        'pieLegendTextColor',
+        'pieStrokeColor',
+        'pieOuterStrokeColor',
+      ])
+        key: color,
+      for (var index = 0; index < 8; index++) ...{
+        'git$index': color,
+        'gitInv$index': color,
+        'gitBranchLabel$index': color,
+      },
+      'strokeWidth': 2,
+      'fontSize': '18px',
+      'fontFamily': 'Fixture Sans',
+      'THEME_COLOR_LIMIT': 8,
+      'archEdgeWidth': 3,
+      'archGroupBorderWidth': '4px',
+      'tagLabelFontSize': '11px',
+      'commitLabelFontSize': 12,
+      'pieTitleTextSize': '23px',
+      'pieSectionTextSize': 14,
+      'pieLegendTextSize': 15,
+      'pieStrokeWidth': 5,
+      'pieOuterStrokeWidth': 6,
+      'pieOpacity': .65,
+      'useGradient': true,
+      'dropShadow': 'drop-shadow(1px 2px 3px #123456)',
+      'cynefin': {
+        for (final key in [
+          'boundaryColor',
+          'cliffColor',
+          'arrowColor',
+          'complexBg',
+          'complicatedBg',
+          'chaoticBg',
+          'clearBg',
+          'confusionBg',
+          'textColor',
+          'labelColor',
+        ])
+          key: color,
+        'domainFontSize': 17,
+        'itemFontSize': 13,
+        'boundaryWidth': 2,
+        'cliffWidth': 4,
+        'arrowWidth': 3,
+      },
+      'radar': {
+        'axisColor': color,
+        'graticuleColor': color,
+        'axisStrokeWidth': 2,
+        'axisLabelFontSize': 13,
+        'curveOpacity': .45,
+        'curveStrokeWidth': 3,
+        'graticuleStrokeWidth': 2,
+        'graticuleOpacity': .25,
+        'legendBoxSize': 14,
+        'legendFontSize': 15,
+      },
+      'wardley': {for (final key in _wardleyThemeTestKeys) key: color},
+    };
+    final fixture = ParityFixture.fromJson({
+      'id': 'all-theme-variables',
+      'type': 'pie',
+      'source': 'pie\n"A": 1',
+      'themeVariables': variables,
+    });
+    final theme = fixture.renderOptions.theme;
+    const typedColor = Color(18, 52, 86);
+
+    expect(fixture.mermaidConfig, {'themeVariables': variables});
+    expect([
+      theme.background,
+      theme.primary,
+      theme.primaryBorder,
+      theme.primaryText,
+      theme.line,
+      theme.secondary,
+      theme.tertiary,
+      theme.secondaryBorder,
+      theme.tertiaryBorder,
+      theme.secondaryText,
+      theme.tertiaryText,
+      theme.text,
+      theme.title,
+      theme.mainBackground,
+      theme.secondBackground,
+      theme.labelBackground,
+      theme.nodeBorder,
+    ], everyElement(typedColor));
+    expect([theme.strokeWidth, theme.fontSize, theme.fontFamily], [2, 18, 'Fixture Sans']);
+    expect([
+      theme.architecture.edgeColor,
+      theme.architecture.edgeArrowColor,
+      theme.architecture.groupBorderColor,
+    ], everyElement(typedColor));
+    expect([theme.architecture.edgeWidth, theme.architecture.groupBorderWidth], [3, 4]);
+    expect([
+      theme.cynefin.boundaryColor,
+      theme.cynefin.cliffColor,
+      theme.cynefin.arrowColor,
+      theme.cynefin.complexBackground,
+      theme.cynefin.complicatedBackground,
+      theme.cynefin.chaoticBackground,
+      theme.cynefin.clearBackground,
+      theme.cynefin.confusionBackground,
+      theme.cynefin.textColor,
+      theme.cynefin.labelColor,
+    ], everyElement(typedColor));
+    expect([
+      theme.eventModeling.uiFill,
+      theme.eventModeling.uiStroke,
+      theme.eventModeling.processorFill,
+      theme.eventModeling.processorStroke,
+      theme.eventModeling.readModelFill,
+      theme.eventModeling.readModelStroke,
+      theme.eventModeling.commandFill,
+      theme.eventModeling.commandStroke,
+      theme.eventModeling.eventFill,
+      theme.eventModeling.eventStroke,
+      theme.eventModeling.swimlaneBackgroundOdd,
+      theme.eventModeling.swimlaneBackgroundStroke,
+      theme.eventModeling.arrowhead,
+      theme.eventModeling.relationStroke,
+    ], everyElement(typedColor));
+    expect(theme.gitGraph.branchColors, everyElement(typedColor));
+    expect(theme.gitGraph.highlightColors, everyElement(typedColor));
+    expect(theme.gitGraph.branchLabelColors, everyElement(typedColor));
+    expect([
+      theme.gitGraph.tagLabelColor,
+      theme.gitGraph.tagLabelBackground,
+      theme.gitGraph.tagLabelBorder,
+      theme.gitGraph.commitLabelColor,
+      theme.gitGraph.commitLabelBackground,
+      theme.gitGraph.commitLineColor,
+      theme.gitGraph.filterColor,
+      theme.gitGraph.gradientStart,
+      theme.gitGraph.gradientStop,
+    ], everyElement(typedColor));
+    expect(theme.gitGraph.useGradient, isTrue);
+    expect(theme.gitGraph.themeColorLimit, 8);
+    expect(
+      [
+        theme.gitGraph.dropShadow.color,
+        theme.gitGraph.dropShadow.offsetX,
+        theme.gitGraph.dropShadow.offsetY,
+        theme.gitGraph.dropShadow.blurRadius,
+      ],
+      [typedColor, 1, 2, 3],
+    );
+    expect([
+      theme.pie.titleTextColor,
+      theme.pie.sectionTextColor,
+      theme.pie.legendTextColor,
+      theme.pie.strokeColor,
+      theme.pie.outerStrokeColor,
+    ], everyElement(typedColor));
+    expect([theme.pie.titleTextSize, theme.pie.sectionTextSize, theme.pie.legendTextSize], [23, 14, 15]);
+    expect([
+      theme.radar.axisColor,
+      theme.radar.graticuleColor,
+      theme.wardley.backgroundColor,
+      theme.wardley.axisColor,
+      theme.wardley.axisTextColor,
+      theme.wardley.gridColor,
+      theme.wardley.componentFill,
+      theme.wardley.componentStroke,
+      theme.wardley.componentLabelColor,
+      theme.wardley.linkStroke,
+      theme.wardley.evolutionStroke,
+      theme.wardley.annotationStroke,
+      theme.wardley.annotationTextColor,
+      theme.wardley.annotationFill,
+    ], everyElement(typedColor));
+  });
+
+  test('fixture rejects unknown, malformed, and ill-typed theme variables', () {
+    for (final variables in [
+      {'unknown': '#123456'},
+      {'pieOpacity': 'opaque'},
+      {'useGradient': 'true'},
+      {
+        'radar': {'unknown': 1},
+      },
+      {'dropShadow': '1px 2px 3px #123456'},
+    ]) {
+      expect(
+        () => ParityFixture.fromJson({
+          'id': 'invalid-theme',
+          'type': 'pie',
+          'source': 'pie\n"A": 1',
+          'themeVariables': variables,
+        }),
+        throwsFormatException,
+      );
+    }
+  });
+
+  test('fixture derives renderer theme defaults from overridden common variables', () {
+    final theme = ParityFixture.fromJson({
+      'id': 'derived-theme',
+      'type': 'wardley',
+      'source': 'wardley-beta\ncomponent API [0.5, 0.5]\n',
+      'themeVariables': {
+        'background': '#123456',
+        'primaryColor': '#234567',
+        'primaryBorderColor': '#345678',
+        'primaryTextColor': '#456789',
+        'secondaryColor': '#56789a',
+        'secondaryBorderColor': '#6789ab',
+        'secondaryTextColor': '#789abc',
+        'lineColor': '#89abcd',
+        'textColor': '#9abcde',
+        'mainBkg': '#abcdef',
+      },
+    }).renderOptions.theme;
+
+    expect(theme.architecture.edgeColor, const Color(137, 171, 205));
+    expect(theme.architecture.groupBorderColor, const Color(52, 86, 120));
+    expect(theme.cynefin.boundaryColor, const Color(137, 171, 205));
+    expect(theme.cynefin.textColor, const Color(154, 188, 222));
+    expect(theme.cynefin.labelColor, const Color(69, 103, 137));
+    expect(theme.eventModeling.relationStroke, const Color(137, 171, 205));
+    expect(theme.gitGraph.tagLabelBackground, const Color(35, 69, 103));
+    expect(theme.gitGraph.tagLabelBorder, const Color(52, 86, 120));
+    expect(theme.gitGraph.commitLabelBackground, const Color(86, 120, 154));
+    expect(theme.gitGraph.commitLabelColor, const Color(120, 154, 188));
+    expect(theme.gitGraph.tagHoleColor, const Color(154, 188, 222));
+    expect(theme.gitGraph.specialColor, const Color(171, 205, 239));
+    expect(theme.pie.sectionTextColor, const Color(154, 188, 222));
+    expect(theme.radar.axisColor, const Color(137, 171, 205));
+    expect(theme.wardley.backgroundColor, const Color(18, 52, 86));
+    expect(theme.wardley.componentFill, const Color(18, 52, 86));
+    expect(theme.wardley.componentStroke, const Color(137, 171, 205));
+    expect(theme.wardley.componentLabelColor, const Color(69, 103, 137));
   });
 
   test('fixture packet options are typed and packet-only', () {

@@ -266,6 +266,8 @@ final class RadarTheme {
   final Color graticuleColor;
   final double graticuleStrokeWidth;
   final double graticuleOpacity;
+
+  /// Compatibility-only in Mermaid 11.16, whose renderer draws 12px swatches.
   final double legendBoxSize;
   final double legendFontSize;
 }

@@ -254,6 +254,117 @@ final class ParityFixture {
 }
 
 const _themePaletteLength = 12;
+const _gitThemePaletteLength = 8;
+
+const _themeColorKeys = {
+  'background',
+  'primaryColor',
+  'primaryBorderColor',
+  'primaryTextColor',
+  'lineColor',
+  'secondaryColor',
+  'tertiaryColor',
+  'secondaryBorderColor',
+  'tertiaryBorderColor',
+  'secondaryTextColor',
+  'tertiaryTextColor',
+  'textColor',
+  'titleColor',
+  'mainBkg',
+  'secondBkg',
+  'labelBackground',
+  'nodeBorder',
+  'archEdgeColor',
+  'archEdgeArrowColor',
+  'archGroupBorderColor',
+  'emUiFill',
+  'emUiStroke',
+  'emProcessorFill',
+  'emProcessorStroke',
+  'emReadModelFill',
+  'emReadModelStroke',
+  'emCommandFill',
+  'emCommandStroke',
+  'emEventFill',
+  'emEventStroke',
+  'emSwimlaneBackgroundOdd',
+  'emSwimlaneBackgroundStroke',
+  'emArrowhead',
+  'emRelationStroke',
+  'tagLabelColor',
+  'tagLabelBackground',
+  'tagLabelBorder',
+  'commitLabelColor',
+  'commitLabelBackground',
+  'commitLineColor',
+  'filterColor',
+  'pieTitleTextColor',
+  'pieSectionTextColor',
+  'pieLegendTextColor',
+  'pieStrokeColor',
+  'pieOuterStrokeColor',
+};
+
+const _themeNumberKeys = {
+  'strokeWidth',
+  'fontSize',
+  'THEME_COLOR_LIMIT',
+  'archEdgeWidth',
+  'archGroupBorderWidth',
+  'tagLabelFontSize',
+  'commitLabelFontSize',
+  'pieTitleTextSize',
+  'pieSectionTextSize',
+  'pieLegendTextSize',
+  'pieStrokeWidth',
+  'pieOuterStrokeWidth',
+  'pieOpacity',
+};
+
+const _nestedThemeColorKeys = {
+  'cynefin': {
+    'boundaryColor',
+    'cliffColor',
+    'arrowColor',
+    'complexBg',
+    'complicatedBg',
+    'chaoticBg',
+    'clearBg',
+    'confusionBg',
+    'textColor',
+    'labelColor',
+  },
+  'radar': {'axisColor', 'graticuleColor'},
+  'wardley': {
+    'backgroundColor',
+    'axisColor',
+    'axisTextColor',
+    'gridColor',
+    'componentFill',
+    'componentStroke',
+    'componentLabelColor',
+    'linkStroke',
+    'evolutionStroke',
+    'annotationStroke',
+    'annotationTextColor',
+    'annotationFill',
+  },
+};
+
+const _nestedThemeNumberKeys = {
+  'cynefin': {'domainFontSize', 'itemFontSize', 'boundaryWidth', 'cliffWidth', 'arrowWidth'},
+  'radar': {
+    'axisStrokeWidth',
+    'axisLabelFontSize',
+    'curveOpacity',
+    'curveStrokeWidth',
+    'graticuleStrokeWidth',
+    'graticuleOpacity',
+    'legendBoxSize',
+    'legendFontSize',
+  },
+  'wardley': <String>{},
+};
 
 Map<String, Object> _themeVariables(Object? value) {
   if (value == null) return const {};
@@ -262,13 +373,24 @@ Map<String, Object> _themeVariables(Object? value) {
   }
   final result = <String, Object>{};
   for (final MapEntry(:key, :value) in value.entries) {
-    final validKey =
-        RegExp(r'^pie(?:[1-9]|1[0-2])$').hasMatch(key) ||
-        RegExp(r'^cScale(?:Peer|Label)?(?:[0-9]|1[01])$').hasMatch(key);
-    if (!validKey || value is! String || !_fixtureHexColor.hasMatch(value.trim())) {
+    final isPalette = RegExp(
+      r'^(?:pie(?:[1-9]|1[0-2])|cScale(?:Peer|Label)?(?:[0-9]|1[01])|git(?:Inv)?[0-7]|gitBranchLabel[0-7])$',
+    ).hasMatch(key);
+    final validated = switch ((key, value)) {
+      (final key, final String color) when (isPalette || _themeColorKeys.contains(key)) => _validatedThemeColor(color),
+      (final key, final Object number) when _themeNumberKeys.contains(key) => _validatedThemeNumber(key, number),
+      ('fontFamily', final String family) when family.trim().isNotEmpty => family.trim(),
+      ('useGradient', final bool enabled) => enabled,
+      ('gradientStart' || 'gradientStop', final String color) => _validatedThemeColor(color),
+      ('dropShadow', final String shadow) when _themeShadow(shadow) != null => shadow.trim(),
+      (final nested, final Map<String, Object?> values) when _nestedThemeColorKeys.containsKey(nested) =>
+        _validatedNestedTheme(nested, values),
+      _ => null,
+    };
+    if (validated == null) {
       throw const FormatException('Invalid fixture themeVariables');
     }
-    result[key] = value.trim();
+    result[key] = validated;
   }
   return Map.unmodifiable(result);
 }
@@ -279,6 +401,9 @@ MermaidTheme _themeOptions(Map<String, Object> variables) {
   final categoricalColors = [...defaults.categoricalColors];
   final categoricalPeerColors = [...defaults.categoricalPeerColors];
   final categoricalLabelColors = [...defaults.categoricalLabelColors];
+  final gitColors = [...defaults.gitGraph.branchColors];
+  final gitHighlightColors = [...defaults.gitGraph.highlightColors];
+  final gitLabelColors = [...defaults.gitGraph.branchLabelColors];
   for (var index = 0; index < _themePaletteLength; index++) {
     if (variables['pie${index + 1}'] case final String color) {
       pieColors[index] = _fixtureColor(color);
@@ -293,11 +418,286 @@ MermaidTheme _themeOptions(Map<String, Object> variables) {
       categoricalLabelColors[index] = _fixtureColor(color);
     }
   }
+  for (var index = 0; index < _gitThemePaletteLength; index++) {
+    if (variables['git$index'] case final String color) gitColors[index] = _fixtureColor(color);
+    if (variables['gitInv$index'] case final String color) gitHighlightColors[index] = _fixtureColor(color);
+    if (variables['gitBranchLabel$index'] case final String color) gitLabelColors[index] = _fixtureColor(color);
+  }
+  final cynefin = _nestedTheme(variables, 'cynefin');
+  final radar = _nestedTheme(variables, 'radar');
+  final wardley = _nestedTheme(variables, 'wardley');
+  final background = _themeColor(variables, 'background', defaults.background);
+  final primary = _themeColor(variables, 'primaryColor', defaults.primary);
+  final primaryBorder = _themeColor(variables, 'primaryBorderColor', defaults.primaryBorder);
+  final primaryText = _themeColor(variables, 'primaryTextColor', defaults.primaryText);
+  final line = _themeColor(variables, 'lineColor', defaults.line);
+  final secondary = _themeColor(variables, 'secondaryColor', defaults.secondary);
+  final secondaryBorder = _themeColor(variables, 'secondaryBorderColor', defaults.secondaryBorder);
+  final secondaryText = _themeColor(variables, 'secondaryTextColor', defaults.secondaryText);
+  final text = _themeColor(variables, 'textColor', defaults.text);
+  final mainBackground = _themeColor(variables, 'mainBkg', defaults.mainBackground);
+  final backgroundOverride = _themeOptionalColor(variables, 'background');
+  final primaryOverride = _themeOptionalColor(variables, 'primaryColor');
+  final primaryBorderOverride = _themeOptionalColor(variables, 'primaryBorderColor');
+  final primaryTextOverride = _themeOptionalColor(variables, 'primaryTextColor');
+  final lineOverride = _themeOptionalColor(variables, 'lineColor');
+  final secondaryOverride = _themeOptionalColor(variables, 'secondaryColor');
+  final secondaryBorderOverride = _themeOptionalColor(variables, 'secondaryBorderColor');
+  final secondaryTextOverride = _themeOptionalColor(variables, 'secondaryTextColor');
+  final textOverride = _themeOptionalColor(variables, 'textColor');
+  final mainBackgroundOverride = _themeOptionalColor(variables, 'mainBkg');
   return MermaidTheme(
+    background: background,
+    primary: primary,
+    primaryBorder: primaryBorder,
+    primaryText: primaryText,
+    line: line,
+    secondary: secondary,
+    tertiary: _themeColor(variables, 'tertiaryColor', defaults.tertiary),
+    secondaryBorder: secondaryBorder,
+    tertiaryBorder: _themeColor(variables, 'tertiaryBorderColor', defaults.tertiaryBorder),
+    secondaryText: secondaryText,
+    tertiaryText: _themeColor(variables, 'tertiaryTextColor', defaults.tertiaryText),
+    text: text,
+    title: _themeColor(variables, 'titleColor', defaults.title),
+    mainBackground: mainBackground,
+    secondBackground: _themeColor(variables, 'secondBkg', defaults.secondBackground),
+    labelBackground: _themeColor(variables, 'labelBackground', defaults.labelBackground),
+    nodeBorder: _themeColor(variables, 'nodeBorder', defaults.nodeBorder),
+    strokeWidth: _themeDouble(variables, 'strokeWidth', defaults.strokeWidth),
+    fontFamily: variables['fontFamily'] as String?,
+    fontSize: _themeDouble(variables, 'fontSize', defaults.fontSize),
     pieColors: List.unmodifiable(pieColors),
     categoricalColors: List.unmodifiable(categoricalColors),
     categoricalPeerColors: List.unmodifiable(categoricalPeerColors),
     categoricalLabelColors: List.unmodifiable(categoricalLabelColors),
+    architecture: ArchitectureTheme(
+      edgeColor: _themeColor(variables, 'archEdgeColor', lineOverride ?? defaults.architecture.edgeColor),
+      edgeArrowColor: _themeColor(
+        variables,
+        'archEdgeArrowColor',
+        lineOverride ?? defaults.architecture.edgeArrowColor,
+      ),
+      edgeWidth: _themeDouble(variables, 'archEdgeWidth', defaults.architecture.edgeWidth),
+      groupBorderColor: _themeColor(
+        variables,
+        'archGroupBorderColor',
+        primaryBorderOverride ?? defaults.architecture.groupBorderColor,
+      ),
+      groupBorderWidth: _themeDouble(variables, 'archGroupBorderWidth', defaults.architecture.groupBorderWidth),
+    ),
+    cynefin: CynefinTheme(
+      domainFontSize: _nestedThemeDouble(cynefin, 'domainFontSize', defaults.cynefin.domainFontSize),
+      itemFontSize: _nestedThemeDouble(cynefin, 'itemFontSize', defaults.cynefin.itemFontSize),
+      boundaryColor: _nestedThemeColor(cynefin, 'boundaryColor', lineOverride ?? defaults.cynefin.boundaryColor),
+      boundaryWidth: _nestedThemeDouble(cynefin, 'boundaryWidth', defaults.cynefin.boundaryWidth),
+      cliffColor: _nestedThemeColor(cynefin, 'cliffColor', defaults.cynefin.cliffColor),
+      cliffWidth: _nestedThemeDouble(cynefin, 'cliffWidth', defaults.cynefin.cliffWidth),
+      arrowColor: _nestedThemeColor(cynefin, 'arrowColor', lineOverride ?? defaults.cynefin.arrowColor),
+      arrowWidth: _nestedThemeDouble(cynefin, 'arrowWidth', defaults.cynefin.arrowWidth),
+      complexBackground: _nestedThemeColor(cynefin, 'complexBg', defaults.cynefin.complexBackground),
+      complicatedBackground: _nestedThemeColor(cynefin, 'complicatedBg', defaults.cynefin.complicatedBackground),
+      chaoticBackground: _nestedThemeColor(cynefin, 'chaoticBg', defaults.cynefin.chaoticBackground),
+      clearBackground: _nestedThemeColor(cynefin, 'clearBg', defaults.cynefin.clearBackground),
+      confusionBackground: _nestedThemeColor(cynefin, 'confusionBg', defaults.cynefin.confusionBackground),
+      textColor: _nestedThemeColor(cynefin, 'textColor', textOverride ?? defaults.cynefin.textColor),
+      labelColor: _nestedThemeColor(cynefin, 'labelColor', primaryTextOverride ?? defaults.cynefin.labelColor),
+    ),
+    eventModeling: EventModelingTheme(
+      uiFill: _themeColor(variables, 'emUiFill', defaults.eventModeling.uiFill),
+      uiStroke: _themeColor(variables, 'emUiStroke', defaults.eventModeling.uiStroke),
+      processorFill: _themeColor(variables, 'emProcessorFill', defaults.eventModeling.processorFill),
+      processorStroke: _themeColor(variables, 'emProcessorStroke', defaults.eventModeling.processorStroke),
+      readModelFill: _themeColor(variables, 'emReadModelFill', defaults.eventModeling.readModelFill),
+      readModelStroke: _themeColor(variables, 'emReadModelStroke', defaults.eventModeling.readModelStroke),
+      commandFill: _themeColor(variables, 'emCommandFill', defaults.eventModeling.commandFill),
+      commandStroke: _themeColor(variables, 'emCommandStroke', defaults.eventModeling.commandStroke),
+      eventFill: _themeColor(variables, 'emEventFill', defaults.eventModeling.eventFill),
+      eventStroke: _themeColor(variables, 'emEventStroke', defaults.eventModeling.eventStroke),
+      swimlaneBackgroundOdd: _themeColor(
+        variables,
+        'emSwimlaneBackgroundOdd',
+        defaults.eventModeling.swimlaneBackgroundOdd,
+      ),
+      swimlaneBackgroundStroke: _themeColor(
+        variables,
+        'emSwimlaneBackgroundStroke',
+        defaults.eventModeling.swimlaneBackgroundStroke,
+      ),
+      arrowhead: _themeColor(variables, 'emArrowhead', lineOverride ?? defaults.eventModeling.arrowhead),
+      relationStroke: _themeColor(variables, 'emRelationStroke', lineOverride ?? defaults.eventModeling.relationStroke),
+    ),
+    gitGraph: GitGraphTheme(
+      branchColors: List.unmodifiable(gitColors),
+      highlightColors: List.unmodifiable(gitHighlightColors),
+      branchLabelColors: List.unmodifiable(gitLabelColors),
+      tagLabelColor: _themeColor(variables, 'tagLabelColor', primaryTextOverride ?? defaults.gitGraph.tagLabelColor),
+      tagLabelBackground: _themeColor(
+        variables,
+        'tagLabelBackground',
+        primaryOverride ?? defaults.gitGraph.tagLabelBackground,
+      ),
+      tagLabelBorder: _themeColor(
+        variables,
+        'tagLabelBorder',
+        primaryBorderOverride ?? defaults.gitGraph.tagLabelBorder,
+      ),
+      tagLabelFontSize: _themeDouble(variables, 'tagLabelFontSize', defaults.gitGraph.tagLabelFontSize),
+      commitLabelColor: _themeColor(
+        variables,
+        'commitLabelColor',
+        secondaryTextOverride ?? defaults.gitGraph.commitLabelColor,
+      ),
+      commitLabelBackground: _themeColor(
+        variables,
+        'commitLabelBackground',
+        secondaryOverride ?? defaults.gitGraph.commitLabelBackground,
+      ),
+      commitLabelFontSize: _themeDouble(variables, 'commitLabelFontSize', defaults.gitGraph.commitLabelFontSize),
+      commitLineColor: _themeOptionalColor(variables, 'commitLineColor') ?? defaults.gitGraph.commitLineColor,
+      tagHoleColor: textOverride ?? defaults.gitGraph.tagHoleColor,
+      primaryColor: primaryOverride ?? defaults.gitGraph.primaryColor,
+      specialColor: mainBackgroundOverride ?? defaults.gitGraph.specialColor,
+      themeColorLimit: _themeInt(variables, 'THEME_COLOR_LIMIT', defaults.gitGraph.themeColorLimit),
+      useGradient: variables['useGradient'] as bool? ?? defaults.gitGraph.useGradient,
+      gradientStart: _themeColor(variables, 'gradientStart', primaryBorderOverride ?? defaults.gitGraph.gradientStart),
+      gradientStop: _themeColor(variables, 'gradientStop', secondaryBorderOverride ?? defaults.gitGraph.gradientStop),
+      filterColor: _themeColor(variables, 'filterColor', defaults.gitGraph.filterColor),
+      dropShadow: switch (variables['dropShadow']) {
+        final String shadow => _themeShadow(shadow)!,
+        _ => defaults.gitGraph.dropShadow,
+      },
+    ),
+    pie: PieTheme(
+      titleTextSize: _themeDouble(variables, 'pieTitleTextSize', defaults.pie.titleTextSize),
+      titleTextColor: _themeColor(variables, 'pieTitleTextColor', defaults.pie.titleTextColor),
+      sectionTextSize: _themeDouble(variables, 'pieSectionTextSize', defaults.pie.sectionTextSize),
+      sectionTextColor: _themeColor(variables, 'pieSectionTextColor', textOverride ?? defaults.pie.sectionTextColor),
+      legendTextSize: _themeDouble(variables, 'pieLegendTextSize', defaults.pie.legendTextSize),
+      legendTextColor: _themeColor(variables, 'pieLegendTextColor', defaults.pie.legendTextColor),
+      strokeColor: _themeColor(variables, 'pieStrokeColor', defaults.pie.strokeColor),
+      strokeWidth: _themeDouble(variables, 'pieStrokeWidth', defaults.pie.strokeWidth),
+      outerStrokeWidth: _themeDouble(variables, 'pieOuterStrokeWidth', defaults.pie.outerStrokeWidth),
+      outerStrokeColor: _themeColor(variables, 'pieOuterStrokeColor', defaults.pie.outerStrokeColor),
+      opacity: _themeDouble(variables, 'pieOpacity', defaults.pie.opacity),
+    ),
+    radar: RadarTheme(
+      axisColor: _nestedThemeColor(radar, 'axisColor', lineOverride ?? defaults.radar.axisColor),
+      axisStrokeWidth: _nestedThemeDouble(radar, 'axisStrokeWidth', defaults.radar.axisStrokeWidth),
+      axisLabelFontSize: _nestedThemeDouble(radar, 'axisLabelFontSize', defaults.radar.axisLabelFontSize),
+      curveOpacity: _nestedThemeDouble(radar, 'curveOpacity', defaults.radar.curveOpacity),
+      curveStrokeWidth: _nestedThemeDouble(radar, 'curveStrokeWidth', defaults.radar.curveStrokeWidth),
+      graticuleColor: _nestedThemeColor(radar, 'graticuleColor', defaults.radar.graticuleColor),
+      graticuleStrokeWidth: _nestedThemeDouble(radar, 'graticuleStrokeWidth', defaults.radar.graticuleStrokeWidth),
+      graticuleOpacity: _nestedThemeDouble(radar, 'graticuleOpacity', defaults.radar.graticuleOpacity),
+      legendBoxSize: _nestedThemeDouble(radar, 'legendBoxSize', defaults.radar.legendBoxSize),
+      legendFontSize: _nestedThemeDouble(radar, 'legendFontSize', defaults.radar.legendFontSize),
+    ),
+    wardley: WardleyTheme(
+      backgroundColor: _nestedThemeColor(
+        wardley,
+        'backgroundColor',
+        backgroundOverride ?? defaults.wardley.backgroundColor,
+      ),
+      axisColor: _nestedThemeColor(wardley, 'axisColor', lineOverride ?? defaults.wardley.axisColor),
+      axisTextColor: _nestedThemeColor(wardley, 'axisTextColor', primaryTextOverride ?? defaults.wardley.axisTextColor),
+      gridColor: _nestedThemeColor(wardley, 'gridColor', defaults.wardley.gridColor),
+      componentFill: _nestedThemeColor(wardley, 'componentFill', backgroundOverride ?? defaults.wardley.componentFill),
+      componentStroke: _nestedThemeColor(wardley, 'componentStroke', lineOverride ?? defaults.wardley.componentStroke),
+      componentLabelColor: _nestedThemeColor(
+        wardley,
+        'componentLabelColor',
+        primaryTextOverride ?? defaults.wardley.componentLabelColor,
+      ),
+      linkStroke: _nestedThemeColor(wardley, 'linkStroke', lineOverride ?? defaults.wardley.linkStroke),
+      evolutionStroke: _nestedThemeColor(wardley, 'evolutionStroke', defaults.wardley.evolutionStroke),
+      annotationStroke: _nestedThemeColor(
+        wardley,
+        'annotationStroke',
+        lineOverride ?? defaults.wardley.annotationStroke,
+      ),
+      annotationTextColor: _nestedThemeColor(
+        wardley,
+        'annotationTextColor',
+        primaryTextOverride ?? defaults.wardley.annotationTextColor,
+      ),
+      annotationFill: _nestedThemeColor(
+        wardley,
+        'annotationFill',
+        backgroundOverride ?? defaults.wardley.annotationFill,
+      ),
+    ),
+  );
+}
+
+Object? _validatedThemeColor(String value) {
+  final trimmed = value.trim();
+  return _fixtureHexColor.hasMatch(trimmed) ? trimmed : null;
+}
+
+Object? _validatedThemeNumber(String key, Object value) {
+  final parsed = _cssNumber(value);
+  if (parsed == null || parsed < 0 || (key == 'THEME_COLOR_LIMIT' && parsed != parsed.roundToDouble())) return null;
+  return value is String ? value.trim() : value;
+}
+
+Map<String, Object>? _validatedNestedTheme(String name, Map<String, Object?> values) {
+  if (values.isEmpty) return null;
+  final colors = _nestedThemeColorKeys[name]!;
+  final numbers = _nestedThemeNumberKeys[name]!;
+  final result = <String, Object>{};
+  for (final MapEntry(:key, :value) in values.entries) {
+    final validated = switch (value) {
+      final String color when colors.contains(key) => _validatedThemeColor(color),
+      final Object number when numbers.contains(key) => _validatedThemeNumber(key, number),
+      _ => null,
+    };
+    if (validated == null) return null;
+    result[key] = validated;
+  }
+  return Map.unmodifiable(result);
+}
+
+Map<String, Object> _nestedTheme(Map<String, Object> variables, String key) =>
+    variables[key] as Map<String, Object>? ?? const {};
+
+double? _cssNumber(Object? value) => switch (value) {
+  final num number => number.toDouble(),
+  final String text => double.tryParse(text.trim().replaceFirst(RegExp(r'px$'), '')),
+  _ => null,
+};
+
+double _themeDouble(Map<String, Object> values, String key, double fallback) => _cssNumber(values[key]) ?? fallback;
+
+int _themeInt(Map<String, Object> values, String key, int fallback) => _cssNumber(values[key])?.round() ?? fallback;
+
+Color? _themeOptionalColor(Map<String, Object> values, String key) => switch (values[key]) {
+  final String color => _fixtureColor(color),
+  _ => null,
+};
+
+Color _themeColor(Map<String, Object> values, String key, Color fallback) =>
+    _themeOptionalColor(values, key) ?? fallback;
+
+double _nestedThemeDouble(Map<String, Object> values, String key, double fallback) =>
+    _cssNumber(values[key]) ?? fallback;
+
+Color _nestedThemeColor(Map<String, Object> values, String key, Color fallback) =>
+    _themeOptionalColor(values, key) ?? fallback;
+
+final _dropShadowPattern = RegExp(
+  r'^drop-shadow\(\s*(-?\d+(?:\.\d+)?)px\s+(-?\d+(?:\.\d+)?)px\s+(\d+(?:\.\d+)?)px\s+(#[0-9a-f]{3,8})\s*\)$',
+  caseSensitive: false,
+);
+
+ThemeShadow? _themeShadow(String value) {
+  final match = _dropShadowPattern.firstMatch(value.trim());
+  if (match == null || !_fixtureHexColor.hasMatch(match.group(4)!)) return null;
+  return ThemeShadow(
+    offsetX: double.parse(match.group(1)!),
+    offsetY: double.parse(match.group(2)!),
+    blurRadius: double.parse(match.group(3)!),
+    color: _fixtureColor(match.group(4)!),
   );
 }
 

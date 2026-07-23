@@ -7,6 +7,18 @@
       "source": "architecture-beta\ngroup cloud(cloud)[Cloud]\nservice api(server)[API] in cloud\nservice db(database)[Database] in cloud\napi:R --> L:db\n"
     },
     {
+      "id": "architecture-theme-variables",
+      "type": "architecture",
+      "source": "architecture-beta\ngroup cloud(cloud)[Cloud]\nservice api(server)[API] in cloud\nservice db(database)[Database] in cloud\napi:R --> L:db\n",
+      "themeVariables": {
+        "archEdgeColor": "#123456",
+        "archEdgeArrowColor": "#654321",
+        "archEdgeWidth": 5,
+        "archGroupBorderColor": "#345678",
+        "archGroupBorderWidth": "4px"
+      }
+    },
+    {
       "id": "architecture-external-gateway",
       "type": "architecture",
       "source": "architecture-beta\ngroup api(cloud)[API]\nservice db(database)[Database] in api\nservice disk1(disk)[Storage] in api\nservice disk2(disk)[Storage] in api\nservice server(server)[Server] in api\nservice gateway(internet)[Gateway]\ndb:L -- R:server\ndisk1:T -- B:server\ndisk2:T -- B:db\nserver:T -- B:gateway\n"
@@ -166,6 +178,25 @@
         "Update": { "width": 116, "height": 20 },
         "Updated\n\na: b": { "width": 204.33333333333334, "height": 60 },
         "Items": { "width": 103, "height": 20 }
+      }
+    },
+    {
+      "id": "event-modeling-theme-variables",
+      "type": "eventmodeling",
+      "source": "eventmodeling\ntimeframe 01 command Cart.Update\ntimeframe 02 event Cart.Updated\n",
+      "themeVariables": {
+        "emCommandFill": "#123456",
+        "emCommandStroke": "#345678",
+        "emEventFill": "#56789a",
+        "emEventStroke": "#789abc",
+        "emSwimlaneBackgroundOdd": "#abcdef",
+        "emSwimlaneBackgroundStroke": "#fedcba",
+        "emArrowhead": "#135790",
+        "emRelationStroke": "#246801"
+      },
+      "textMeasurements": {
+        "Update": { "width": 116, "height": 20 },
+        "Updated": { "width": 125, "height": 20 }
       }
     },
     {
@@ -367,6 +398,25 @@
       "id": "radar-comparison",
       "type": "radar",
       "source": "radar-beta\naxis speed[\"Speed\"], quality, cost[\"Cost\"]\ncurve current[\"Current\"] { 3, 4, 2 }\n"
+    },
+    {
+      "id": "radar-theme-variables",
+      "type": "radar",
+      "source": "radar-beta\naxis speed[\"Speed\"], quality, cost[\"Cost\"]\ncurve current[\"Current\"] { 3, 4, 2 }\n",
+      "themeVariables": {
+        "radar": {
+          "axisColor": "#123456",
+          "axisStrokeWidth": 4,
+          "axisLabelFontSize": 15,
+          "curveOpacity": 0.65,
+          "curveStrokeWidth": 5,
+          "graticuleColor": "#654321",
+          "graticuleStrokeWidth": 3,
+          "graticuleOpacity": 0.45,
+          "legendBoxSize": 16,
+          "legendFontSize": 14
+        }
+      }
     },
     {
       "id": "radar-custom-geometry",
@@ -587,6 +637,27 @@
       "id": "wardley-components",
       "type": "wardley",
       "source": "wardley-beta\ncomponent API [0.6, 0.5]\ncomponent Database [0.3, 0.8]\nAPI -> Database\n"
+    },
+    {
+      "id": "wardley-theme-variables",
+      "type": "wardley",
+      "source": "wardley-beta\ntitle Platform Map\nanchor User [0.9, 0.1]\ncomponent API [0.6, 0.5]\nUser -> API\n",
+      "themeVariables": {
+        "wardley": {
+          "backgroundColor": "#f0f1f2",
+          "axisColor": "#123456",
+          "axisTextColor": "#234567",
+          "gridColor": "#345678",
+          "componentFill": "#456789",
+          "componentStroke": "#56789a",
+          "componentLabelColor": "#6789ab",
+          "linkStroke": "#789abc",
+          "evolutionStroke": "#89abcd",
+          "annotationStroke": "#9abcde",
+          "annotationTextColor": "#abcdef",
+          "annotationFill": "#bcdef0"
+        }
+      }
     },
     {
       "id": "wardley-custom-config",
