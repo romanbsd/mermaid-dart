@@ -18,6 +18,11 @@ const _sequenceMessageRowPadding = 11.0;
 const _sequenceActorLifelineOffset = 80.0;
 const _sequenceActorHeadRadius = 15.0;
 const _sequenceActorFigureWidth = 36.0;
+// Mermaid's UML participant symbols use a 22px radius for boundary, control,
+// and entity figures in sequence diagrams.
+const _sequenceParticipantSymbolRadius = 22.0;
+// Mermaid offsets the second rectangle in a collections participant by 6px.
+const _sequenceCollectionsOffset = 6.0;
 const _sequenceNumberRadius = 6.0;
 const _sequenceActivationStartOffset = 2.0;
 const _sequenceFrameNotchTop = 13.0;
@@ -211,6 +216,9 @@ List<SceneElement> _sequenceParticipant(
   _LayoutContext context,
   SceneTextStyle style,
 ) {
+  final fill = SolidFill(context.options.theme.primary);
+  final link = participant.links.values.firstOrNull;
+  final classes = ['sequence-participant', 'sequence-participant-${participant.kind.name}'];
   if (participant.kind == SequenceParticipantKind.actor) {
     final border = SceneStroke(color: context.options.theme.primaryBorder, width: _sequenceLineWidth);
     final halfWidth = _sequenceActorFigureWidth / 2;
@@ -265,31 +273,207 @@ List<SceneElement> _sequenceParticipant(
       ),
     ];
   }
+  final border = SceneStroke(color: context.options.theme.primaryBorder);
   final bounds = Bounds(left: centerX - width / 2, top: top, width: width, height: config.actorHeight);
-  final link = participant.links.values.firstOrNull;
-  return [
-    SceneRect(
-      id: context.id('sequence-participant'),
-      bounds: bounds,
-      radiusX: 3,
-      radiusY: 3,
-      fill: SolidFill(context.options.theme.primary),
-      stroke: SceneStroke(color: context.options.theme.primaryBorder),
-      role: SemanticRole.node,
-      cssClasses: ['sequence-participant', 'sequence-participant-${participant.kind.name}'],
-      label: participant.label,
-    ),
+  final symbolCenterY = top + _sequenceParticipantSymbolRadius;
+  final symbolLabelY = top + config.actorHeight - 2;
+
+  List<SceneElement> withLabel(List<SceneElement> geometry) => [
+    ...geometry,
     _text(
       context,
       participant.label,
       centerX,
-      top + config.actorHeight / 2,
+      participant.kind == SequenceParticipantKind.participant ? top + config.actorHeight / 2 : symbolLabelY,
       anchor: TextAnchor.middle,
       style: style,
       link: link,
       cssClasses: const ['sequence-participant-label'],
     ),
   ];
+
+  switch (participant.kind) {
+    case SequenceParticipantKind.actor:
+      throw StateError('Actor participants are handled above.');
+    case SequenceParticipantKind.participant:
+      return withLabel([
+        SceneRect(
+          id: context.id('sequence-participant'),
+          bounds: bounds,
+          radiusX: 3,
+          radiusY: 3,
+          fill: fill,
+          stroke: border,
+          role: SemanticRole.node,
+          cssClasses: classes,
+          label: participant.label,
+        ),
+      ]);
+    case SequenceParticipantKind.collections:
+      final shadowBounds = Bounds(
+        left: bounds.left - _sequenceCollectionsOffset,
+        top: bounds.top + _sequenceCollectionsOffset,
+        width: bounds.width,
+        height: bounds.height - _sequenceCollectionsOffset,
+      );
+      return withLabel([
+        SceneRect(
+          id: context.id('sequence-collections-shadow'),
+          bounds: shadowBounds,
+          fill: fill,
+          stroke: border,
+          cssClasses: classes,
+        ),
+        SceneRect(
+          id: context.id('sequence-participant'),
+          bounds: bounds,
+          fill: fill,
+          stroke: border,
+          role: SemanticRole.node,
+          cssClasses: classes,
+          label: participant.label,
+        ),
+      ]);
+    case SequenceParticipantKind.boundary:
+      final radius = _sequenceParticipantSymbolRadius;
+      return withLabel([
+        SceneLine(
+          id: context.id('sequence-boundary-stem'),
+          start: Point(centerX - radius * 2.5, symbolCenterY),
+          end: Point(centerX - radius, symbolCenterY),
+          stroke: border,
+          cssClasses: classes,
+        ),
+        SceneLine(
+          id: context.id('sequence-boundary-bar'),
+          start: Point(centerX - radius * 2.5, symbolCenterY - 10),
+          end: Point(centerX - radius * 2.5, symbolCenterY + 10),
+          stroke: border,
+          cssClasses: classes,
+        ),
+        SceneCircle(
+          id: context.id('sequence-participant'),
+          center: Point(centerX, symbolCenterY),
+          radius: radius,
+          fill: fill,
+          stroke: border,
+          role: SemanticRole.node,
+          cssClasses: classes,
+          label: participant.label,
+        ),
+      ]);
+    case SequenceParticipantKind.control:
+      final radius = _sequenceParticipantSymbolRadius;
+      return withLabel([
+        SceneCircle(
+          id: context.id('sequence-participant'),
+          center: Point(centerX, symbolCenterY),
+          radius: radius,
+          fill: fill,
+          stroke: border,
+          role: SemanticRole.node,
+          cssClasses: classes,
+          label: participant.label,
+        ),
+        ScenePath(
+          id: context.id('sequence-control-arrow'),
+          commands: [
+            MoveTo(Point(centerX - radius / 2, symbolCenterY - radius)),
+            ArcTo(
+              radiusX: radius,
+              radiusY: radius,
+              largeArc: true,
+              end: Point(centerX + radius / 2, symbolCenterY - radius),
+            ),
+            LineTo(Point(centerX + radius / 2 - 5, symbolCenterY - radius - 3)),
+          ],
+          stroke: border,
+          cssClasses: classes,
+        ),
+      ]);
+    case SequenceParticipantKind.entity:
+      final radius = _sequenceParticipantSymbolRadius;
+      return withLabel([
+        SceneCircle(
+          id: context.id('sequence-participant'),
+          center: Point(centerX, symbolCenterY),
+          radius: radius,
+          fill: fill,
+          stroke: border,
+          role: SemanticRole.node,
+          cssClasses: classes,
+          label: participant.label,
+        ),
+        SceneLine(
+          id: context.id('sequence-entity-underline'),
+          start: Point(centerX - radius, symbolCenterY + radius),
+          end: Point(centerX + radius, symbolCenterY + radius),
+          stroke: border,
+          cssClasses: classes,
+        ),
+      ]);
+    case SequenceParticipantKind.database:
+      final cylinderWidth = width / 3;
+      final cylinderHeight = width / 3;
+      final left = centerX - cylinderWidth / 2;
+      final right = centerX + cylinderWidth / 2;
+      final radiusY = cylinderWidth / 2 / (2.5 + cylinderWidth / 50);
+      return withLabel([
+        ScenePath(
+          id: context.id('sequence-participant'),
+          commands: [
+            MoveTo(Point(left, top + radiusY)),
+            ArcTo(radiusX: cylinderWidth / 2, radiusY: radiusY, end: Point(right, top + radiusY)),
+            ArcTo(radiusX: cylinderWidth / 2, radiusY: radiusY, end: Point(left, top + radiusY)),
+            LineTo(Point(left, top + cylinderHeight - radiusY)),
+            ArcTo(
+              radiusX: cylinderWidth / 2,
+              radiusY: radiusY,
+              clockwise: false,
+              end: Point(right, top + cylinderHeight - radiusY),
+            ),
+            LineTo(Point(right, top + radiusY)),
+          ],
+          fill: fill,
+          stroke: border,
+          role: SemanticRole.node,
+          cssClasses: classes,
+          label: participant.label,
+        ),
+      ]);
+    case SequenceParticipantKind.queue:
+      final radiusY = config.actorHeight / 2;
+      final radiusX = radiusY / (2.5 + config.actorHeight / 50);
+      final left = bounds.left + radiusX;
+      final right = bounds.right - radiusX;
+      return withLabel([
+        ScenePath(
+          id: context.id('sequence-participant'),
+          commands: [
+            MoveTo(Point(left, top)),
+            LineTo(Point(right, top)),
+            ArcTo(radiusX: radiusX, radiusY: radiusY, end: Point(right, top + config.actorHeight)),
+            LineTo(Point(left, top + config.actorHeight)),
+            ArcTo(radiusX: radiusX, radiusY: radiusY, clockwise: false, end: Point(left, top)),
+            ClosePath(),
+          ],
+          fill: fill,
+          stroke: border,
+          role: SemanticRole.node,
+          cssClasses: classes,
+          label: participant.label,
+        ),
+        ScenePath(
+          id: context.id('sequence-queue-rim'),
+          commands: [
+            MoveTo(Point(right, top)),
+            ArcTo(radiusX: radiusX, radiusY: radiusY, end: Point(right, top + config.actorHeight)),
+          ],
+          stroke: border,
+          cssClasses: classes,
+        ),
+      ]);
+  }
 }
 
 final class _SequenceLayoutBuilder {

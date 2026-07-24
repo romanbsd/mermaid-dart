@@ -59,6 +59,48 @@ deactivate API
       );
       expect(mirrored.bounds.width, greaterThan(unmirrored.bounds.width));
     });
+
+    test('renders Mermaid participant shape matrix as distinct geometry', () {
+      final scene = layoutDiagram(
+        parse(DiagramType.sequence, '''
+sequenceDiagram
+participant P as Participant
+actor A as Actor
+participant B@{ type: boundary }
+participant C@{ type: control }
+participant E@{ type: entity }
+participant D@{ type: database }
+participant L@{ type: collections }
+participant Q@{ type: queue }
+'''),
+        options: const RenderOptions(padding: 0, sequence: SequenceRenderOptions(mirrorActors: false)),
+      );
+      final elements = _flatten(scene.elements).toList();
+
+      for (final kind in SequenceParticipantKind.values) {
+        expect(
+          elements.where((element) => element.cssClasses.contains('sequence-participant-${kind.name}')),
+          isNotEmpty,
+          reason: 'missing ${kind.name} geometry',
+        );
+      }
+      expect(
+        elements
+            .where((element) => element.cssClasses.contains('sequence-participant-collections'))
+            .whereType<SceneRect>(),
+        hasLength(2),
+      );
+      expect(
+        elements
+            .where((element) => element.cssClasses.contains('sequence-participant-database'))
+            .whereType<ScenePath>(),
+        isNotEmpty,
+      );
+      expect(
+        elements.where((element) => element.cssClasses.contains('sequence-participant-queue')).whereType<ScenePath>(),
+        isNotEmpty,
+      );
+    });
   });
 }
 

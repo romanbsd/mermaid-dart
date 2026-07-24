@@ -573,8 +573,10 @@ List<SceneElement> _flowchartEdgeElements(
       ? _graphBasisPath([start, middle, pathEnd])
       : <PathCommand>[MoveTo(start), LineTo(middle), LineTo(beforeEnd), LineTo(pathEnd)];
   final stroke = SceneStroke(
-    color: context.options.theme.line,
-    width: edge.stroke == FlowchartEdgeStroke.thick ? config.edgeWidth * 3.5 : config.edgeWidth,
+    color: _flowchartColor(edge.styles['stroke']) ?? context.options.theme.line,
+    width:
+        double.tryParse(edge.styles['stroke-width']?.replaceFirst('px', '') ?? '') ??
+        (edge.stroke == FlowchartEdgeStroke.thick ? config.edgeWidth * 3.5 : config.edgeWidth),
     dashes: edge.stroke == FlowchartEdgeStroke.dotted ? const [2] : const [0],
     join: StrokeJoin.miter,
   );

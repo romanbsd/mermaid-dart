@@ -62,14 +62,14 @@ final class _StateParser {
       final classAssignment = parseGraphClassAssignment(text);
       if (classAssignment != null) {
         for (final id in classAssignment.ids) {
-          mergeCssClasses(_state(scope, id).cssClasses, classAssignment.cssClasses);
+          mergeCssClasses((_findState(scope, id) ?? _state(scope, id)).cssClasses, classAssignment.cssClasses);
         }
         continue;
       }
       final style = parseGraphStyleAssignment(text);
       if (style != null) {
         for (final id in style.ids) {
-          _state(scope, id).styles.addAll(style.styles);
+          (_findState(scope, id) ?? _state(scope, id)).styles.addAll(style.styles);
         }
         continue;
       }
@@ -177,6 +177,23 @@ final class _StateParser {
     final state = _MutableState(id, label ?? id, type ?? StateType.normal);
     scope.states[id] = state;
     return state;
+  }
+
+  _MutableState? _findState(_StateScope scope, String rawId) {
+    final id = unquoteGraphText(rawId.trim());
+    if (scope.states[id] case final state?) return state;
+    for (final state in scope.states.values) {
+      if (_findStateInChildren(state, id) case final nested?) return nested;
+    }
+    return null;
+  }
+
+  _MutableState? _findStateInChildren(_MutableState state, String id) {
+    for (final child in state.children) {
+      if (child.id == id) return child;
+      if (_findStateInChildren(child, id) case final nested?) return nested;
+    }
+    return null;
   }
 }
 

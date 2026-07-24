@@ -14,6 +14,7 @@ FlowchartAst parseFlowchart(String source) {
   final classDefinitions = <String, Map<String, String>>{};
   final classAssignments = <({List<String> ids, List<String> classes})>[];
   final styles = <String, Map<String, String>>{};
+  final linkStyles = <({List<int>? indices, Map<String, String> properties})>[];
   var direction = FlowchartDirection.topDown;
   var directionRead = false;
 
@@ -92,6 +93,20 @@ FlowchartAst parseFlowchart(String source) {
       styles[body.substring(0, separator)] = _parseStyleProperties(body.substring(separator + 1));
       continue;
     }
+    if (text.startsWith('linkStyle ')) {
+      final body = text.substring('linkStyle '.length).trim();
+      final separator = body.indexOf(RegExp(r'\s'));
+      if (separator < 0) throwParseError(source, 'Expected link style properties', statementOffset);
+      final selector = body.substring(0, separator);
+      final indices = selector == 'default'
+          ? null
+          : _commaSeparated(selector).map(int.tryParse).whereType<int>().toList();
+      if (indices != null && indices.isEmpty) {
+        throwParseError(source, 'Expected link indexes or default', statementOffset);
+      }
+      linkStyles.add((indices: indices, properties: _parseStyleProperties(body.substring(separator + 1))));
+      continue;
+    }
 
     final chain = _parseFlowchartChain(source, text, statementOffset);
     for (final node in chain.nodes) {
@@ -114,10 +129,27 @@ FlowchartAst parseFlowchart(String source) {
     (nodes[id] ??= _MutableFlowchartNode(id: id, label: id)).styles.addAll(properties);
   }
 
+  final styledEdges = <FlowchartEdgeAst>[
+    for (final (index, edge) in edges.indexed)
+      FlowchartEdgeAst(
+        from: edge.from,
+        to: edge.to,
+        id: edge.id,
+        label: edge.label,
+        stroke: edge.stroke,
+        startMarker: edge.startMarker,
+        endMarker: edge.endMarker,
+        length: edge.length,
+        styles: Map.unmodifiable({
+          for (final assignment in linkStyles)
+            if (assignment.indices == null || assignment.indices!.contains(index)) ...assignment.properties,
+        }),
+      ),
+  ];
   return FlowchartAst(
     direction: direction,
     nodes: List.unmodifiable(nodes.values.map((node) => node.freeze())),
-    edges: List.unmodifiable(edges),
+    edges: List.unmodifiable(styledEdges),
     subgraphs: List.unmodifiable(subgraphs.map((subgraph) => subgraph.freeze())),
     classDefinitions: Map.unmodifiable({
       for (final MapEntry(key: name, value: properties) in classDefinitions.entries)
@@ -253,15 +285,20 @@ _MutableFlowchartSubgraph _parseSubgraph(String source, String value, int offset
     ('{', '}', FlowchartNodeShape.diamond),
     ('>', ']', FlowchartNodeShape.asymmetric),
   ];
+  var matchedOpening = false;
   for (final (opening, closing, candidateShape) in delimiters) {
     if (!text.startsWith(opening, cursor)) continue;
+    matchedOpening = true;
     final end = _flowchartClosing(text, cursor + opening.length, closing);
-    if (end < 0) throwParseError(source, 'Unterminated Flowchart node', offset + cursor);
-    label = _unquoteFlowchart(text.substring(cursor + opening.length, end).trim());
+    if (end < 0) continue;
+    label = _flowchartLabel(text.substring(cursor + opening.length, end).trim());
     shape = candidateShape;
     explicitShape = true;
     cursor = end + closing.length;
     break;
+  }
+  if (matchedOpening && !explicitShape) {
+    throwParseError(source, 'Unterminated Flowchart node', offset + cursor);
   }
 
   final cssClasses = <String>[];
@@ -391,6 +428,13 @@ String _unquoteFlowchart(String value) {
     return decodeQuotedString(value);
   }
   return value;
+}
+
+String _flowchartLabel(String value) {
+  final label = _unquoteFlowchart(value);
+  return label.length >= 2 && label.startsWith('`') && label.endsWith('`')
+      ? label.substring(1, label.length - 1)
+      : label;
 }
 
 List<String> _commaSeparated(String value) =>

@@ -84,6 +84,49 @@ end note
       );
     });
 
+    test('parses composites, forks, joins, concurrency, notes, and styling', () {
+      final ast =
+          parse(DiagramType.stateDiagram, '''
+stateDiagram-v2
+state Workflow {
+  direction LR
+  [*] --> Fork
+  state Fork <<fork>>
+  Fork --> First
+  Fork --> Second
+  --
+  state Join <<join>>
+  First --> Join
+  Second --> Join
+  Join --> [*]
+}
+note left of Workflow
+Concurrent processing
+with a synchronized join
+end note
+classDef active fill:#eef,stroke:#446,color:#113
+class Workflow,First,Second active
+''')
+              as StateDiagramAst;
+
+      final workflow = ast.states.singleWhere((state) => state.id == 'Workflow');
+      expect(workflow.direction, GraphDirection.leftRight);
+      expect(
+        workflow.children.map((state) => state.type),
+        containsAll([StateType.start, StateType.fork, StateType.divider, StateType.join, StateType.end]),
+      );
+      expect(workflow.note?.position, StateNotePosition.left);
+      expect(workflow.note?.text, 'Concurrent processing<br>with a synchronized join');
+      expect(workflow.cssClasses, ['active']);
+      expect(
+        workflow.children
+            .where((state) => state.id == 'First' || state.id == 'Second')
+            .every((state) => state.cssClasses.contains('active')),
+        isTrue,
+      );
+      expect(ast.classDefinitions['active'], {'fill': '#eef', 'stroke': '#446', 'color': '#113'});
+    });
+
     test('reports an unterminated composite state at its declaration', () {
       expect(
         () => parse(DiagramType.stateDiagram, 'stateDiagram-v2\nstate Open {\n  [*] --> A\n'),

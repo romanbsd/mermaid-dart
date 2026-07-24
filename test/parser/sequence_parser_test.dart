@@ -119,6 +119,122 @@ B--xA: Done
       ]);
     });
 
+    test('parses Mermaid participant shape matrix', () {
+      final ast =
+          parse(DiagramType.sequence, '''
+sequenceDiagram
+participant P as Participant
+actor A as Actor
+participant B@{ type: boundary }
+participant C@{ type: control }
+participant E@{ type: entity }
+participant D@{ type: database }
+participant L@{ type: collections }
+participant Q@{ type: queue }
+''')
+              as SequenceAst;
+
+      expect(ast.participants.map((participant) => participant.kind), SequenceParticipantKind.values);
+    });
+
+    test('parses every Mermaid frame kind and nested frame sections', () {
+      final ast =
+          parse(DiagramType.sequence, '''
+sequenceDiagram
+participant A
+participant B
+loop retry
+  opt cached
+    A->>B: loop and opt
+  end
+end
+alt yes
+  A->>B: yes
+else no
+  B-->>A: no
+end
+par first
+  A->>B: first
+and second
+  B->>A: second
+end
+par_over overlap
+  A->>B: overlap
+and other
+  B->>A: other
+end
+critical must succeed
+  A->>B: primary
+option fallback
+  B->>A: fallback
+end
+break stop now
+  A-xB: stopped
+end
+rect rgb(240, 240, 255)
+  A->>B: highlighted
+end
+''')
+              as SequenceAst;
+
+      expect(ast.statements.whereType<SequenceBlockAst>().map((block) => block.kind), [
+        SequenceBlockKind.loop,
+        SequenceBlockKind.alt,
+        SequenceBlockKind.par,
+        SequenceBlockKind.parOver,
+        SequenceBlockKind.critical,
+        SequenceBlockKind.breakBlock,
+      ]);
+      final loop = ast.statements.first as SequenceBlockAst;
+      expect(
+        loop.sections.single.statements.single,
+        isA<SequenceBlockAst>().having((block) => block.kind, 'kind', SequenceBlockKind.opt),
+      );
+      expect((ast.statements[1] as SequenceBlockAst).sections, hasLength(2));
+      expect((ast.statements[2] as SequenceBlockAst).sections, hasLength(2));
+      expect((ast.statements[3] as SequenceBlockAst).sections, hasLength(2));
+      expect((ast.statements[4] as SequenceBlockAst).sections, hasLength(2));
+      expect(ast.statements.last, isA<SequenceRectAst>());
+    });
+
+    test('parses wrapping, numbering, notes, activations, and lifecycle', () {
+      final ast =
+          parse(DiagramType.sequence, '''
+sequenceDiagram
+autonumber 10 10
+participant A
+Note left of A: wrap: A deliberately long note
+create participant B
+A->>+B: wrap: Create a deliberately long-lived worker
+Note over A,B: nowrap: Shared note
+B-->>-A: Complete
+destroy B
+B--xA: Gone
+''')
+              as SequenceAst;
+
+      expect(ast.autoNumber, const SequenceAutoNumberAst(start: 10, step: 10));
+      expect(ast.participants.last.createdAt, 0);
+      expect(ast.participants.last.destroyedAt, 2);
+      expect(ast.statements.whereType<SequenceNoteAst>().map((note) => note.text), [
+        'A deliberately long note',
+        'Shared note',
+      ]);
+      expect(ast.statements.whereType<SequenceMessageAst>().map((message) => message.text), [
+        'Create a deliberately long-lived worker',
+        'Complete',
+        'Gone',
+      ]);
+      expect(
+        ast.statements.whereType<SequenceMessageAst>().first,
+        isA<SequenceMessageAst>().having((message) => message.activateTarget, 'activateTarget', isTrue),
+      );
+      expect(
+        ast.statements.whereType<SequenceMessageAst>().elementAt(1),
+        isA<SequenceMessageAst>().having((message) => message.deactivateSource, 'deactivateSource', isTrue),
+      );
+    });
+
     test('supports semicolon-separated statements and sequence hash comments', () {
       final ast =
           parse(

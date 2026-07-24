@@ -74,6 +74,69 @@ BUILDING {
       );
     });
 
+    test('parses every symbolic relationship cardinality combination', () {
+      const tokens = {
+        '||': ErCardinality.exactlyOne,
+        '|o': ErCardinality.zeroOrOne,
+        '|{': ErCardinality.oneOrMore,
+        'o{': ErCardinality.zeroOrMore,
+        'u': ErCardinality.parent,
+      };
+      const mirroredTokens = {
+        '||': ErCardinality.exactlyOne,
+        'o|': ErCardinality.zeroOrOne,
+        '}|': ErCardinality.oneOrMore,
+        '}o': ErCardinality.zeroOrMore,
+        'u': ErCardinality.parent,
+      };
+      final lines = <String>[];
+      for (final left in tokens.keys) {
+        for (final right in mirroredTokens.keys) {
+          lines.add('LEFT_${lines.length} $left--$right RIGHT_${lines.length} : relates');
+        }
+      }
+      final ast = parse(DiagramType.entityRelationship, 'erDiagram\n${lines.join('\n')}') as ErDiagramAst;
+
+      expect(ast.relationships, hasLength(tokens.length * mirroredTokens.length));
+      var index = 0;
+      for (final left in tokens.entries) {
+        for (final right in mirroredTokens.entries) {
+          final relationship = ast.relationships[index++];
+          expect(relationship.fromCardinality, left.value);
+          expect(relationship.toCardinality, right.value);
+          expect(relationship.identifying, isTrue);
+        }
+      }
+    });
+
+    test('parses aliases and every attribute key variant', () {
+      final ast =
+          parse(DiagramType.entityRelationship, '''
+erDiagram
+ACCOUNT["Customer Account"] {
+  uuid id PK "primary identifier"
+  string email UK
+  uuid owner_id FK
+  string region PK, FK, UK "compound key member"
+  decimal(10,2) balance
+}
+ACCOUNT ||..o{ "AUDIT EVENT" : records
+''')
+              as ErDiagramAst;
+
+      expect(ast.entities.first.label, 'Customer Account');
+      expect(ast.entities.first.attributes.map((attribute) => attribute.keys), [
+        {ErAttributeKey.primary},
+        {ErAttributeKey.unique},
+        {ErAttributeKey.foreign},
+        {ErAttributeKey.primary, ErAttributeKey.foreign, ErAttributeKey.unique},
+        <ErAttributeKey>{},
+      ]);
+      expect(ast.entities.first.attributes.first.comment, 'primary identifier');
+      expect(ast.relationships.single.identifying, isFalse);
+      expect(ast.entities.last.id, 'AUDIT EVENT');
+    });
+
     test('reports malformed attributes with a source location', () {
       expect(
         () => parse(DiagramType.entityRelationship, 'erDiagram\nUSER {\n  string\n}\n'),

@@ -119,6 +119,48 @@ end
       expect(ast.subgraphs.single.nodeIds, ['Gateway', 'API', 'Database']);
     });
 
+    test('ports the upstream shape, chain, link-style, and markdown matrix', () {
+      const shapes = {
+        'A[Rectangle]': FlowchartNodeShape.rectangle,
+        'A(Rounded)': FlowchartNodeShape.rounded,
+        'A([Stadium])': FlowchartNodeShape.stadium,
+        'A[[Subroutine]]': FlowchartNodeShape.subroutine,
+        'A[(Database)]': FlowchartNodeShape.cylinder,
+        'A((Circle))': FlowchartNodeShape.circle,
+        'A(((Double)))': FlowchartNodeShape.doubleCircle,
+        'A>Asymmetric]': FlowchartNodeShape.asymmetric,
+        'A{Diamond}': FlowchartNodeShape.diamond,
+        'A{{Hexagon}}': FlowchartNodeShape.hexagon,
+        'A[/Lean right/]': FlowchartNodeShape.parallelogram,
+        r'A[\Lean left\]': FlowchartNodeShape.parallelogramAlt,
+        r'A[/Trapezoid\]': FlowchartNodeShape.trapezoid,
+        r'A[\Trapezoid alt/]': FlowchartNodeShape.trapezoidAlt,
+      };
+      for (final MapEntry(key: source, value: shape) in shapes.entries) {
+        late final FlowchartAst ast;
+        try {
+          ast = parse(DiagramType.flowchart, 'flowchart LR\n$source\n') as FlowchartAst;
+        } on MermaidParseException catch (error) {
+          fail('$source: $error');
+        }
+        expect(ast.nodes.single.shape, shape, reason: source);
+      }
+
+      final ast =
+          parse(DiagramType.flowchart, '''
+flowchart LR
+A["`Markdown label`"] --> B --> C
+linkStyle default stroke-width:2px
+linkStyle 0,1 stroke:#ff0000
+''')
+              as FlowchartAst;
+
+      expect(ast.nodes.first.label, 'Markdown label');
+      expect(ast.edges, hasLength(2));
+      expect(ast.edges.first.styles, {'stroke-width': '2px', 'stroke': '#ff0000'});
+      expect(ast.edges.last.styles, {'stroke-width': '2px', 'stroke': '#ff0000'});
+    });
+
     test('reports an unterminated node with a source location', () {
       expect(
         () => parse(DiagramType.flowchart, 'flowchart TD\nA[broken --> B\n'),

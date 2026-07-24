@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:mermaid_dart/mermaid_dart.dart';
 import 'package:test/test.dart';
 
@@ -52,6 +54,31 @@ timeline
       final eventBounds = sceneElementGeometryBounds(event)!;
       expect(eventBounds.width, 310);
       expect(eventBounds.height, closeTo(32.8, 0.001));
+    });
+
+    test('tracks Mermaid.js goldens for both orientations', () {
+      final td = File('test/rendering/goldens/timeline_product_history_mermaid.svg').readAsStringSync();
+      final lr = File('test/rendering/goldens/timeline_product_history_lr_mermaid.svg').readAsStringSync();
+
+      for (final golden in [td, lr]) {
+        expect(golden, contains('aria-roledescription="timeline"'));
+        for (final label in [
+          'Product history',
+          'Discovery',
+          'Research',
+          'Interviews',
+          'Prototype',
+          'Delivery',
+          'Beta',
+          'Launch',
+        ]) {
+          expect(golden, contains(label), reason: 'missing $label');
+        }
+        expect(golden, matches(RegExp(r'Customer\s+feedback')), reason: 'missing Customer feedback');
+        expect(golden, matches(RegExp(r'General\s+availability')), reason: 'missing General availability');
+      }
+      expect(td, contains('<line x1="430" y1="18" x2="430" y2="367.5999755859375"'));
+      expect(lr, contains('<line x1="150" y1="285.6" x2="1040" y2="285.6"'));
     });
   });
 }

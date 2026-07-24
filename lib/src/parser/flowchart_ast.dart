@@ -122,6 +122,7 @@ final class FlowchartEdgeAst with _AstValueEquality {
     this.startMarker = FlowchartEdgeMarker.none,
     this.endMarker = FlowchartEdgeMarker.arrow,
     this.length = 1,
+    this.styles = const {},
   });
 
   /// Source node identifier.
@@ -148,8 +149,11 @@ final class FlowchartEdgeAst with _AstValueEquality {
   /// Mermaid's minimum-rank edge length.
   final int length;
 
+  /// Inline properties assigned with Mermaid's `linkStyle` statement.
+  final Map<String, String> styles;
+
   @override
-  List<Object?> get equalityFields => [from, to, id, label, stroke, startMarker, endMarker, length];
+  List<Object?> get equalityFields => [from, to, id, label, stroke, startMarker, endMarker, length, styles];
 }
 
 /// A flowchart subgraph and its directly declared nodes.

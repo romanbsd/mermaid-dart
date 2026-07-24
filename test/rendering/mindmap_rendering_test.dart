@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:mermaid_dart/mermaid_dart.dart';
 import 'package:test/test.dart';
 
@@ -79,6 +81,17 @@ mindmap
     expect(edges.map((edge) => edge.stroke?.width), containsAll([11, 5]));
     expect(edges.map((edge) => edge.fill), everyElement(const SolidFill(Color(255, 255, 255, 0))));
     expect(edges.map((edge) => edge.stroke?.color).toSet(), hasLength(2));
+  });
+
+  test('tracks the rich Mermaid.js force-layout golden', () {
+    final golden = File('test/rendering/goldens/mindmap_product_mermaid.svg').readAsStringSync();
+
+    expect(golden, contains('aria-roledescription="mindmap"'));
+    expect(golden, contains('class="mindmapDiagram"'));
+    for (final label in ['Product', 'Research', 'Interviews', 'Prototype', 'Launch', 'Rollout']) {
+      expect(golden, contains(label), reason: 'missing $label');
+    }
+    expect(RegExp(r'id="my-svg-edge_').allMatches(golden), hasLength(5));
   });
 }
 

@@ -94,6 +94,79 @@ class Empty <<enumeration>> {}
       expect(ast.classes.last.members, isEmpty);
     });
 
+    test('parses namespaces, annotations, and generic member matrix', () {
+      final ast =
+          parse(DiagramType.classDiagram, '''
+classDiagram
+namespace domain {
+  class Repository~T~ {
+    <<interface>>
+    +List~T~ items
+    +findById(id) T
+  }
+  class Status {
+    <<enumeration>>
+    ACTIVE
+    INACTIVE
+  }
+}
+class Service {
+  <<service>>
+  #Map~String,Repository~T~~ repositories
+  +save~T~(value T) bool
+}
+''')
+              as ClassDiagramAst;
+
+      expect(ast.namespaces.single.classIds, ['Repository~T~', 'Status']);
+      expect(ast.classes.map((entry) => entry.annotations.single), ['interface', 'enumeration', 'service']);
+      expect(ast.classes.first.members.map((member) => member.text), ['+List~T~ items', '+findById(id) T']);
+      expect(ast.classes.last.members.map((member) => member.kind), [
+        ClassMemberKind.attribute,
+        ClassMemberKind.method,
+      ]);
+    });
+
+    test('parses every relation marker, line, and cardinality variant', () {
+      final ast =
+          parse(DiagramType.classDiagram, '''
+classDiagram
+A "1" <|-- "*" B : inheritance
+A "0..1" *-- "1..*" C : composition
+A o-- D : aggregation
+A --> E : association
+A ..> F : dependency
+A ()-- G : lollipop
+H --|> A : reverse inheritance
+I --* A : reverse composition
+J --o A : reverse aggregation
+K --() A : reverse lollipop
+''')
+              as ClassDiagramAst;
+
+      expect(ast.relations, hasLength(10));
+      expect(ast.relations.take(6).map((relation) => relation.startMarker), [
+        ClassRelationMarker.extension,
+        ClassRelationMarker.composition,
+        ClassRelationMarker.aggregation,
+        ClassRelationMarker.none,
+        ClassRelationMarker.none,
+        ClassRelationMarker.lollipop,
+      ]);
+      expect(ast.relations[4].endMarker, ClassRelationMarker.dependency);
+      expect(ast.relations[4].line, ClassRelationLine.dotted);
+      expect(ast.relations.skip(6).map((relation) => relation.endMarker), [
+        ClassRelationMarker.extension,
+        ClassRelationMarker.composition,
+        ClassRelationMarker.aggregation,
+        ClassRelationMarker.lollipop,
+      ]);
+      expect(ast.relations.first.fromCardinality, '1');
+      expect(ast.relations.first.toCardinality, '*');
+      expect(ast.relations[1].fromCardinality, '0..1');
+      expect(ast.relations[1].toCardinality, '1..*');
+    });
+
     test('reports an unterminated class body at its declaration', () {
       expect(
         () => parse(DiagramType.classDiagram, 'classDiagram\nclass Broken {\n  +name\n'),
