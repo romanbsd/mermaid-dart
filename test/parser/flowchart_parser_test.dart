@@ -74,6 +74,51 @@ F <--> G
       ]);
     });
 
+    test('parses no-space arrows without consuming them as node ids', () {
+      final ast =
+          parse(DiagramType.flowchart, '''
+flowchart LR
+A-->B
+B-.->C
+C---D
+''')
+              as FlowchartAst;
+
+      expect(ast.nodes.map((node) => node.id), ['A', 'B', 'C', 'D']);
+      expect(ast.edges, const [
+        FlowchartEdgeAst(from: 'A', to: 'B'),
+        FlowchartEdgeAst(from: 'B', to: 'C', stroke: FlowchartEdgeStroke.dotted),
+        FlowchartEdgeAst(from: 'C', to: 'D', endMarker: FlowchartEdgeMarker.none),
+      ]);
+    });
+
+    test('parses inline classes on bare nodes while retaining punctuation in ids', () {
+      final ast =
+          parse(DiagramType.flowchart, '''
+flowchart LR
+source-node.v1:port --> target-node:::hot,selected
+''')
+              as FlowchartAst;
+
+      expect(ast.nodes.first.id, 'source-node.v1:port');
+      expect(
+        ast.nodes.last,
+        const FlowchartNodeAst(id: 'target-node', label: 'target-node', cssClasses: ['hot', 'selected']),
+      );
+    });
+
+    test('expands ampersand node groups on both sides of an edge', () {
+      final ast = parse(DiagramType.flowchart, 'flowchart LR\nA & B --> C & D\n') as FlowchartAst;
+
+      expect(ast.nodes.map((node) => node.id), ['A', 'B', 'C', 'D']);
+      expect(ast.edges, const [
+        FlowchartEdgeAst(from: 'A', to: 'C'),
+        FlowchartEdgeAst(from: 'A', to: 'D'),
+        FlowchartEdgeAst(from: 'B', to: 'C'),
+        FlowchartEdgeAst(from: 'B', to: 'D'),
+      ]);
+    });
+
     test('parses subgraphs, local direction, classes, and class definitions', () {
       final ast =
           parse(DiagramType.flowchart, '''

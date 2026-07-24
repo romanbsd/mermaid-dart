@@ -1,7 +1,9 @@
 import 'ast.dart';
 import 'common_syntax.dart';
 
-final _flowchartIdentifier = RegExp(r'[A-Za-z0-9_][A-Za-z0-9_.:-]*');
+// Mermaid permits punctuation in ids, but its lexer gives edge operators and
+// the inline-class marker precedence over those same characters.
+final _flowchartIdentifier = RegExp(r'[A-Za-z0-9_](?:(?!:::|--|-\.)[A-Za-z0-9_.:-])*');
 final _flowchartClassName = RegExp(r'[A-Za-z0-9_-]+');
 
 /// Parses Mermaid's classic `flowchart` and `graph` syntax.
@@ -230,33 +232,56 @@ _MutableFlowchartSubgraph _parseSubgraph(String source, String value, int offset
 ) {
   final nodes = <_ParsedFlowchartNode>[];
   final edges = <FlowchartEdgeAst>[];
-  var cursor = 0;
-  var current = _parseFlowchartNode(source, text, cursor, offset);
-  nodes.add(current.node);
-  cursor = current.end;
+  var current = _parseFlowchartNodeGroup(source, text, 0, offset);
+  nodes.addAll(current.nodes);
+  var cursor = current.end;
   while (true) {
     cursor = _skipFlowchartSpaces(text, cursor);
     if (cursor >= text.length) break;
     final parsedEdge = _parseFlowchartEdge(source, text, cursor, offset);
     cursor = _skipFlowchartSpaces(text, parsedEdge.end);
-    final next = _parseFlowchartNode(source, text, cursor, offset);
-    nodes.add(next.node);
-    edges.add(
-      FlowchartEdgeAst(
-        from: current.node.id,
-        to: next.node.id,
-        id: parsedEdge.id,
-        label: parsedEdge.label,
-        stroke: parsedEdge.stroke,
-        startMarker: parsedEdge.startMarker,
-        endMarker: parsedEdge.endMarker,
-        length: parsedEdge.length,
-      ),
-    );
+    final next = _parseFlowchartNodeGroup(source, text, cursor, offset);
+    nodes.addAll(next.nodes);
+    for (final from in current.nodes) {
+      for (final to in next.nodes) {
+        edges.add(
+          FlowchartEdgeAst(
+            from: from.id,
+            to: to.id,
+            id: parsedEdge.id,
+            label: parsedEdge.label,
+            stroke: parsedEdge.stroke,
+            startMarker: parsedEdge.startMarker,
+            endMarker: parsedEdge.endMarker,
+            length: parsedEdge.length,
+          ),
+        );
+      }
+    }
     current = next;
     cursor = next.end;
   }
   return (nodes: nodes, edges: edges);
+}
+
+({List<_ParsedFlowchartNode> nodes, int end}) _parseFlowchartNodeGroup(
+  String source,
+  String text,
+  int start,
+  int offset,
+) {
+  final nodes = <_ParsedFlowchartNode>[];
+  var parsed = _parseFlowchartNode(source, text, start, offset);
+  nodes.add(parsed.node);
+  var cursor = parsed.end;
+  while (true) {
+    final ampersand = _skipFlowchartSpaces(text, cursor);
+    if (ampersand >= text.length || text[ampersand] != '&') break;
+    parsed = _parseFlowchartNode(source, text, ampersand + 1, offset);
+    nodes.add(parsed.node);
+    cursor = parsed.end;
+  }
+  return (nodes: nodes, end: cursor);
 }
 
 ({_ParsedFlowchartNode node, int end}) _parseFlowchartNode(String source, String text, int start, int offset) {
