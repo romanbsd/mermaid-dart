@@ -15,6 +15,9 @@ enum GraphDirection {
 
   /// Whether ranks use their natural top-to-bottom or left-to-right order.
   bool get isForward => this == topDown || this == leftRight;
+
+  /// Whether ranks run from bottom or right toward top or left.
+  bool get isReversed => !isForward;
 }
 
 /// Base type for immutable syntax trees produced by Mermaid parsers.

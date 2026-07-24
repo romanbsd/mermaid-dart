@@ -258,7 +258,7 @@ List<SceneElement> _classRelationElements(
   final route = _classEdgeRoute(fromBounds, toBounds);
   final pathStart = relation.startMarker == ClassRelationMarker.none
       ? route.start
-      : _pointAlong(route.start, route.middle, _classMarkerPathOffset);
+      : pointToward(route.start, route.middle, _classMarkerPathOffset);
   final color = context.options.theme.line;
   final elements = <SceneElement>[
     ScenePath(
@@ -372,18 +372,12 @@ List<SceneElement> _classEndpointMarker(
   Point opposite, {
   required double length,
 }) {
-  final dx = opposite.x - endpoint.x;
-  final dy = opposite.y - endpoint.y;
-  final distance = math.sqrt(dx * dx + dy * dy);
-  final ux = distance == 0 ? 1.0 : dx / distance;
-  final uy = distance == 0 ? 0.0 : dy / distance;
-  final px = -uy;
-  final py = ux;
-  final middle = Point(endpoint.x + ux * length, endpoint.y + uy * length);
+  final direction = Direction.between(endpoint, opposite);
+  final middle = direction.from(endpoint, length);
   return (
-    left: Point(middle.x + px * _classMarkerHalfWidth, middle.y + py * _classMarkerHalfWidth),
-    right: Point(middle.x - px * _classMarkerHalfWidth, middle.y - py * _classMarkerHalfWidth),
-    back: Point(endpoint.x + ux * length * 2, endpoint.y + uy * length * 2),
+    left: direction.from(middle, 0, _classMarkerHalfWidth),
+    right: direction.from(middle, 0, -_classMarkerHalfWidth),
+    back: direction.from(endpoint, length * 2),
     middle: middle,
   );
 }
@@ -397,22 +391,10 @@ SceneText _classCardinality(
   List<String> cssClasses, {
   required bool source,
 }) {
-  final dx = middle.x - start.x;
-  final dy = middle.y - start.y;
-  final length = math.sqrt(dx * dx + dy * dy);
-  final ux = length == 0 ? 1.0 : dx / length;
-  final uy = length == 0 ? 0.0 : dy / length;
-  final px = -uy;
-  final py = ux;
+  final direction = Direction.between(start, middle);
   final position = source
-      ? Point(
-          start.x + ux * _classStartCardinalityAlong + px * _classStartCardinalityAcross,
-          start.y + uy * _classStartCardinalityAlong + py * _classStartCardinalityAcross,
-        )
-      : Point(
-          end.x - ux * _classEndCardinalityAlong + px * _classEndCardinalityAcross,
-          end.y - uy * _classEndCardinalityAlong + py * _classEndCardinalityAcross,
-        );
+      ? direction.from(start, _classStartCardinalityAlong, _classStartCardinalityAcross)
+      : direction.from(end, -_classEndCardinalityAlong, _classEndCardinalityAcross);
   return _text(
     context,
     value,
@@ -544,12 +526,4 @@ double _classRankMiddle(Iterable<Bounds> positions, Bounds target) {
       .map((bounds) => bounds.right)
       .fold(double.negativeInfinity, math.max);
   return precedingRight.isFinite ? (precedingRight + target.left) / 2 : target.left;
-}
-
-Point _pointAlong(Point start, Point end, double distance) {
-  final dx = end.x - start.x;
-  final dy = end.y - start.y;
-  final length = math.sqrt(dx * dx + dy * dy);
-  if (length == 0) return start;
-  return Point(start.x + dx / length * distance, start.y + dy / length * distance);
 }

@@ -1,3 +1,4 @@
+import 'package:collection/collection.dart';
 import 'package:petitparser/petitparser.dart';
 import 'package:yaml/yaml.dart';
 
@@ -201,6 +202,13 @@ Never throwParseFailure(String source, Failure failure) {
   throwParseError(source, failure.message, failure.position);
 }
 
+/// Reports a failure on the zero-based [line] of [source], for parsers that scan
+/// line by line and have no offset inside the line to point at.
+Never throwParseErrorOnLine(String source, int line, String message) {
+  final safeLine = line.clamp(0, source.split(RegExp(r'\r?\n')).length - 1);
+  throw MermaidParseException(message: message, source: source, offset: 0, line: safeLine + 1, column: 1);
+}
+
 Never throwParseError(String source, String message, int offset) {
   final location = sourceLocationAt(source, offset);
   throw MermaidParseException(
@@ -276,5 +284,51 @@ String decodeQuotedString(String lexeme) {
   }
   return value.toString();
 }
+
+/// Offsets of the non-overlapping [needle] occurrences in [value] that fall
+/// outside a quoted run.
+///
+/// A run opens and closes on any character of [quotes], and while [escapes] is
+/// set a backslash inside a run hides the character after it.
+Iterable<int> _unquotedMatches(String value, String needle, String quotes, bool escapes) sync* {
+  String? quote;
+  for (var index = 0; index < value.length; index++) {
+    final character = value[index];
+    if (quote != null) {
+      if (escapes && character == r'\') {
+        index++;
+      } else if (character == quote) {
+        quote = null;
+      }
+    } else if (quotes.contains(character)) {
+      quote = character;
+    } else if (value.startsWith(needle, index)) {
+      yield index;
+      index += needle.length - 1;
+    }
+  }
+}
+
+/// Splits [value] on every [separator] outside a quoted run.
+///
+/// Segments keep their quotes and surrounding whitespace, and empty segments are
+/// kept, so callers see exactly what the separators delimited.
+List<String> splitOutsideQuotes(String value, String separator, {String quotes = '"\'', bool escapes = true}) {
+  final result = <String>[];
+  var start = 0;
+  for (final index in _unquotedMatches(value, separator, quotes, escapes)) {
+    result.add(value.substring(start, index));
+    start = index + separator.length;
+  }
+  return result..add(value.substring(start));
+}
+
+/// The offset of the first [needle] in [value] outside a quoted run, or `-1`.
+int indexOutsideQuotes(String value, String needle, {String quotes = '"\'', bool escapes = true}) =>
+    _unquotedMatches(value, needle, quotes, escapes).firstOrNull ?? -1;
+
+/// The offset of the last [needle] in [value] outside a quoted run, or `-1`.
+int lastIndexOutsideQuotes(String value, String needle, {String quotes = '"\'', bool escapes = true}) =>
+    _unquotedMatches(value, needle, quotes, escapes).lastOrNull ?? -1;
 
 String _hideNonNewlines(String value) => value.replaceAll(RegExp(r'[^\r\n]'), ' ');

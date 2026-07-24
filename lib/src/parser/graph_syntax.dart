@@ -41,6 +41,47 @@ GraphDirection? parseGraphDirectionStatement(String source) {
   return (ids: splitQuotedList(match.group(1)!), styles: parseStyleProperties(match.group(2)!));
 }
 
+/// The style state every node of a graph-shaped diagram carries.
+abstract interface class GraphStyledNode {
+  /// The CSS classes assigned to the node.
+  List<String> get cssClasses;
+
+  /// The inline styles assigned to the node.
+  Map<String, String> get styles;
+}
+
+/// Applies the `classDef`, `class`, and `style` statements shared by graph-shaped
+/// diagrams, reporting whether [text] was one of them.
+///
+/// [node] resolves a statement's target, creating it when the statement is the
+/// first mention of that id, as upstream Mermaid does.
+bool applyGraphClassSyntax(
+  String text, {
+  required Map<String, Map<String, String>> classDefinitions,
+  required GraphStyledNode Function(String id) node,
+  bool caseSensitive = false,
+}) {
+  if (parseGraphClassDefinition(text, caseSensitive: caseSensitive) case final classDef?) {
+    for (final name in classDef.names) {
+      classDefinitions[name] = classDef.styles;
+    }
+    return true;
+  }
+  if (parseGraphClassAssignment(text, caseSensitive: caseSensitive) case final assignment?) {
+    for (final id in assignment.ids) {
+      mergeCssClasses(node(id).cssClasses, assignment.cssClasses);
+    }
+    return true;
+  }
+  if (parseGraphStyleAssignment(text, caseSensitive: caseSensitive) case final style?) {
+    for (final id in style.ids) {
+      node(id).styles.addAll(style.styles);
+    }
+    return true;
+  }
+  return false;
+}
+
 Map<String, String> parseStyleProperties(String source) {
   final result = <String, String>{};
   for (final property in source.split(',')) {

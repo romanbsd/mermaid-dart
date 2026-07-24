@@ -238,21 +238,14 @@ List<SceneElement> _erCardinalityElements(
   _LayoutContext context,
   Color color,
 ) {
-  final dx = opposite.x - endpoint.x;
-  final dy = opposite.y - endpoint.y;
-  final distance = math.sqrt(dx * dx + dy * dy);
-  final ux = distance == 0 ? 1.0 : dx / distance;
-  final uy = distance == 0 ? 0.0 : dy / distance;
-  final px = -uy;
-  final py = ux;
-  Point at(double along, [double across = 0]) =>
-      Point(endpoint.x + ux * along + px * across, endpoint.y + uy * along + py * across);
+  final direction = Direction.between(endpoint, opposite);
+  Point at(double along, [double across = 0]) => direction.from(endpoint, along, across);
   SceneLine bar(double depth) {
     final center = at(depth);
     return SceneLine(
       id: context.id('er-cardinality-bar'),
-      start: Point(center.x + px * _erMarkerHalfWidth, center.y + py * _erMarkerHalfWidth),
-      end: Point(center.x - px * _erMarkerHalfWidth, center.y - py * _erMarkerHalfWidth),
+      start: direction.from(center, 0, _erMarkerHalfWidth),
+      end: direction.from(center, 0, -_erMarkerHalfWidth),
       stroke: _graphStroke(color, 1),
       cssClasses: const ['er-cardinality', 'er-cardinality-bar'],
     );

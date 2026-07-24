@@ -374,16 +374,14 @@ _LayoutResult _layoutWardley(WardleyAst ast, _LayoutContext context) {
     final source = positions[link.sourceId];
     final target = positions[link.targetId];
     if (source == null || target == null) continue;
-    final dx = target.x - source.x;
-    final dy = target.y - source.y;
-    final distance = math.sqrt(dx * dx + dy * dy);
-    if (distance == 0) continue;
+    final direction = Direction.between(source, target);
+    if (direction.distance == 0) continue;
     final sourceNode = nodesById[link.sourceId]!;
     final targetNode = nodesById[link.targetId]!;
     final sourceRadius = sourceNode.isPipelineParent ? squareSize / math.sqrt2 : config.nodeRadius;
     final targetRadius = targetNode.isPipelineParent ? squareSize / math.sqrt2 : config.nodeRadius;
-    final start = Point(source.x + dx / distance * sourceRadius, source.y + dy / distance * sourceRadius);
-    final end = Point(target.x - dx / distance * targetRadius, target.y - dy / distance * targetRadius);
+    final start = direction.from(source, sourceRadius);
+    final end = direction.from(target, -targetRadius);
     elements.add(
       SceneLine(
         id: context.id('wardley-link'),
@@ -419,11 +417,8 @@ _LayoutResult _layoutWardley(WardleyAst ast, _LayoutContext context) {
     }
     if (link.label case final label?) {
       final midpoint = Point((source.x + target.x) / 2, (source.y + target.y) / 2);
-      final labelPoint = Point(
-        midpoint.x + dy / distance * _wardleyLinkLabelOffset,
-        midpoint.y - dx / distance * _wardleyLinkLabelOffset,
-      );
-      var labelAngle = math.atan2(dy, dx) * _wardleyHalfTurnDegrees / math.pi;
+      final labelPoint = direction.from(midpoint, 0, -_wardleyLinkLabelOffset);
+      var labelAngle = math.atan2(direction.y, direction.x) * _wardleyHalfTurnDegrees / math.pi;
       if (labelAngle > _wardleyQuarterTurnDegrees || labelAngle < -_wardleyQuarterTurnDegrees) {
         labelAngle += _wardleyHalfTurnDegrees;
       }
@@ -453,13 +448,9 @@ _LayoutResult _layoutWardley(WardleyAst ast, _LayoutContext context) {
     final origin = positions[trend.nodeId];
     if (origin == null) continue;
     final target = project(trend.targetX, trend.targetY);
-    final dx = target.x - origin.x;
-    final dy = target.y - origin.y;
-    final distance = math.sqrt(dx * dx + dy * dy);
+    final direction = Direction.between(origin, target);
     final shorten = config.nodeRadius + _wardleyTrendTargetClearance;
-    final end = distance > shorten
-        ? Point(target.x - dx / distance * shorten, target.y - dy / distance * shorten)
-        : target;
+    final end = direction.distance > shorten ? direction.from(target, -shorten) : target;
     elements.add(
       SceneLine(
         id: context.id('wardley-trend'),
@@ -470,7 +461,7 @@ _LayoutResult _layoutWardley(WardleyAst ast, _LayoutContext context) {
         cssClasses: const ['wardley-trend'],
       ),
     );
-    if (distance > 0) {
+    if (direction.distance > 0) {
       elements.add(
         _wardleyArrow(
           context,

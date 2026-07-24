@@ -67,6 +67,25 @@ C :c, 2025-01-02, 2d
     expect(byLabel['A']!.bounds.top, byLabel['B']!.bounds.top);
     expect(byLabel['C']!.bounds.top, isNot(byLabel['A']!.bounds.top));
   });
+
+  test('draws exclude ranges for date formats that carry time tokens', () {
+    final ast =
+        parse(DiagramType.gantt, '''
+gantt
+dateFormat YYYY-MM-DDTHH:mm
+todayMarker off
+excludes 2025-01-03T00:00
+section Work
+A :a, 2025-01-01T00:00, 5d
+''')
+            as GanttAst;
+    final scene = layoutDiagram(ast, options: const RenderOptions(gantt: GanttRenderOptions(useMaxWidth: false)));
+    final excluded = _flatten(
+      scene.elements,
+    ).whereType<SceneRect>().where((rect) => rect.cssClasses.contains('exclude-range'));
+
+    expect(excluded, hasLength(1));
+  });
 }
 
 Iterable<SceneElement> _flatten(Iterable<SceneElement> elements) sync* {

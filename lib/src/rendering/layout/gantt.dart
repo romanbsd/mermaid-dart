@@ -17,19 +17,7 @@ _LayoutResult _layoutGantt(GanttAst ast, _LayoutContext context) {
   final tasks = ast.tasks;
   if (tasks.isEmpty) {
     return _LayoutResult(width, options.topPadding * 2, [
-      if (ast.title case final title?)
-        _ganttText(
-          context,
-          title,
-          width / 2,
-          options.titleTopMargin,
-          fontSize: 18,
-          color: options.titleColor,
-          anchor: TextAnchor.middle,
-          baseline: TextBaseline.alphabetic,
-          role: SemanticRole.title,
-          classes: const ['titleText'],
-        ),
+      ?_ganttTitle(ast, context, options, width),
     ], bounds: Bounds(left: 0, top: 0, width: width, height: options.topPadding * 2));
   }
 
@@ -51,19 +39,7 @@ _LayoutResult _layoutGantt(GanttAst ast, _LayoutContext context) {
     ..._ganttTasks(ast, context, options, scale, rows, width, nonVertical.length),
     ..._ganttSectionLabels(ast, context, options, rows),
     ..._ganttToday(ast, context, options, scale, height),
-    if (ast.title case final title?)
-      _ganttText(
-        context,
-        title,
-        width / 2,
-        options.titleTopMargin,
-        fontSize: 18,
-        color: options.titleColor,
-        anchor: TextAnchor.middle,
-        baseline: TextBaseline.alphabetic,
-        role: SemanticRole.title,
-        classes: const ['titleText'],
-      ),
+    ?_ganttTitle(ast, context, options, width),
   ];
   return _LayoutResult(
     width,
@@ -71,6 +47,25 @@ _LayoutResult _layoutGantt(GanttAst ast, _LayoutContext context) {
     elements,
     bounds: Bounds(left: 0, top: 0, width: width, height: height),
   );
+}
+
+/// The diagram title, drawn the same way whether or not the chart has tasks.
+SceneElement? _ganttTitle(GanttAst ast, _LayoutContext context, GanttRenderOptions options, double width) {
+  if (ast.title case final title?) {
+    return _ganttText(
+      context,
+      title,
+      width / 2,
+      options.titleTopMargin,
+      fontSize: 18,
+      color: options.titleColor,
+      anchor: TextAnchor.middle,
+      baseline: TextBaseline.alphabetic,
+      role: SemanticRole.title,
+      classes: const ['titleText'],
+    );
+  }
+  return null;
 }
 
 Map<String, int> _ganttRows(GanttAst ast, GanttRenderOptions options, List<GanttTaskAst> tasks) {
@@ -394,7 +389,7 @@ Iterable<SceneElement> _ganttToday(
   _GanttTimeScale scale,
   double height,
 ) sync* {
-  if (ast.todayMarker.toLowerCase() == 'off') return;
+  if (ast.todayMarker is GanttTodayMarkerOff) return;
   final x = options.leftPadding + scale(DateTime.now());
   yield SceneLine(
     id: context.id('today'),
@@ -492,37 +487,15 @@ Color _ganttSectionColor(GanttRenderOptions options, int style) => switch (style
   _ => options.sectionBackground,
 };
 
-bool _ganttDateExcluded(GanttAst ast, DateTime date) {
-  final formatted = _ganttFormatDayJs(date, ast.dateFormat).toLowerCase();
-  final iso = _ganttIsoDate(date);
-  if (ast.includes.contains(formatted) || ast.includes.contains(iso)) return false;
-  if (ast.excludes.contains('weekends')) {
-    final first = ast.weekendStart == GanttWeekendStart.friday ? DateTime.friday : DateTime.saturday;
-    final second = first == DateTime.saturday ? DateTime.sunday : DateTime.saturday;
-    if (date.weekday == first || date.weekday == second) return true;
-  }
-  return ast.excludes.contains(GanttWeekday.values[date.weekday - 1].name) ||
-      ast.excludes.contains(formatted) ||
-      ast.excludes.contains(iso);
-}
+bool _ganttDateExcluded(GanttAst ast, DateTime date) => ganttDateExcluded(
+  date,
+  dateFormat: ast.dateFormat,
+  excludes: ast.excludes,
+  includes: ast.includes,
+  weekendStart: ast.weekendStart,
+);
 
 int _ganttStyleCount(GanttRenderOptions options) => options.numberSectionStyles > 0 ? options.numberSectionStyles : 1;
-
-String _ganttFormatDayJs(DateTime date, String format) {
-  final pattern = format.trim().isEmpty ? 'YYYY-MM-DD' : format.trim();
-  final values = <String, String>{
-    'YYYY': date.year.toString().padLeft(4, '0'),
-    'YY': (date.year % 100).toString().padLeft(2, '0'),
-    'MM': date.month.toString().padLeft(2, '0'),
-    'M': date.month.toString(),
-    'DD': date.day.toString().padLeft(2, '0'),
-    'D': date.day.toString(),
-  };
-  return pattern.replaceAllMapped(RegExp(r'YYYY|YY|MM|DD|M|D'), (match) => values[match.group(0)]!);
-}
-
-String _ganttIsoDate(DateTime date) =>
-    '${date.year.toString().padLeft(4, '0')}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
 
 List<DateTime> _ganttTicks(DateTime start, DateTime end, GanttTickInterval interval, GanttWeekday weekday) {
   var tick = _floorGanttTick(start, interval.unit, weekday);

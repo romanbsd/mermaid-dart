@@ -9,6 +9,11 @@ const _pieLegendRightOffsetInRects = 12.0;
 const _pieMaximumDonutRatio = .9;
 const _pieTitleY = 25.0;
 
+/// The [PieRenderOptions.highlightSlice] value that highlights whichever slice the
+/// pointer is over rather than a named one. Upstream Mermaid reads it from string
+/// config, so a slice labelled `hover` selects hover highlighting instead of itself.
+const _pieHoverHighlight = 'hover';
+
 /// Mermaid's `.pieCircle.highlighted` stylesheet enlarges the selected slice
 /// by five percent. The scene records that visual state as explicit geometry.
 const _pieHighlightScale = 1.05;
@@ -101,7 +106,7 @@ _LayoutResult _layoutPie(PieAst ast, _LayoutContext context) {
     final end = angle + sweep;
     final classes = <String>['pieCircle'];
     final isHighlighted = config.highlightSlice == section.label;
-    if (config.highlightSlice == 'hover') {
+    if (config.highlightSlice == _pieHoverHighlight) {
       classes.add('highlightedOnHover');
     } else if (isHighlighted) {
       classes.add('highlighted');

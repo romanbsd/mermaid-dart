@@ -87,6 +87,10 @@ void _element(XmlBuilder builder, SceneElement element, {bool omitIdentity = fal
     if (element.role != null) 'data-role': element.role!.name,
     if (element.label != null) 'aria-label': element.label!,
   };
+  final paint = switch (element) {
+    SceneShape(:final fill, :final stroke) => {..._fill(fill), ..._stroke(stroke)},
+    _ => const <String, String>{},
+  };
   switch (element) {
     case SceneGroup(:final children, :final transforms, :final clipId):
       builder.element(
@@ -114,7 +118,7 @@ void _element(XmlBuilder builder, SceneElement element, {bool omitIdentity = fal
           ..._stroke(stroke),
         },
       );
-    case SceneRect(:final bounds, :final radiusX, :final radiusY, :final fill, :final stroke):
+    case SceneRect(:final bounds, :final radiusX, :final radiusY):
       builder.element(
         'rect',
         attributes: {
@@ -125,23 +129,15 @@ void _element(XmlBuilder builder, SceneElement element, {bool omitIdentity = fal
           'height': _number(bounds.height),
           if (radiusX != 0) 'rx': _number(radiusX),
           if (radiusY != 0) 'ry': _number(radiusY),
-          ..._fill(fill),
-          ..._stroke(stroke),
+          ...paint,
         },
       );
-    case SceneCircle(:final center, :final radius, :final fill, :final stroke):
+    case SceneCircle(:final center, :final radius):
       builder.element(
         'circle',
-        attributes: {
-          ...common,
-          'cx': _number(center.x),
-          'cy': _number(center.y),
-          'r': _number(radius),
-          ..._fill(fill),
-          ..._stroke(stroke),
-        },
+        attributes: {...common, 'cx': _number(center.x), 'cy': _number(center.y), 'r': _number(radius), ...paint},
       );
-    case SceneEllipse(:final center, :final radiusX, :final radiusY, :final fill, :final stroke):
+    case SceneEllipse(:final center, :final radiusX, :final radiusY):
       builder.element(
         'ellipse',
         attributes: {
@@ -150,25 +146,15 @@ void _element(XmlBuilder builder, SceneElement element, {bool omitIdentity = fal
           'cy': _number(center.y),
           'rx': _number(radiusX),
           'ry': _number(radiusY),
-          ..._fill(fill),
-          ..._stroke(stroke),
+          ...paint,
         },
       );
-    case ScenePolygon(:final points, :final fill, :final stroke):
-      builder.element(
-        'polygon',
-        attributes: {...common, 'points': _points(points), ..._fill(fill), ..._stroke(stroke)},
-      );
-    case ScenePolyline(:final points, :final fill, :final stroke):
-      builder.element(
-        'polyline',
-        attributes: {...common, 'points': _points(points), ..._fill(fill), ..._stroke(stroke)},
-      );
-    case ScenePath(:final commands, :final fill, :final stroke):
-      builder.element(
-        'path',
-        attributes: {...common, 'd': commands.map(_command).join(' '), ..._fill(fill), ..._stroke(stroke)},
-      );
+    case ScenePolygon(:final points):
+      builder.element('polygon', attributes: {...common, 'points': _points(points), ...paint});
+    case ScenePolyline(:final points):
+      builder.element('polyline', attributes: {...common, 'points': _points(points), ...paint});
+    case ScenePath(:final commands):
+      builder.element('path', attributes: {...common, 'd': commands.map(_command).join(' '), ...paint});
     case SceneText(
       :final position,
       :final text,

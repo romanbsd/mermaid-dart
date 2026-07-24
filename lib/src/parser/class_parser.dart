@@ -124,25 +124,12 @@ final class _ClassParser {
       notes.add(ClassNoteAst(text: unquoteGraphText(note.group(1)!)));
       return true;
     }
-    final classDef = parseGraphClassDefinition(text, caseSensitive: true);
-    if (classDef != null) {
-      for (final name in classDef.names) {
-        classDefinitions[name] = classDef.styles;
-      }
-      return true;
-    }
-    final classAssignment = parseGraphClassAssignment(text, caseSensitive: true);
-    if (classAssignment != null) {
-      for (final id in classAssignment.ids) {
-        mergeCssClasses(_class(id, namespaceId: namespaceId).cssClasses, classAssignment.cssClasses);
-      }
-      return true;
-    }
-    final style = parseGraphStyleAssignment(text, caseSensitive: true);
-    if (style != null) {
-      for (final id in style.ids) {
-        _class(id, namespaceId: namespaceId).styles.addAll(style.styles);
-      }
+    if (applyGraphClassSyntax(
+      text,
+      classDefinitions: classDefinitions,
+      node: (id) => _class(id, namespaceId: namespaceId),
+      caseSensitive: true,
+    )) {
       return true;
     }
     final inlineMember = RegExp(r'^(.+?)\s*:\s*(.+)$').firstMatch(text);
@@ -240,14 +227,17 @@ ClassRelationMarker _endMarker(String operator) {
   return ClassRelationMarker.none;
 }
 
-final class _MutableClass {
+final class _MutableClass implements GraphStyledNode {
   _MutableClass(this.id, this.label, this.namespaceId);
 
   final String id;
   String label;
   final List<String> annotations = [];
   final List<ClassMemberAst> members = [];
+  @override
   final List<String> cssClasses = [];
+
+  @override
   final Map<String, String> styles = {};
   String? namespaceId;
 

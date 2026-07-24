@@ -17,6 +17,7 @@ part 'er_ast.dart';
 part 'event_modeling_ast.dart';
 part 'flowchart_ast.dart';
 part 'gantt_ast.dart';
+part 'gantt_dates.dart';
 part 'git_graph_ast.dart';
 part 'info_ast.dart';
 part 'kanban_ast.dart';

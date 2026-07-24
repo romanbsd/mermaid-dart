@@ -122,15 +122,8 @@ ScenePolygon _graphBarbArrow(
   required Color color,
   required String cssClass,
 }) {
-  final dx = tip.x - tail.x;
-  final dy = tip.y - tail.y;
-  final distance = math.sqrt(dx * dx + dy * dy);
-  final ux = distance == 0 ? 1.0 : dx / distance;
-  final uy = distance == 0 ? 0.0 : dy / distance;
-  final px = -uy;
-  final py = ux;
-  Point behind(double along, [double across = 0]) =>
-      Point(tip.x - ux * along + px * across, tip.y - uy * along + py * across);
+  final direction = Direction.between(tail, tip);
+  Point behind(double along, [double across = 0]) => direction.from(tip, -along, across);
   return ScenePolygon(
     id: context.id(cssClass),
     points: [tip, behind(10, 6), behind(5), behind(10, -6)],
@@ -167,6 +160,21 @@ SceneRect _graphLabelBackground(
 double _maxGraphTextWidth(Iterable<String> rows, _LayoutContext context, {double minimum = 0}) =>
     rows.map((row) => context.measurer.measure(row, context.textStyle).width).fold(minimum, math.max);
 
+/// The closed set of style properties Mermaid honours on graph nodes and edges.
+extension _GraphStyleProperties on Map<String, String> {
+  /// The declared `fill` colour.
+  Color? get fillColor => _flowchartColor(this['fill']);
+
+  /// The declared `stroke` colour.
+  Color? get strokeColor => _flowchartColor(this['stroke']);
+
+  /// The declared `color`, used for label text.
+  Color? get textColor => _flowchartColor(this['color']);
+
+  /// The declared `stroke-width`, accepting the `px` suffix Mermaid allows.
+  double? get strokeWidth => double.tryParse(this['stroke-width']?.replaceFirst('px', '') ?? '');
+}
+
 ({Color fill, SceneStroke stroke}) _graphNodePaint(
   List<String> cssClasses,
   Map<String, String> inline,
@@ -176,8 +184,8 @@ double _maxGraphTextWidth(Iterable<String> rows, _LayoutContext context, {double
 ) {
   final styles = _diagramNodeStyles(cssClasses, inline, definitions);
   return (
-    fill: _flowchartColor(styles['fill']) ?? context.options.theme.mainBackground,
-    stroke: _graphStroke(_flowchartColor(styles['stroke']) ?? context.options.theme.primaryBorder, strokeWidth),
+    fill: styles.fillColor ?? context.options.theme.mainBackground,
+    stroke: _graphStroke(styles.strokeColor ?? context.options.theme.primaryBorder, strokeWidth),
   );
 }
 

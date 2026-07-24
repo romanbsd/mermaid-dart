@@ -37,12 +37,8 @@ RailroadNodeAst _parseSequence(RailroadScanner scanner) {
 RailroadNodeAst _parseTerm(RailroadScanner scanner) {
   var node = _parsePrimary(scanner);
   while (true) {
-    if (scanner.tryConsume('?')) {
-      node = RailroadOptionalAst(node);
-    } else if (scanner.tryConsume('*')) {
-      node = RailroadRepetitionAst(node, min: 0, max: double.infinity);
-    } else if (scanner.tryConsume('+')) {
-      node = RailroadRepetitionAst(node, min: 1, max: double.infinity);
+    if (railroadPostfix(scanner, node) case final repeated?) {
+      node = repeated;
     } else if (scanner.tryConsume('-')) {
       node = RailroadSequenceAst([node, const RailroadTerminalAst('-'), _parsePrimary(scanner)]);
     } else {
@@ -67,7 +63,7 @@ RailroadNodeAst _parsePrimary(RailroadScanner scanner) {
     return node;
   }
   if (scanner.tryConsume('{')) {
-    final node = RailroadRepetitionAst(_parseChoice(scanner), min: 0, max: double.infinity);
+    final node = railroadZeroOrMore(_parseChoice(scanner));
     scanner.expect('}');
     return node;
   }

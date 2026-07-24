@@ -1755,6 +1755,12 @@ final class TreeViewRenderOptions extends DiagramRenderOptions {
   /// Namespace used by Mermaid's small built-in file and folder icon pack.
   static const builtInIconPack = 'mermaid-treeview';
 
+  /// The icon names that resolve to the built-in pack even without its prefix.
+  static const builtInIconNames = {'file', 'folder'};
+
+  /// The icon name that suppresses a node's icon entirely.
+  static const noIcon = 'none';
+
   /// The built in file icon behavior exposed by [TreeViewRenderOptions].
   static const builtInFileIcon = '$builtInIconPack:file';
 

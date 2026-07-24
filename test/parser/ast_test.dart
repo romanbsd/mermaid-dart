@@ -14,6 +14,14 @@ void main() {
     expect(ast.accessibilityDescription, 'Description');
   });
 
+  test('flowchart directions are graph directions with the same axis queries', () {
+    expect(FlowchartDirection.values, GraphDirection.values);
+    expect(GraphDirection.bottomTop.isReversed, isTrue);
+    expect(GraphDirection.rightLeft.isReversed, isTrue);
+    expect(GraphDirection.topDown.isReversed, isFalse);
+    expect(GraphDirection.leftRight.isReversed, isFalse);
+  });
+
   test('all diagram ASTs use deep value equality and matching hash codes', () {
     final pairs = <(DiagramAst, DiagramAst)>[
       (

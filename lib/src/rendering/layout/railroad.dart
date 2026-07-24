@@ -223,6 +223,25 @@ _RailBox _railChoice(List<RailroadNodeAst> nodes, _RailroadContext context) {
   ]);
 }
 
+/// The boxed item together with the entry and exit stubs that join it to the
+/// rail. The stub length has to match the item's own offset, so both come from
+/// one place.
+List<SceneElement> _railStubbedItem(
+  _RailBox box,
+  _RailroadContext context, {
+  required String itemId,
+  required double width,
+  required double itemY,
+  required double centerY,
+}) {
+  final stub = context.config.arcRadius * 2;
+  return [
+    SceneGroup(id: context.scene.id(itemId), transforms: [Translate(stub, itemY)], children: box.elements),
+    context.path([MoveTo(Point(0, centerY)), LineTo(Point(stub, centerY))]),
+    context.path([MoveTo(Point(stub + box.width, centerY)), LineTo(Point(width, centerY))]),
+  ];
+}
+
 _RailBox _railOptional(RailroadNodeAst node, _RailroadContext context) {
   final box = _railNode(node, context);
   final radius = context.config.arcRadius;
@@ -232,9 +251,7 @@ _RailBox _railOptional(RailroadNodeAst node, _RailroadContext context) {
   final itemY = radius * 2;
   final centerY = itemY + box.up;
   final elements = <SceneElement>[
-    SceneGroup(id: scene.id('rail-optional-item'), transforms: [Translate(radius * 2, itemY)], children: box.elements),
-    context.path([MoveTo(Point(0, centerY)), LineTo(Point(radius * 2, centerY))]),
-    context.path([MoveTo(Point(radius * 2 + box.width, centerY)), LineTo(Point(width, centerY))]),
+    ..._railStubbedItem(box, context, itemId: 'rail-optional-item', width: width, itemY: itemY, centerY: centerY),
     context.path(railroadBypassCommands(width: width, baselineY: centerY, radius: radius)),
   ];
   return _RailBox(width, height, centerY, height - centerY, [
@@ -253,9 +270,7 @@ _RailBox _railRepetition(RailroadNodeAst node, int min, num _, _RailroadContext 
   final centerY = itemY + box.up;
   final loopY = itemY + box.height + radius;
   final elements = <SceneElement>[
-    SceneGroup(id: scene.id('rail-repeat-item'), transforms: [Translate(radius * 2, itemY)], children: box.elements),
-    context.path([MoveTo(Point(0, centerY)), LineTo(Point(radius * 2, centerY))]),
-    context.path([MoveTo(Point(radius * 2 + box.width, centerY)), LineTo(Point(width, centerY))]),
+    ..._railStubbedItem(box, context, itemId: 'rail-repeat-item', width: width, itemY: itemY, centerY: centerY),
     context.path(
       railroadRepetitionLoopCommands(itemWidth: box.width, baselineY: centerY, loopY: loopY, radius: radius),
     ),

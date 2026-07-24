@@ -11,6 +11,7 @@ import 'geometry/cynefin.dart';
 import 'geometry/event_modeling.dart';
 import 'geometry/git_graph.dart';
 import 'geometry/packet.dart';
+import 'geometry/direction.dart';
 import 'geometry/path_builders.dart';
 import 'geometry/polar.dart';
 import 'geometry/railroad.dart';
@@ -389,19 +390,11 @@ ScenePolygon _triangleArrow(
   String idSuffix = 'arrow',
   required List<String> cssClasses,
 }) {
-  final dx = tip.x - tail.x;
-  final dy = tip.y - tail.y;
-  final distance = math.sqrt(dx * dx + dy * dy);
-  final unitX = distance == 0 ? 1.0 : dx / distance;
-  final unitY = distance == 0 ? 0.0 : dy / distance;
-  final base = Point(tip.x - unitX * length, tip.y - unitY * length);
+  final direction = Direction.between(tail, tip);
+  final base = direction.from(tip, -length);
   return ScenePolygon(
     id: context.id('$idPrefix-$idSuffix'),
-    points: [
-      tip,
-      Point(base.x - unitY * halfWidth, base.y + unitX * halfWidth),
-      Point(base.x + unitY * halfWidth, base.y - unitX * halfWidth),
-    ],
+    points: [tip, direction.from(base, 0, halfWidth), direction.from(base, 0, -halfWidth)],
     fill: SolidFill(color),
     role: SemanticRole.edge,
     cssClasses: cssClasses,

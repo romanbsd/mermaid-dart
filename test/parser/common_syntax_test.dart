@@ -48,6 +48,38 @@ packet
     });
   });
 
+  group('quote-aware scanning', () {
+    test('splits on separators outside quotes, keeping empty and untrimmed segments', () {
+      expect(splitOutsideQuotes('a, "b, c" , d', ','), ['a', ' "b, c" ', ' d']);
+      expect(splitOutsideQuotes(',,', ','), ['', '', '']);
+      expect(splitOutsideQuotes('plain', ','), ['plain']);
+    });
+
+    test('honours multi-character separators without overlapping matches', () {
+      expect(splitOutsideQuotes('a->b->c', '->'), ['a', 'b', 'c']);
+      expect(splitOutsideQuotes('a-->b', '->'), ['a-', 'b']);
+      expect(splitOutsideQuotes('a"x->y"->b', '->'), ['a"x->y"', 'b']);
+    });
+
+    test('treats a backslash inside quotes as an escape only when escapes are enabled', () {
+      expect(splitOutsideQuotes(r'"a\"b",c', ','), [r'"a\"b"', 'c']);
+      // Without escapes the second quote closes the run, so the comma sits inside the next one.
+      expect(splitOutsideQuotes(r'"a\"b",c', ',', escapes: false), [r'"a\"b",c']);
+    });
+
+    test('restricts quoting to the requested characters', () {
+      expect(splitOutsideQuotes("'a,b',c", ','), ["'a,b'", 'c']);
+      expect(splitOutsideQuotes("'a,b',c", ',', quotes: '"'), ["'a", "b'", 'c']);
+    });
+
+    test('reports the first and last unquoted offsets, or -1 when there is none', () {
+      expect(indexOutsideQuotes('a@"b@c"@d', '@'), 1);
+      expect(lastIndexOutsideQuotes('a@"b@c"@d', '@'), 7);
+      expect(indexOutsideQuotes('"a@b"', '@'), -1);
+      expect(lastIndexOutsideQuotes('"a@b"', '@'), -1);
+    });
+  });
+
   group('ignored common syntax', () {
     test('only hides frontmatter at the start of the document', () {
       const bodyBlock = 'info\n---\nbody\n---\n';

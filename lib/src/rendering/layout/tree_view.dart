@@ -75,7 +75,7 @@ SceneStroke _treeStroke(Color color, double width) => SceneStroke(color: color, 
 
 String _treeQualifyIcon(String icon, TreeViewRenderOptions config) {
   if (icon.contains(':')) return icon;
-  if (icon == 'file' || icon == 'folder' || config.defaultIconPack.isEmpty) {
+  if (TreeViewRenderOptions.builtInIconNames.contains(icon) || config.defaultIconPack.isEmpty) {
     return '${TreeViewRenderOptions.builtInIconPack}:$icon';
   }
   return '${config.defaultIconPack}:$icon';
@@ -87,7 +87,7 @@ String? _treeIconReference({
   required String? explicitIcon,
   required TreeViewRenderOptions config,
 }) {
-  if (explicitIcon == 'none') return null;
+  if (explicitIcon == TreeViewRenderOptions.noIcon) return null;
   if (explicitIcon != null && explicitIcon.isNotEmpty) {
     return _treeQualifyIcon(explicitIcon, config);
   }
@@ -103,7 +103,7 @@ String? _treeIconReference({
         detected = config.extensionIcons[extension] ?? config.extensionIcons[extension.substring(1)];
       }
     }
-    if (detected == 'none') return null;
+    if (detected == TreeViewRenderOptions.noIcon) return null;
     if (detected != null && detected.isNotEmpty) {
       return _treeQualifyIcon(detected, config);
     }

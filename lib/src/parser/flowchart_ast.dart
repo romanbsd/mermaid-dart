@@ -1,24 +1,10 @@
 part of 'ast.dart';
 
 /// Flow direction declared by a Mermaid flowchart.
-enum FlowchartDirection {
-  topDown,
-  bottomTop,
-  leftRight,
-  rightLeft;
-
-  /// Whether this direction lies on the vertical axis.
-  bool get isVertical => this == topDown || this == bottomTop;
-
-  /// Whether this direction lies on the horizontal axis.
-  bool get isHorizontal => !isVertical;
-
-  /// Whether layout proceeds from top or left toward bottom or right.
-  bool get isForward => this == topDown || this == leftRight;
-
-  /// Whether layout proceeds from bottom or right toward top or left.
-  bool get isReversed => !isForward;
-}
+///
+/// Flowcharts accept exactly the cardinal directions every graph-shaped diagram
+/// accepts, so this names [GraphDirection] rather than restating it.
+typedef FlowchartDirection = GraphDirection;
 
 /// Closed set of classic Mermaid flowchart node shapes.
 enum FlowchartNodeShape {

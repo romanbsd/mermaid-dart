@@ -369,9 +369,7 @@ List<SceneElement> _stateTransitionElements(
 ) {
   final rawPoints = _graphEdgePoints(from, to);
   final targetsSpecialState = to.width == _stateSpecialExtent && to.height == _stateSpecialExtent;
-  final rawEnd = targetsSpecialState
-      ? _statePointToward(rawPoints.end, rawPoints.start, _stateEndEdgeInset)
-      : rawPoints.end;
+  final rawEnd = targetsSpecialState ? pointToward(rawPoints.end, rawPoints.start, _stateEndEdgeInset) : rawPoints.end;
   final verticalCompositeBranch =
       from.height > _stateNodeHeight && (to.center.y - from.center.y).abs() >= (to.center.x - from.center.x).abs();
   final end = verticalCompositeBranch ? Point(to.center.x, to.center.y >= from.center.y ? to.top : to.bottom) : rawEnd;
@@ -423,14 +421,6 @@ List<SceneElement> _stateTransitionElements(
     );
   }
   return elements;
-}
-
-Point _statePointToward(Point point, Point target, double distance) {
-  final dx = target.x - point.x;
-  final dy = target.y - point.y;
-  final length = math.sqrt(dx * dx + dy * dy);
-  if (length == 0) return point;
-  return Point(point.x + dx / length * distance, point.y + dy / length * distance);
 }
 
 Size _stateNoteSize(StateNoteAst note, _LayoutContext context) {

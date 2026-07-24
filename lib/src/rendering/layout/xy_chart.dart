@@ -165,69 +165,56 @@ List<SceneElement> _xyUpstreamLeftValueAxis(
   _LayoutContext context,
   _MermaidXyGeometry geometry,
   XyChartTheme theme,
-) {
-  final config = geometry.config.yAxis;
-  final axisX = geometry.left - config.axisLineWidth / 2;
-  final tickX = geometry.left - config.axisLineWidth;
-  final labelX = tickX - config.tickLength - config.labelPadding;
-  return [
-    if (config.showAxisLine)
-      _xyPath(
-        context,
-        Point(axisX, geometry.top),
-        Point(axisX, geometry.bottom),
-        theme.yAxisLineColor,
-        config.axisLineWidth,
-        const ['left-axis', 'axis-line'],
-      ),
-    if (config.showLabel)
-      for (final tick in geometry.yTicks)
-        _transformedText(
-          context,
-          _xyNumber(tick),
-          labelX,
-          geometry.valuePosition(tick),
-          idPrefix: 'xychart-text',
-          color: theme.yAxisLabelColor,
-          fontSize: config.labelFontSize,
-          anchor: TextAnchor.end,
-          baseline: TextBaseline.middle,
-          cssClasses: const ['left-axis', 'label'],
-        ),
-    if (config.showTick)
-      for (final tick in geometry.yTicks)
-        _xyPath(
-          context,
-          Point(tickX, geometry.valuePosition(tick)),
-          Point(tickX - config.tickLength, geometry.valuePosition(tick)),
-          theme.yAxisTickColor,
-          config.tickWidth,
-          const ['left-axis', 'ticks'],
-        ),
-    if (config.showTitle && ast.yAxis.title.isNotEmpty)
-      _transformedText(
-        context,
-        ast.yAxis.title,
-        config.titlePadding,
-        (geometry.top + geometry.bottom) / 2,
-        idPrefix: 'xychart-text',
-        color: theme.yAxisTitleColor,
-        fontSize: config.titleFontSize,
-        anchor: TextAnchor.middle,
-        baseline: TextBaseline.textBeforeEdge,
-        rotation: 270,
-        cssClasses: const ['left-axis', 'title'],
-      ),
-  ];
-}
+) => _xyUpstreamLeftAxis(
+  context,
+  geometry,
+  config: geometry.config.yAxis,
+  title: ast.yAxis.title,
+  labels: [for (final tick in geometry.yTicks) (text: _xyNumber(tick), position: geometry.valuePosition(tick))],
+  tickPositions: [for (final tick in geometry.yTicks) geometry.valuePosition(tick)],
+  colors: (
+    line: theme.yAxisLineColor,
+    label: theme.yAxisLabelColor,
+    tick: theme.yAxisTickColor,
+    title: theme.yAxisTitleColor,
+  ),
+);
 
 List<SceneElement> _xyUpstreamLeftCategoryAxis(
   XyChartAst ast,
   _LayoutContext context,
   _MermaidXyGeometry geometry,
   XyChartTheme theme,
-) {
-  final config = geometry.config.xAxis;
+) => _xyUpstreamLeftAxis(
+  context,
+  geometry,
+  config: geometry.config.xAxis,
+  title: ast.xAxis.title,
+  labels: [
+    for (final (index, label) in geometry.categoryLabels.indexed)
+      (text: label, position: geometry.categoryPosition(index)),
+  ],
+  tickPositions: [for (var index = 0; index < geometry.categoryCount; index++) geometry.categoryPosition(index)],
+  colors: (
+    line: theme.xAxisLineColor,
+    label: theme.xAxisLabelColor,
+    tick: theme.xAxisTickColor,
+    title: theme.xAxisTitleColor,
+  ),
+);
+
+/// The left axis, shared by the value axis of a vertical chart and the category
+/// axis of a horizontal one: upstream draws both the same way, differing only in
+/// which axis supplies the labels, the palette, and the title.
+List<SceneElement> _xyUpstreamLeftAxis(
+  _LayoutContext context,
+  _MermaidXyGeometry geometry, {
+  required XyChartAxisRenderOptions config,
+  required String title,
+  required List<({String text, double position})> labels,
+  required List<double> tickPositions,
+  required ({Color line, Color label, Color tick, Color title}) colors,
+}) {
   final axisX = geometry.left - config.axisLineWidth / 2;
   final tickX = geometry.left - config.axisLineWidth;
   final labelX = tickX - config.tickLength - config.labelPadding;
@@ -237,42 +224,42 @@ List<SceneElement> _xyUpstreamLeftCategoryAxis(
         context,
         Point(axisX, geometry.top),
         Point(axisX, geometry.bottom),
-        theme.xAxisLineColor,
+        colors.line,
         config.axisLineWidth,
         const ['left-axis', 'axis-line'],
       ),
     if (config.showLabel)
-      for (final (index, label) in geometry.categoryLabels.indexed)
+      for (final label in labels)
         _transformedText(
           context,
-          label,
+          label.text,
           labelX,
-          geometry.categoryPosition(index),
+          label.position,
           idPrefix: 'xychart-text',
-          color: theme.xAxisLabelColor,
+          color: colors.label,
           fontSize: config.labelFontSize,
           anchor: TextAnchor.end,
           baseline: TextBaseline.middle,
           cssClasses: const ['left-axis', 'label'],
         ),
     if (config.showTick)
-      for (var index = 0; index < geometry.categoryCount; index++)
+      for (final position in tickPositions)
         _xyPath(
           context,
-          Point(tickX, geometry.categoryPosition(index)),
-          Point(tickX - config.tickLength, geometry.categoryPosition(index)),
-          theme.xAxisTickColor,
+          Point(tickX, position),
+          Point(tickX - config.tickLength, position),
+          colors.tick,
           config.tickWidth,
           const ['left-axis', 'ticks'],
         ),
-    if (config.showTitle && ast.xAxis.title.isNotEmpty)
+    if (config.showTitle && title.isNotEmpty)
       _transformedText(
         context,
-        ast.xAxis.title,
+        title,
         config.titlePadding,
         (geometry.top + geometry.bottom) / 2,
         idPrefix: 'xychart-text',
-        color: theme.xAxisTitleColor,
+        color: colors.title,
         fontSize: config.titleFontSize,
         anchor: TextAnchor.middle,
         baseline: TextBaseline.textBeforeEdge,

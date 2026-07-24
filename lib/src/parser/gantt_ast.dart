@@ -13,7 +13,7 @@ final class GanttAst extends DiagramAst {
     this.weekendStart = GanttWeekendStart.saturday,
     this.excludes = const [],
     this.includes = const [],
-    this.todayMarker = '',
+    this.todayMarker = const GanttTodayMarkerStyle(),
     this.sections = const [],
     super.title,
     super.accessibilityTitle,
@@ -44,14 +44,17 @@ final class GanttAst extends DiagramAst {
   /// First day of the two-day weekend excluded by `excludes weekends`.
   final GanttWeekendStart weekendStart;
 
-  /// Lowercase excluded weekday/date tokens in declaration order.
-  final List<String> excludes;
+  /// Excluded weekends, weekdays, and dates in declaration order.
+  final List<GanttDateFilter> excludes;
 
-  /// Lowercase included date tokens that override exclusions.
-  final List<String> includes;
+  /// Dates that override [excludes], in declaration order.
+  ///
+  /// Mermaid only re-includes explicit dates, so weekend and weekday entries
+  /// here never override an exclusion.
+  final List<GanttDateFilter> includes;
 
-  /// Mermaid today-marker style, or `off`.
-  final String todayMarker;
+  /// Whether and how the today marker is drawn.
+  final GanttTodayMarker todayMarker;
 
   /// Sections and their tasks in source order.
   final List<GanttSectionAst> sections;
@@ -202,3 +205,78 @@ enum GanttWeekday { monday, tuesday, wednesday, thursday, friday, saturday, sund
 
 /// Supported weekend starting days.
 enum GanttWeekendStart { friday, saturday }
+
+/// One entry of a Gantt `excludes` or `includes` list.
+sealed class GanttDateFilter with _AstValueEquality {
+  const GanttDateFilter();
+
+  /// Classifies one lowercase `excludes`/`includes` token.
+  factory GanttDateFilter.fromToken(String token) {
+    if (token == ganttWeekendsToken) return const GanttWeekendsFilter();
+    final weekday = GanttWeekday.values.firstWhereOrNull((day) => day.name == token);
+    return weekday == null ? GanttDateLiteralFilter(token) : GanttWeekdayFilter(weekday);
+  }
+}
+
+/// Matches both days of the weekend selected by [GanttAst.weekendStart].
+final class GanttWeekendsFilter extends GanttDateFilter {
+  /// Creates a weekend filter.
+  const GanttWeekendsFilter();
+
+  @override
+  List<Object?> get equalityFields => const [];
+}
+
+/// Matches every occurrence of one weekday.
+final class GanttWeekdayFilter extends GanttDateFilter {
+  /// Creates a filter matching [weekday].
+  const GanttWeekdayFilter(this.weekday);
+
+  /// The matched weekday.
+  final GanttWeekday weekday;
+
+  @override
+  List<Object?> get equalityFields => [weekday];
+}
+
+/// Matches one calendar day written in [GanttAst.dateFormat] or as an ISO date.
+final class GanttDateLiteralFilter extends GanttDateFilter {
+  /// Creates a filter matching the lowercase date token [value].
+  const GanttDateLiteralFilter(this.value);
+
+  /// The lowercase date token as written in the diagram source.
+  final String value;
+
+  @override
+  List<Object?> get equalityFields => [value];
+}
+
+/// Whether and how a Gantt diagram draws its today marker.
+sealed class GanttTodayMarker with _AstValueEquality {
+  const GanttTodayMarker();
+
+  /// Classifies the value written after `todayMarker`.
+  factory GanttTodayMarker.fromValue(String value) =>
+      value.toLowerCase() == ganttTodayMarkerOffToken ? const GanttTodayMarkerOff() : GanttTodayMarkerStyle(value);
+}
+
+/// Suppresses the today marker.
+final class GanttTodayMarkerOff extends GanttTodayMarker {
+  /// Creates a suppressed today marker.
+  const GanttTodayMarkerOff();
+
+  @override
+  List<Object?> get equalityFields => const [];
+}
+
+/// Draws the today marker, optionally with Mermaid style overrides.
+final class GanttTodayMarkerStyle extends GanttTodayMarker {
+  /// Creates a today marker styled by [styles], or the renderer default.
+  const GanttTodayMarkerStyle([this.styles = '']);
+
+  /// Raw CSS declarations from the diagram source, or empty for the default.
+  final String styles;
+
+  @override
+  List<Object?> get equalityFields => [styles];
+}

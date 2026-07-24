@@ -582,16 +582,30 @@ final class SceneLine extends SceneElement with _SceneValue {
   List<Object?> get fields => [id, start, end, stroke, role, cssClasses, label];
 }
 
+/// A scene element whose geometry is painted with a [fill] and a [stroke].
+///
+/// Backends can resolve paint for any shape in one branch instead of repeating
+/// the same lookup per geometry kind.
+sealed class SceneShape extends SceneElement {
+  const SceneShape({required super.id, this.fill, this.stroke, super.role, super.cssClasses, super.label});
+
+  /// The fill.
+  final SceneFill? fill;
+
+  /// The stroke.
+  final SceneStroke? stroke;
+}
+
 /// Backend-neutral scene rect in a laid-out diagram scene.
-final class SceneRect extends SceneElement with _SceneValue {
+final class SceneRect extends SceneShape with _SceneValue {
   /// Creates a typed [SceneRect].
   const SceneRect({
     required super.id,
     required this.bounds,
     this.radiusX = 0,
     this.radiusY = 0,
-    this.fill,
-    this.stroke,
+    super.fill,
+    super.stroke,
     super.role,
     super.cssClasses,
     super.label,
@@ -605,25 +619,19 @@ final class SceneRect extends SceneElement with _SceneValue {
 
   /// The radius y.
   final double radiusY;
-
-  /// The fill.
-  final SceneFill? fill;
-
-  /// The stroke.
-  final SceneStroke? stroke;
   @override
   List<Object?> get fields => [id, bounds, radiusX, radiusY, fill, stroke, role, cssClasses, label];
 }
 
 /// Backend-neutral scene circle in a laid-out diagram scene.
-final class SceneCircle extends SceneElement with _SceneValue {
+final class SceneCircle extends SceneShape with _SceneValue {
   /// Creates a typed [SceneCircle].
   const SceneCircle({
     required super.id,
     required this.center,
     required this.radius,
-    this.fill,
-    this.stroke,
+    super.fill,
+    super.stroke,
     super.role,
     super.cssClasses,
     super.label,
@@ -634,26 +642,20 @@ final class SceneCircle extends SceneElement with _SceneValue {
 
   /// The radius.
   final double radius;
-
-  /// The fill.
-  final SceneFill? fill;
-
-  /// The stroke.
-  final SceneStroke? stroke;
   @override
   List<Object?> get fields => [id, center, radius, fill, stroke, role, cssClasses, label];
 }
 
 /// Backend-neutral scene ellipse in a laid-out diagram scene.
-final class SceneEllipse extends SceneElement with _SceneValue {
+final class SceneEllipse extends SceneShape with _SceneValue {
   /// Creates a typed [SceneEllipse].
   const SceneEllipse({
     required super.id,
     required this.center,
     required this.radiusX,
     required this.radiusY,
-    this.fill,
-    this.stroke,
+    super.fill,
+    super.stroke,
     super.role,
     super.cssClasses,
     super.label,
@@ -667,24 +669,18 @@ final class SceneEllipse extends SceneElement with _SceneValue {
 
   /// The radius y.
   final double radiusY;
-
-  /// The fill.
-  final SceneFill? fill;
-
-  /// The stroke.
-  final SceneStroke? stroke;
   @override
   List<Object?> get fields => [id, center, radiusX, radiusY, fill, stroke, role, cssClasses, label];
 }
 
 /// Backend-neutral scene polygon in a laid-out diagram scene.
-final class ScenePolygon extends SceneElement with _SceneValue {
+final class ScenePolygon extends SceneShape with _SceneValue {
   /// Creates a typed [ScenePolygon].
   const ScenePolygon({
     required super.id,
     required this.points,
-    this.fill,
-    this.stroke,
+    super.fill,
+    super.stroke,
     super.role,
     super.cssClasses,
     super.label,
@@ -692,24 +688,18 @@ final class ScenePolygon extends SceneElement with _SceneValue {
 
   /// The points.
   final List<Point> points;
-
-  /// The fill.
-  final SceneFill? fill;
-
-  /// The stroke.
-  final SceneStroke? stroke;
   @override
   List<Object?> get fields => [id, points, fill, stroke, role, cssClasses, label];
 }
 
 /// Backend-neutral scene polyline in a laid-out diagram scene.
-final class ScenePolyline extends SceneElement with _SceneValue {
+final class ScenePolyline extends SceneShape with _SceneValue {
   /// Creates a typed [ScenePolyline].
   const ScenePolyline({
     required super.id,
     required this.points,
-    this.fill,
-    this.stroke,
+    super.fill,
+    super.stroke,
     super.role,
     super.cssClasses,
     super.label,
@@ -717,24 +707,18 @@ final class ScenePolyline extends SceneElement with _SceneValue {
 
   /// The points.
   final List<Point> points;
-
-  /// The fill.
-  final SceneFill? fill;
-
-  /// The stroke.
-  final SceneStroke? stroke;
   @override
   List<Object?> get fields => [id, points, fill, stroke, role, cssClasses, label];
 }
 
 /// Backend-neutral scene path in a laid-out diagram scene.
-final class ScenePath extends SceneElement with _SceneValue {
+final class ScenePath extends SceneShape with _SceneValue {
   /// Creates a typed [ScenePath].
   const ScenePath({
     required super.id,
     required this.commands,
-    this.fill,
-    this.stroke,
+    super.fill,
+    super.stroke,
     super.role,
     super.cssClasses,
     super.label,
@@ -742,12 +726,6 @@ final class ScenePath extends SceneElement with _SceneValue {
 
   /// The commands.
   final List<PathCommand> commands;
-
-  /// The fill.
-  final SceneFill? fill;
-
-  /// The stroke.
-  final SceneStroke? stroke;
   @override
   List<Object?> get fields => [id, commands, fill, stroke, role, cssClasses, label];
 }

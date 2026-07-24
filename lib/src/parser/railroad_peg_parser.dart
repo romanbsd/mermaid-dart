@@ -36,14 +36,8 @@ RailroadNodeAst _parsePrefix(RailroadScanner scanner) {
   } else if (scanner.tryConsume('!')) {
     prefix = '!';
   }
-  var node = _parsePrimary(scanner);
-  if (scanner.tryConsume('?')) {
-    node = RailroadOptionalAst(node);
-  } else if (scanner.tryConsume('*')) {
-    node = RailroadRepetitionAst(node, min: 0, max: double.infinity);
-  } else if (scanner.tryConsume('+')) {
-    node = RailroadRepetitionAst(node, min: 1, max: double.infinity);
-  }
+  final primary = _parsePrimary(scanner);
+  final node = railroadPostfix(scanner, primary) ?? primary;
   return prefix == null ? node : RailroadSpecialAst('$prefix${_nodeLabel(node)}');
 }
 

@@ -1,5 +1,5 @@
 import 'ast.dart';
-import 'errors.dart';
+import 'common_syntax.dart';
 
 const _numberPattern = r'[+-]?(?:\d+(?:\.\d+)?|\.\d+)';
 final _range = RegExp('($_numberPattern)\\s*-->\\s*($_numberPattern)\\s*\$');
@@ -25,7 +25,7 @@ XyChartAst parseXyChart(String source) {
     if (comment >= 0) line = line.substring(0, comment).trim();
     if (!sawHeader) {
       final match = RegExp(r'^xychart(?:-beta)?(?:\s+(vertical|horizontal))?$', caseSensitive: false).firstMatch(line);
-      if (match == null) _fail(source, index, 'Expected xychart');
+      if (match == null) throwParseErrorOnLine(source, index, 'Expected xychart');
       orientation = match.group(1)?.toLowerCase() == 'horizontal'
           ? XyChartOrientation.horizontal
           : XyChartOrientation.vertical;
@@ -37,7 +37,7 @@ XyChartAst parseXyChart(String source) {
       while (++index < lines.length && !lines[index].contains('}')) {
         value.add(lines[index].trimRight());
       }
-      if (index == lines.length) _fail(source, index - 1, 'Unterminated accDescr');
+      if (index == lines.length) throwParseErrorOnLine(source, index - 1, 'Unterminated accDescr');
       accessibilityDescription = value.join('\n').trim();
       continue;
     }
@@ -66,7 +66,7 @@ XyChartAst parseXyChart(String source) {
       continue;
     }
     final plotMatch = RegExp(r'^(bar|line)\s+(.*?)\s*(\[[^\]]*\])\s*$', caseSensitive: false).firstMatch(line);
-    if (plotMatch == null) _fail(source, index, 'Invalid XY chart statement');
+    if (plotMatch == null) throwParseErrorOnLine(source, index, 'Invalid XY chart statement');
     final values = _plotValues(plotMatch.group(3)!, source, index);
     plots.add(
       XyChartPlotAst(
@@ -77,7 +77,7 @@ XyChartAst parseXyChart(String source) {
       ),
     );
   }
-  if (!sawHeader) _fail(source, 0, 'Expected xychart');
+  if (!sawHeader) throwParseErrorOnLine(source, 0, 'Expected xychart');
   final visibleCount = switch (xAxis) {
     XyChartBandAxisAst axis => axis.categories.length,
     _ => plots.fold<int>(0, (length, plot) => plot.points.length > length ? plot.points.length : length),
@@ -105,10 +105,10 @@ XyChartAst parseXyChart(String source) {
 (String, XyChartAxisAst?) _axis(String value, String source, int line, {required bool allowBand}) {
   final bandStart = value.indexOf('[');
   if (bandStart >= 0) {
-    if (!allowBand || !value.endsWith(']')) _fail(source, line, 'Invalid axis data');
+    if (!allowBand || !value.endsWith(']')) throwParseErrorOnLine(source, line, 'Invalid axis data');
     final title = _text(value.substring(0, bandStart).trim());
     final categories = _split(value.substring(bandStart + 1, value.length - 1));
-    if (categories.isEmpty) _fail(source, line, 'Axis categories cannot be empty');
+    if (categories.isEmpty) throwParseErrorOnLine(source, line, 'Axis categories cannot be empty');
     return (title, XyChartBandAxisAst(title: title, categories: categories.map(_text).toList()));
   }
   final match = _range.firstMatch(value);
@@ -124,12 +124,12 @@ XyChartAst parseXyChart(String source) {
 
 (List<double>, List<String>) _plotValues(String value, String source, int line) {
   final items = _split(value.substring(1, value.length - 1));
-  if (items.isEmpty) _fail(source, line, 'Plot data cannot be empty');
+  if (items.isEmpty) throwParseErrorOnLine(source, line, 'Plot data cannot be empty');
   final points = <double>[];
   final labels = <String>[];
   for (final item in items) {
     final match = _plotPoint.firstMatch(item.trim());
-    if (match == null) _fail(source, line, 'Invalid plot data');
+    if (match == null) throwParseErrorOnLine(source, line, 'Invalid plot data');
     points.add(double.parse(match.group(1)!));
     labels.add(match.group(2) == null ? '' : _text(match.group(2)!));
   }
@@ -159,8 +159,3 @@ List<String> _split(String value) {
 String _text(String value) => value.length >= 2 && value.startsWith('"') && value.endsWith('"')
     ? value.substring(1, value.length - 1)
     : value.replaceAll(RegExp(r'\s+'), '');
-
-Never _fail(String source, int line, String message) {
-  final safeLine = line.clamp(0, source.split(RegExp(r'\r?\n')).length - 1);
-  throw MermaidParseException(message: message, source: source, offset: 0, line: safeLine + 1, column: 1);
-}

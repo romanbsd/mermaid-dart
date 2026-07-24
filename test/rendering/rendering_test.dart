@@ -4,6 +4,23 @@ import 'package:xml/xml.dart';
 
 void main() {
   group('geometry-first rendering', () {
+    test('every filled scene element exposes fill and stroke through SceneShape', () {
+      const fill = SolidFill(Color(0x11, 0x22, 0x33));
+      const stroke = SceneStroke(color: Color(0x44, 0x55, 0x66));
+      const shapes = <SceneShape>[
+        SceneRect(id: 'rect', bounds: Bounds(left: 0, top: 0, width: 1, height: 1), fill: fill, stroke: stroke),
+        SceneCircle(id: 'circle', center: Point(0, 0), radius: 1, fill: fill, stroke: stroke),
+        SceneEllipse(id: 'ellipse', center: Point(0, 0), radiusX: 1, radiusY: 2, fill: fill, stroke: stroke),
+        ScenePolygon(id: 'polygon', points: [Point(0, 0)], fill: fill, stroke: stroke),
+        ScenePolyline(id: 'polyline', points: [Point(0, 0)], fill: fill, stroke: stroke),
+        ScenePath(id: 'path', commands: [MoveTo(Point(0, 0))], fill: fill, stroke: stroke),
+      ];
+
+      expect(shapes.map((shape) => shape.fill), everyElement(fill));
+      expect(shapes.map((shape) => shape.stroke), everyElement(stroke));
+      expect(const SceneLine(id: 'line', start: Point(0, 0), end: Point(1, 1)), isNot(isA<SceneShape>()));
+    });
+
     test('architecture options expose Mermaid layout defaults', () {
       const options = ArchitectureRenderOptions();
 

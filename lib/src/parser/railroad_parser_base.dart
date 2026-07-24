@@ -68,6 +68,21 @@ RailroadAst railroadAst(CommonMetadata metadata, List<RailroadRuleAst> rules, Ra
   accessibilityDescription: metadata.accessibilityDescription,
 );
 
+/// A `*` repetition: zero or more of [node].
+RailroadNodeAst railroadZeroOrMore(RailroadNodeAst node) => RailroadRepetitionAst(node, min: 0, max: double.infinity);
+
+/// A `+` repetition: one or more of [node].
+RailroadNodeAst railroadOneOrMore(RailroadNodeAst node) => RailroadRepetitionAst(node, min: 1, max: double.infinity);
+
+/// The `?`, `*`, or `+` suffix applied to [node], or `null` when the scanner is
+/// not at one of them.
+RailroadNodeAst? railroadPostfix(RailroadScanner scanner, RailroadNodeAst node) {
+  if (scanner.tryConsume('?')) return RailroadOptionalAst(node);
+  if (scanner.tryConsume('*')) return railroadZeroOrMore(node);
+  if (scanner.tryConsume('+')) return railroadOneOrMore(node);
+  return null;
+}
+
 RailroadNodeAst railroadSequence(List<RailroadNodeAst> elements) =>
     elements.length == 1 ? elements.single : RailroadSequenceAst(List.unmodifiable(elements));
 

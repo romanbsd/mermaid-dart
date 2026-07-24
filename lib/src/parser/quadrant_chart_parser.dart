@@ -1,6 +1,5 @@
 import 'ast.dart';
 import 'common_syntax.dart';
-import 'errors.dart';
 
 const _quadrantNumberPattern = r'(?:1|0(?:\.\d+)?)';
 final _pointPattern = RegExp(
@@ -68,7 +67,7 @@ QuadrantChartAst parseQuadrantChart(String source) {
         continue;
       }
 
-      _fail(source, index, 'Invalid quadrant chart statement');
+      throwParseErrorOnLine(source, index, 'Invalid quadrant chart statement');
     }
   }
 
@@ -100,24 +99,24 @@ QuadrantPointStyleAst _parseStyles(String source, String diagramSource, int line
   double? strokeWidth;
   for (final declaration in source.split(',')) {
     final separator = declaration.indexOf(':');
-    if (separator < 0) _fail(diagramSource, line, 'Invalid quadrant point style');
+    if (separator < 0) throwParseErrorOnLine(diagramSource, line, 'Invalid quadrant point style');
     final name = declaration.substring(0, separator).trim().toLowerCase();
     final value = declaration.substring(separator + 1).trim();
     switch (name) {
       case 'radius':
-        if (!_integer.hasMatch(value)) _fail(diagramSource, line, 'Invalid radius');
+        if (!_integer.hasMatch(value)) throwParseErrorOnLine(diagramSource, line, 'Invalid radius');
         radius = double.parse(value);
       case 'color':
-        if (!_hexColor.hasMatch(value)) _fail(diagramSource, line, 'Invalid color');
+        if (!_hexColor.hasMatch(value)) throwParseErrorOnLine(diagramSource, line, 'Invalid color');
         color = _normalizedColor(value);
       case 'stroke-color':
-        if (!_hexColor.hasMatch(value)) _fail(diagramSource, line, 'Invalid stroke-color');
+        if (!_hexColor.hasMatch(value)) throwParseErrorOnLine(diagramSource, line, 'Invalid stroke-color');
         strokeColor = _normalizedColor(value);
       case 'stroke-width':
-        if (!_pixelSize.hasMatch(value)) _fail(diagramSource, line, 'Invalid stroke-width');
+        if (!_pixelSize.hasMatch(value)) throwParseErrorOnLine(diagramSource, line, 'Invalid stroke-width');
         strokeWidth = double.parse(value.substring(0, value.length - 2));
       default:
-        _fail(diagramSource, line, 'Unsupported quadrant point style $name');
+        throwParseErrorOnLine(diagramSource, line, 'Unsupported quadrant point style $name');
     }
   }
   return QuadrantPointStyleAst(radius: radius, color: color, strokeColor: strokeColor, strokeWidth: strokeWidth);
@@ -134,9 +133,4 @@ String _text(String value) {
         : unquoted;
   }
   return trimmed;
-}
-
-Never _fail(String source, int line, String message) {
-  final safeLine = line.clamp(0, source.split(RegExp(r'\r?\n')).length - 1);
-  throw MermaidParseException(message: message, source: source, offset: 0, line: safeLine + 1, column: 1);
 }

@@ -91,14 +91,14 @@ WardleySizeAst _parseSize(String source, String line, int offset) {
 }
 
 List<WardleyEvolutionStageAst> _parseEvolution(String source, String value, int offset) {
-  final parts = _splitOutsideQuotes(value, '->');
+  final parts = splitOutsideQuotes(value, '->');
   if (parts.length < 2) throwParseError(source, 'Evolution requires at least two stages', offset);
   return parts
       .map((part) {
-        final labels = _splitOutsideQuotes(part, '/');
+        final labels = splitOutsideQuotes(part, '/');
         if (labels.length > 2) throwParseError(source, 'Invalid evolution stage', offset);
         final primary = labels.first.trim();
-        final at = _lastOutsideQuotes(primary, '@');
+        final at = lastIndexOutsideQuotes(primary, '@');
         final nameText = at < 0 ? primary : primary.substring(0, at).trim();
         final boundary = at < 0 ? null : _decimal(source, primary.substring(at + 1).trim(), offset);
         return WardleyEvolutionStageAst(
@@ -256,7 +256,7 @@ WardleyAnnotationAst _parseAnnotation(String source, String value, int offset) {
 }
 
 WardleyLinkAst _parseLink(String source, String line, int offset) {
-  final semicolon = _firstOutsideQuotes(line, ';');
+  final semicolon = indexOutsideQuotes(line, ';');
   final annotation = semicolon < 0 ? null : line.substring(semicolon + 1).trim();
   final expression = (semicolon < 0 ? line : line.substring(0, semicolon)).trim();
   final operators = _linkOperators(expression);
@@ -380,7 +380,7 @@ WardleyLinkFlow _flow(String value) => switch (value) {
   required String context,
   bool quotedOnly = false,
 }) {
-  final open = _firstOutsideQuotes(value, '[');
+  final open = indexOutsideQuotes(value, '[');
   final close = open < 0 ? -1 : value.indexOf(']', open + 1);
   if (open < 0 || close < 0) throwParseError(source, 'Invalid $context coordinates', offset);
   final nameText = value.substring(0, open).trim();
@@ -435,61 +435,6 @@ String _name(String source, String value, int offset) {
 
 void _expectEmptySuffix(String source, String suffix, int offset, String context) {
   if (suffix.trim().isNotEmpty) throwParseError(source, 'Unexpected $context content', offset);
-}
-
-List<String> _splitOutsideQuotes(String value, String separator) {
-  final result = <String>[];
-  String? quote;
-  var start = 0;
-  for (var index = 0; index <= value.length - separator.length; index++) {
-    final character = value[index];
-    if (quote != null) {
-      if (character == '\\') {
-        index++;
-      } else if (character == quote) {
-        quote = null;
-      }
-    } else if (character == '"' || character == "'") {
-      quote = character;
-    } else if (value.startsWith(separator, index)) {
-      result.add(value.substring(start, index));
-      start = index + separator.length;
-      index += separator.length - 1;
-    }
-  }
-  result.add(value.substring(start));
-  return result;
-}
-
-int _firstOutsideQuotes(String value, String needle) {
-  String? quote;
-  for (var index = 0; index < value.length; index++) {
-    final character = value[index];
-    if (quote != null) {
-      if (character == '\\') {
-        index++;
-      } else if (character == quote) {
-        quote = null;
-      }
-    } else if (character == '"' || character == "'") {
-      quote = character;
-    } else if (value.startsWith(needle, index)) {
-      return index;
-    }
-  }
-  return -1;
-}
-
-int _lastOutsideQuotes(String value, String needle) {
-  var result = -1;
-  var start = 0;
-  while (start < value.length) {
-    final found = _firstOutsideQuotes(value.substring(start), needle);
-    if (found < 0) break;
-    result = start + found;
-    start = result + needle.length;
-  }
-  return result;
 }
 
 enum _LinkOperatorKind { port, arrow, dashedArrow, flowArrow }

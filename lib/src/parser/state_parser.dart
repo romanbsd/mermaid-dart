@@ -52,25 +52,11 @@ final class _StateParser {
         hideEmptyDescriptions = true;
         continue;
       }
-      final classDef = parseGraphClassDefinition(text);
-      if (classDef != null) {
-        for (final name in classDef.names) {
-          classDefinitions[name] = classDef.styles;
-        }
-        continue;
-      }
-      final classAssignment = parseGraphClassAssignment(text);
-      if (classAssignment != null) {
-        for (final id in classAssignment.ids) {
-          mergeCssClasses((_findState(scope, id) ?? _state(scope, id)).cssClasses, classAssignment.cssClasses);
-        }
-        continue;
-      }
-      final style = parseGraphStyleAssignment(text);
-      if (style != null) {
-        for (final id in style.ids) {
-          (_findState(scope, id) ?? _state(scope, id)).styles.addAll(style.styles);
-        }
+      if (applyGraphClassSyntax(
+        text,
+        classDefinitions: classDefinitions,
+        node: (id) => _findState(scope, id) ?? _state(scope, id),
+      )) {
         continue;
       }
       final note = RegExp(r'^note\s+(left|right)\s+of\s+([^\s:]+)\s*:\s*(.+)$', caseSensitive: false).firstMatch(text);
@@ -223,7 +209,7 @@ final class _StateScope {
   GraphDirection? direction;
 }
 
-final class _MutableState {
+final class _MutableState implements GraphStyledNode {
   _MutableState(this.id, this.label, this.type);
 
   final String id;
@@ -234,7 +220,10 @@ final class _MutableState {
   final List<StateTransitionAst> transitions = [];
   GraphDirection? direction;
   StateNoteAst? note;
+  @override
   final List<String> cssClasses = [];
+
+  @override
   final Map<String, String> styles = {};
 
   StateAst freeze() => StateAst(

@@ -47,9 +47,14 @@ todayMarker off
       expect(ast.topAxis, isTrue);
       expect(ast.weekday, GanttWeekday.monday);
       expect(ast.weekendStart, GanttWeekendStart.friday);
-      expect(ast.excludes, ['weekends', '2025-02-10', 'monday', '2025-02-11']);
-      expect(ast.includes, ['2025-02-10']);
-      expect(ast.todayMarker, 'off');
+      expect(ast.excludes, const [
+        GanttWeekendsFilter(),
+        GanttDateLiteralFilter('2025-02-10'),
+        GanttWeekdayFilter(GanttWeekday.monday),
+        GanttDateLiteralFilter('2025-02-11'),
+      ]);
+      expect(ast.includes, const [GanttDateLiteralFilter('2025-02-10')]);
+      expect(ast.todayMarker, const GanttTodayMarkerOff());
     });
 
     test('resolves dates, durations, dependencies, tags, sections, and links', () {
@@ -116,6 +121,37 @@ Task :task, 2025-01-03, 3d
 
       expect(ast.tasks.single.end, DateTime(2025, 1, 7));
       expect(ast.tasks.single.renderEnd, DateTime(2025, 1, 7));
+    });
+
+    test('resolves every duration unit, with M as months and m as minutes', () {
+      final ast =
+          parse(DiagramType.gantt, '''
+gantt
+dateFormat YYYY-MM-DDTHH:mm
+section Work
+Millis :ms, 2025-01-01T00:00, 500ms
+Seconds :s, 2025-01-01T00:00, 30s
+Minutes :m, 2025-01-01T00:00, 15m
+Hours :h, 2025-01-01T00:00, 6h
+Days :d, 2025-01-01T00:00, 2d
+Weeks :w, 2025-01-01T00:00, 1w
+Months :mo, 2025-01-01T00:00, 3M
+Years :y, 2025-01-01T00:00, 1y
+Fractional :fm, 2025-01-01T00:00, 1.5M
+''')
+              as GanttAst;
+
+      final ends = {for (final task in ast.tasks) task.id: task.end};
+      expect(ends['ms'], DateTime(2025, 1, 1, 0, 0, 0, 500));
+      expect(ends['s'], DateTime(2025, 1, 1, 0, 0, 30));
+      expect(ends['m'], DateTime(2025, 1, 1, 0, 15));
+      expect(ends['h'], DateTime(2025, 1, 1, 6));
+      expect(ends['d'], DateTime(2025, 1, 3));
+      expect(ends['w'], DateTime(2025, 1, 8));
+      expect(ends['mo'], DateTime(2025, 4));
+      expect(ends['y'], DateTime(2026));
+      // A fractional month is a flat 30-day remainder, as upstream Mermaid does.
+      expect(ends['fm'], DateTime(2025, 2, 16));
     });
 
     test('reports invalid dates, tick intervals, and unresolved dependencies', () {

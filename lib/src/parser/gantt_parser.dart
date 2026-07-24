@@ -3,7 +3,7 @@ import 'common_syntax.dart';
 
 final _ganttHeader = RegExp(r'^[\t \r\n]*(gantt)(?=\s|$)', caseSensitive: false);
 final _tickInterval = RegExp(r'^([1-9]\d*)(millisecond|second|minute|hour|day|week|month)$', caseSensitive: false);
-final _duration = RegExp(r'^(\d+(?:\.\d+)?)(ms|[Mdhmswy])$');
+final _duration = RegExp('^(\\d+(?:\\.\\d+)?)(${_DurationUnit.values.map((unit) => unit.suffix).join('|')})\$');
 final _after = RegExp(r'^after\s+([\d\w-]+(?:\s+[\d\w-]+)*)$', caseSensitive: false);
 final _until = RegExp(r'^until\s+([\d\w-]+(?:\s+[\d\w-]+)*)$', caseSensitive: false);
 final _click = RegExp(r'^click\s+(\S+)\s+(.+)$', caseSensitive: false);
@@ -38,9 +38,9 @@ final class _GanttCollector {
   bool topAxis = false;
   GanttWeekday weekday = GanttWeekday.sunday;
   GanttWeekendStart weekendStart = GanttWeekendStart.saturday;
-  String todayMarker = '';
-  final excludes = <String>[];
-  final includes = <String>[];
+  GanttTodayMarker todayMarker = const GanttTodayMarkerStyle();
+  final excludes = <GanttDateFilter>[];
+  final includes = <GanttDateFilter>[];
   final sections = <_RawSection>[];
   final interactions = <_Interaction>[];
   _RawSection? currentSection;
@@ -86,7 +86,7 @@ final class _GanttCollector {
       case 'includes':
         _mergeTokens(includes, _requiredValue(content, 'includes', offset));
       case 'todaymarker':
-        todayMarker = _requiredValue(content, 'todayMarker', offset);
+        todayMarker = GanttTodayMarker.fromValue(_requiredValue(content, 'todayMarker', offset));
       case 'section':
         final name = _requiredValue(content, 'section', offset);
         currentSection = _RawSection(name);
@@ -110,9 +110,10 @@ final class _GanttCollector {
     }
   }
 
-  void _mergeTokens(List<String> target, String value) {
+  void _mergeTokens(List<GanttDateFilter> target, String value) {
     for (final token in value.toLowerCase().split(_tokenSeparator).where((token) => token.isNotEmpty)) {
-      if (!target.contains(token)) target.add(token);
+      final filter = GanttDateFilter.fromToken(token);
+      if (!target.contains(filter)) target.add(filter);
     }
   }
 
@@ -316,7 +317,7 @@ final class _GanttCollector {
       final end = tasks.map((task) => task.start).reduce((left, right) => left.isBefore(right) ? left : right);
       return _EndResult(end, false);
     }
-    final explicit = _tryParseDate(value, dateFormat);
+    final explicit = tryParseGanttDate(value, dateFormat);
     if (explicit != null) {
       return _EndResult(inclusiveEndDates ? explicit.add(const Duration(days: 1)) : explicit, true);
     }
@@ -341,18 +342,13 @@ final class _GanttCollector {
     return (end: end, renderEnd: renderEnd);
   }
 
-  bool _isExcluded(DateTime date) {
-    final formatted = _formatDayJs(date, dateFormat);
-    final iso = _isoDate(date);
-    if (includes.contains(formatted.toLowerCase()) || includes.contains(iso)) return false;
-    if (excludes.contains('weekends')) {
-      final first = weekendStart == GanttWeekendStart.friday ? DateTime.friday : DateTime.saturday;
-      final second = first == DateTime.saturday ? DateTime.sunday : DateTime.saturday;
-      if (date.weekday == first || date.weekday == second) return true;
-    }
-    final weekdayName = GanttWeekday.values[date.weekday - 1].name;
-    return excludes.contains(weekdayName) || excludes.contains(formatted.toLowerCase()) || excludes.contains(iso);
-  }
+  bool _isExcluded(DateTime date) => ganttDateExcluded(
+    date,
+    dateFormat: dateFormat,
+    excludes: excludes,
+    includes: includes,
+    weekendStart: weekendStart,
+  );
 }
 
 final class _RawSection {
@@ -415,24 +411,9 @@ GanttTaskAst _copyTask(GanttTaskAst task, {String? link, GanttCallbackAst? callb
   callback: callback ?? task.callback,
 );
 
-List<String> _splitCallbackArguments(String source) {
-  if (source.trim().isEmpty) return const [];
-  final result = <String>[];
-  final buffer = StringBuffer();
-  var quoted = false;
-  for (final rune in source.runes) {
-    final char = String.fromCharCode(rune);
-    if (char == '"') quoted = !quoted;
-    if (char == ',' && !quoted) {
-      result.add(_unquoteArgument(buffer.toString()));
-      buffer.clear();
-    } else {
-      buffer.write(char);
-    }
-  }
-  result.add(_unquoteArgument(buffer.toString()));
-  return result;
-}
+List<String> _splitCallbackArguments(String source) => source.trim().isEmpty
+    ? const []
+    : splitOutsideQuotes(source, ',', quotes: '"', escapes: false).map(_unquoteArgument).toList();
 
 String _unquoteArgument(String value) {
   final trimmed = value.trim();
@@ -442,94 +423,46 @@ String _unquoteArgument(String value) {
 }
 
 DateTime _parseDate(String value, String format, String source, int offset) {
-  final parsed = _tryParseDate(value, format);
+  final parsed = tryParseGanttDate(value, format);
   if (parsed == null) throwParseError(source, 'Invalid Gantt date: $value', offset);
   return parsed;
 }
 
-DateTime? _tryParseDate(String value, String format) {
-  final trimmed = value.trim();
-  final trimmedFormat = format.trim();
-  if (trimmedFormat == 'x' || trimmedFormat == 'X') {
-    final number = int.tryParse(trimmed);
-    if (number == null) return null;
-    return DateTime.fromMillisecondsSinceEpoch(trimmedFormat == 'X' ? number * 1000 : number);
-  }
-  final pattern = trimmedFormat.isEmpty ? 'YYYY-MM-DD' : trimmedFormat;
-  const tokens = ['YYYY', 'SSS', 'YY', 'MM', 'DD', 'HH', 'mm', 'ss', 'M', 'D', 'H', 'm', 's'];
-  final fields = <String>[];
-  final expression = StringBuffer('^');
-  for (var index = 0; index < pattern.length;) {
-    final token = tokens.where((token) => pattern.startsWith(token, index)).firstOrNull;
-    if (token == null) {
-      expression.write(RegExp.escape(pattern[index]));
-      index++;
-    } else {
-      fields.add(token);
-      expression.write(
-        token == 'YYYY' || token == 'SSS'
-            ? r'(\d{'
-                  '${token.length}'
-                  r'})'
-            : r'(\d{1,2})',
-      );
-      index += token.length;
-    }
-  }
-  expression.write(r'$');
-  final match = RegExp(expression.toString()).firstMatch(trimmed);
-  if (match == null) return null;
-  var year = 1970;
-  var month = 1;
-  var day = 1;
-  var hour = 0;
-  var minute = 0;
-  var second = 0;
-  var millisecond = 0;
-  for (var index = 0; index < fields.length; index++) {
-    final number = int.parse(match.group(index + 1)!);
-    switch (fields[index]) {
-      case 'YYYY':
-        year = number;
-      case 'YY':
-        year = 2000 + number;
-      case 'MM' || 'M':
-        month = number;
-      case 'DD' || 'D':
-        day = number;
-      case 'HH' || 'H':
-        hour = number;
-      case 'mm' || 'm':
-        minute = number;
-      case 'ss' || 's':
-        second = number;
-      case 'SSS':
-        millisecond = number;
-    }
-  }
-  final result = DateTime(year, month, day, hour, minute, second, millisecond);
-  if (result.year != year ||
-      result.month != month ||
-      result.day != day ||
-      result.hour != hour ||
-      result.minute != minute ||
-      result.second != second) {
-    return null;
-  }
-  return result;
+/// A Day.js duration suffix accepted after a Gantt task's length.
+///
+/// Declaration order is match order, so `ms` must precede `m`. Suffixes are
+/// case-sensitive: `M` is months while `m` is minutes.
+enum _DurationUnit {
+  milliseconds('ms', microseconds: Duration.microsecondsPerMillisecond),
+  seconds('s', microseconds: Duration.microsecondsPerSecond),
+  minutes('m', microseconds: Duration.microsecondsPerMinute),
+  hours('h', microseconds: Duration.microsecondsPerHour),
+  days('d', microseconds: Duration.microsecondsPerDay),
+  weeks('w', microseconds: Duration.microsecondsPerDay * DateTime.daysPerWeek),
+  months('M', calendarMonths: 1),
+  years('y', calendarMonths: DateTime.monthsPerYear);
+
+  const _DurationUnit(this.suffix, {this.microseconds, this.calendarMonths});
+
+  /// Literal suffix as written in the diagram source.
+  final String suffix;
+
+  /// Fixed length of one unit, or `null` for calendar-relative units.
+  final int? microseconds;
+
+  /// Calendar months per unit, or `null` for fixed-length units.
+  final int? calendarMonths;
+
+  static _DurationUnit bySuffix(String suffix) => values.firstWhere((unit) => unit.suffix == suffix);
 }
 
-DateTime _addDuration(DateTime start, double value, String unit) => switch (unit) {
-  'ms' => start.add(Duration(microseconds: (value * Duration.microsecondsPerMillisecond).round())),
-  's' => start.add(Duration(microseconds: (value * Duration.microsecondsPerSecond).round())),
-  'm' => start.add(Duration(microseconds: (value * Duration.microsecondsPerMinute).round())),
-  'h' => start.add(Duration(microseconds: (value * Duration.microsecondsPerHour).round())),
-  'd' => start.add(Duration(microseconds: (value * Duration.microsecondsPerDay).round())),
-  'w' => start.add(Duration(microseconds: (value * Duration.microsecondsPerDay * 7).round())),
-  'M' => _addCalendarMonths(start, value),
-  'y' => _addCalendarMonths(start, value * 12),
-  _ => start,
-};
+DateTime _addDuration(DateTime start, double value, String suffix) {
+  final unit = _DurationUnit.bySuffix(suffix);
+  final months = unit.calendarMonths;
+  return months == null
+      ? start.add(Duration(microseconds: (value * unit.microseconds!).round()))
+      : _addCalendarMonths(start, value * months);
+}
 
 DateTime _addCalendarMonths(DateTime start, double months) {
   final whole = months.truncate();
@@ -551,37 +484,4 @@ DateTime _addCalendarMonths(DateTime start, double months) {
   return fraction == 0
       ? result
       : result.add(Duration(microseconds: (fraction * 30 * Duration.microsecondsPerDay).round()));
-}
-
-String _formatDayJs(DateTime date, String format) {
-  final pattern = format.trim().isEmpty ? 'YYYY-MM-DD' : format.trim();
-  final replacements = <String, String>{
-    'YYYY': date.year.toString().padLeft(4, '0'),
-    'YY': (date.year % 100).toString().padLeft(2, '0'),
-    'MM': date.month.toString().padLeft(2, '0'),
-    'M': date.month.toString(),
-    'DD': date.day.toString().padLeft(2, '0'),
-    'D': date.day.toString(),
-    'HH': date.hour.toString().padLeft(2, '0'),
-    'H': date.hour.toString(),
-    'mm': date.minute.toString().padLeft(2, '0'),
-    'm': date.minute.toString(),
-    'ss': date.second.toString().padLeft(2, '0'),
-    's': date.second.toString(),
-    'SSS': date.millisecond.toString().padLeft(3, '0'),
-  };
-  return pattern.replaceAllMapped(
-    RegExp(r'YYYY|SSS|YY|MM|DD|HH|mm|ss|M|D|H|m|s'),
-    (match) => replacements[match.group(0)]!,
-  );
-}
-
-String _isoDate(DateTime date) =>
-    '${date.year.toString().padLeft(4, '0')}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
-
-extension<T> on Iterable<T> {
-  T? get firstOrNull {
-    final iterator = this.iterator;
-    return iterator.moveNext() ? iterator.current : null;
-  }
 }

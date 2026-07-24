@@ -30,27 +30,7 @@ final class _ErParser {
         direction = parsedDirection;
         continue;
       }
-      final classDef = parseGraphClassDefinition(text);
-      if (classDef != null) {
-        for (final name in classDef.names) {
-          classDefinitions[name] = classDef.styles;
-        }
-        continue;
-      }
-      final classAssignment = parseGraphClassAssignment(text);
-      if (classAssignment != null) {
-        for (final id in classAssignment.ids) {
-          mergeCssClasses(_entity(id).cssClasses, classAssignment.cssClasses);
-        }
-        continue;
-      }
-      final style = parseGraphStyleAssignment(text);
-      if (style != null) {
-        for (final id in style.ids) {
-          _entity(id).styles.addAll(style.styles);
-        }
-        continue;
-      }
+      if (applyGraphClassSyntax(text, classDefinitions: classDefinitions, node: _entity)) continue;
       final entityBlock = RegExp(r'^(.+?)\s*\{$').firstMatch(text);
       if (entityBlock != null) {
         final declaration = _parseErEntityDeclaration(entityBlock.group(1)!);
@@ -199,13 +179,16 @@ ErCardinality _textCardinality(String value) => switch (value.toLowerCase()) {
   _ => ErCardinality.zeroOrMore,
 };
 
-final class _MutableErEntity {
+final class _MutableErEntity implements GraphStyledNode {
   _MutableErEntity(this.id, this.label);
 
   final String id;
   String label;
   final List<ErAttributeAst> attributes = [];
+  @override
   final List<String> cssClasses = [];
+
+  @override
   final Map<String, String> styles = {};
 
   ErEntityAst freeze() => ErEntityAst(

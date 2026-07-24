@@ -363,9 +363,9 @@ List<SceneElement> _flowchartNodeElements(
     for (final className in node.cssClasses) ...?classDefinitions[className],
     ...node.styles,
   };
-  final fill = _flowchartColor(styles['fill']) ?? context.options.theme.mainBackground;
-  final strokeColor = _flowchartColor(styles['stroke']) ?? context.options.theme.nodeBorder;
-  final strokeWidth = double.tryParse(styles['stroke-width']?.replaceFirst('px', '') ?? '') ?? 1;
+  final fill = styles.fillColor ?? context.options.theme.mainBackground;
+  final strokeColor = styles.strokeColor ?? context.options.theme.nodeBorder;
+  final strokeWidth = styles.strokeWidth ?? 1;
   final stroke = SceneStroke(color: strokeColor, width: strokeWidth);
   final classes = [
     'flowchart-node',
@@ -385,7 +385,7 @@ List<SceneElement> _flowchartNodeElements(
       style: SceneTextStyle(
         fontFamily: context.textStyle.fontFamily,
         fontSize: context.textStyle.fontSize,
-        color: _flowchartColor(styles['color']) ?? context.textStyle.color,
+        color: styles.textColor ?? context.textStyle.color,
       ),
       cssClasses: const ['flowchart-node-label'],
     ),
@@ -573,9 +573,9 @@ List<SceneElement> _flowchartEdgeElements(
       ? _graphBasisPath([start, middle, pathEnd])
       : <PathCommand>[MoveTo(start), LineTo(middle), LineTo(beforeEnd), LineTo(pathEnd)];
   final stroke = SceneStroke(
-    color: _flowchartColor(edge.styles['stroke']) ?? context.options.theme.line,
+    color: edge.styles.strokeColor ?? context.options.theme.line,
     width:
-        double.tryParse(edge.styles['stroke-width']?.replaceFirst('px', '') ?? '') ??
+        edge.styles.strokeWidth ??
         (edge.stroke == FlowchartEdgeStroke.thick ? config.edgeWidth * 3.5 : config.edgeWidth),
     dashes: edge.stroke == FlowchartEdgeStroke.dotted ? const [2] : const [0],
     join: StrokeJoin.miter,
