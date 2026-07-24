@@ -203,7 +203,8 @@ final class MermaidScenePainter extends CustomPainter {
         text.position.y - (firstLine?.baseline ?? painter.height),
       mermaid.TextBaseline.central ||
       mermaid.TextBaseline.middle => text.position.y - painter.height / 2,
-      mermaid.TextBaseline.hanging => text.position.y,
+      mermaid.TextBaseline.hanging ||
+      mermaid.TextBaseline.textBeforeEdge => text.position.y,
     };
     painter.paint(canvas, Offset(x, y));
   }

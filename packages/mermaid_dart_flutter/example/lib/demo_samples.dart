@@ -246,6 +246,26 @@ title Storage allocation
 ''',
   ),
   DemoSample(
+    type: DiagramType.quadrantChart,
+    title: 'Quadrant Chart',
+    description:
+        'Normalized campaign points, quadrant labels, axes, and point styles.',
+    source: '''
+quadrantChart
+title Campaign reach and engagement
+x-axis Low Reach --> High Reach
+y-axis Low Engagement --> High Engagement
+quadrant-1 Expand
+quadrant-2 Promote
+quadrant-3 Re-evaluate
+quadrant-4 Improve
+Campaign A: [0.30, 0.60]
+Campaign B: [0.78, 0.34] color: #ff3300, radius: 9
+Campaign C:::priority: [0.57, 0.69]
+classDef priority color: #109060, stroke-color: #310085, stroke-width: 3px
+''',
+  ),
+  DemoSample(
     type: DiagramType.radar,
     title: 'Radar',
     description: 'Named axes and multiple comparative data curves.',
@@ -392,6 +412,19 @@ User -> API
 API +<> Database; data
 evolve API 0.85
 note "Reduce coupling" [0.2, 0.8]
+''',
+  ),
+  DemoSample(
+    type: DiagramType.xyChart,
+    title: 'XY Chart',
+    description: 'Categorical axes with bar and line series.',
+    source: '''
+xychart
+title "Quarterly sales"
+x-axis "Quarter" [Q1, Q2, Q3, Q4]
+y-axis "Revenue" 0 --> 100
+bar "Actual" [20, 45, 70, 85]
+line "Forecast" [25, 50, 75, 95]
 ''',
   ),
 ];

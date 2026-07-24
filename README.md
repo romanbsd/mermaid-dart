@@ -9,11 +9,11 @@ scene graph, and can serialize the scene as accessible SVG.
 
 ## Status
 
-The parity suite currently covers 84 representative diagrams, all of which pass
+The parity suite currently covers 95 representative diagrams. All 95 pass
 visual comparison against the pinned Mermaid.js 11.16.0 renderer:
 
 ```text
-Result: 0 exact, 84 visual, 0 different, 0 errors
+Result: 0 exact, 95 visual, 0 different, 0 errors
 ```
 
 “Visual parity” means the viewport, visible text, element counts, geometry, and
@@ -40,6 +40,7 @@ available in Mermaid.js.
 | Mindmap | `mindmap` | `mindmap` |
 | Packet | `packet` | `packet`, `packet-beta` |
 | Pie | `pie` | `pie` |
+| Quadrant Chart | `quadrantChart` | `quadrantChart` |
 | Radar | `radar` | `radar-beta` |
 | Railroad | `railroad` | `railroad-beta` |
 | Railroad ABNF | `railroadAbnf` | `railroad-abnf-beta` |
@@ -245,8 +246,8 @@ final svg = renderDiagramSvg(
 
 `RenderOptions` exposes dedicated configuration objects for Architecture,
 Cynefin, Event Modeling, Flowchart, Gantt, Git Graph, Info, Kanban, Mindmap,
-Packet, Pie, Radar, Railroad, Sequence, Timeline, Tree View, Treemap, and
-Wardley Map renderers.
+Packet, Pie, Quadrant Chart, Radar, Railroad, Sequence, Timeline, Tree View,
+Treemap, Wardley Map, and XY Chart renderers.
 Theme and renderer defaults follow
 the corresponding Mermaid.js 11.16.0 behavior.
 

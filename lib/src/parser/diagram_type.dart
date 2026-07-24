@@ -44,6 +44,9 @@ enum DiagramType {
   /// Selects the pie variant.
   pie('pie'),
 
+  /// Selects the quadrant chart variant.
+  quadrantChart('quadrantChart'),
+
   /// Selects the radar variant.
   radar('radar'),
 

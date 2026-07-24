@@ -13,6 +13,7 @@ import 'kanban_parser.dart';
 import 'mindmap_parser.dart';
 import 'packet_parser.dart';
 import 'pie_parser.dart';
+import 'quadrant_chart_parser.dart';
 import 'radar_parser.dart';
 import 'railroad_abnf_parser.dart';
 import 'railroad_ebnf_parser.dart';
@@ -44,6 +45,7 @@ DiagramAst parse(DiagramType diagramType, String source) => switch (diagramType)
   DiagramType.mindmap => parseMindmap(source),
   DiagramType.packet => parsePacket(source),
   DiagramType.pie => parsePie(source),
+  DiagramType.quadrantChart => parseQuadrantChart(source),
   DiagramType.radar => parseRadar(source),
   DiagramType.railroad => parseRailroad(source),
   DiagramType.railroadAbnf => parseRailroadAbnf(source),

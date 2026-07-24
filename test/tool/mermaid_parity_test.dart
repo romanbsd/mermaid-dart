@@ -26,8 +26,8 @@ void main() {
     final manifest = ParityManifest.load(File('tool/mermaid_parity/fixtures.json'));
 
     expect(manifest.mermaidVersion, '11.16.0');
-    expect(manifest.fixtures.map((fixture) => fixture.id), hasLength(87));
-    expect(manifest.fixtures.map((fixture) => fixture.id).toSet(), hasLength(87));
+    expect(manifest.fixtures.map((fixture) => fixture.id), hasLength(95));
+    expect(manifest.fixtures.map((fixture) => fixture.id).toSet(), hasLength(95));
     expect(
       manifest.fixtures.map((fixture) => fixture.id),
       containsAll([
@@ -65,8 +65,16 @@ void main() {
         'info-theme-variables',
         'packet-theme-variables',
         'pie-theme-variables',
+        'quadrant-campaigns',
+        'quadrant-upstream-quadrants-only',
+        'quadrant-upstream-one-sided-axes',
+        'quadrant-upstream-points-force-bottom',
+        'quadrant-upstream-custom-config',
+        'quadrant-upstream-theme-variables',
+        'quadrant-upstream-unicode',
         'radar-theme-variables',
         'xy-chart-sales',
+        'xy-chart-horizontal',
         'railroad-theme-variables',
         'treemap-theme-variables',
         'wardley-theme-variables',
@@ -948,6 +956,75 @@ void main() {
     );
   });
 
+  test('fixture quadrant options are typed and quadrant-only', () {
+    const options = {
+      'chartWidth': 640,
+      'chartHeight': 360,
+      'titlePadding': 8,
+      'titleFontSize': 18,
+      'quadrantPadding': 12,
+      'xAxisLabelPadding': 7,
+      'yAxisLabelPadding': 9,
+      'xAxisLabelFontSize': 14,
+      'yAxisLabelFontSize': 15,
+      'quadrantLabelFontSize': 13,
+      'quadrantTextTopPadding': 6,
+      'pointTextPadding': 4,
+      'pointLabelFontSize': 11,
+      'pointRadius': 7,
+      'xAxisPosition': 'bottom',
+      'yAxisPosition': 'right',
+      'quadrantInternalBorderStrokeWidth': 3,
+      'quadrantExternalBorderStrokeWidth': 4,
+    };
+    final configured = ParityFixture.fromJson({
+      'id': 'configured',
+      'type': 'quadrantChart',
+      'source': 'quadrantChart',
+      'quadrantOptions': options,
+    });
+
+    final quadrant = configured.renderOptions.quadrantChart;
+    expect(quadrant.chartWidth, 640);
+    expect(quadrant.chartHeight, 360);
+    expect(quadrant.titlePadding, 8);
+    expect(quadrant.titleFontSize, 18);
+    expect(quadrant.quadrantPadding, 12);
+    expect(quadrant.xAxisLabelPadding, 7);
+    expect(quadrant.yAxisLabelPadding, 9);
+    expect(quadrant.xAxisLabelFontSize, 14);
+    expect(quadrant.yAxisLabelFontSize, 15);
+    expect(quadrant.quadrantLabelFontSize, 13);
+    expect(quadrant.quadrantTextTopPadding, 6);
+    expect(quadrant.pointTextPadding, 4);
+    expect(quadrant.pointLabelFontSize, 11);
+    expect(quadrant.pointRadius, 7);
+    expect(quadrant.xAxisPosition, QuadrantXAxisPosition.bottom);
+    expect(quadrant.yAxisPosition, QuadrantYAxisPosition.right);
+    expect(quadrant.internalBorderStrokeWidth, 3);
+    expect(quadrant.externalBorderStrokeWidth, 4);
+    expect(configured.mermaidConfig, {'quadrantChart': options});
+
+    expect(
+      () => ParityFixture.fromJson({
+        'id': 'configured',
+        'type': 'pie',
+        'source': 'pie\n"A": 1',
+        'quadrantOptions': {'chartWidth': 640},
+      }),
+      throwsFormatException,
+    );
+    expect(
+      () => ParityFixture.fromJson({
+        'id': 'configured',
+        'type': 'quadrantChart',
+        'source': 'quadrantChart',
+        'quadrantOptions': {'xAxisPosition': 'left'},
+      }),
+      throwsFormatException,
+    );
+  });
+
   test('fixture global palette theme variables are typed and forwarded', () {
     const themeVariables = {
       'pie1': '#112233',
@@ -977,6 +1054,71 @@ void main() {
       }),
       throwsFormatException,
     );
+  });
+
+  test('fixture quadrant theme variables are typed and forwarded', () {
+    const variables = {
+      'quadrant1Fill': '#010101',
+      'quadrant2Fill': '#020202',
+      'quadrant3Fill': '#030303',
+      'quadrant4Fill': '#040404',
+      'quadrant1TextFill': '#111111',
+      'quadrant2TextFill': '#121212',
+      'quadrant3TextFill': '#131313',
+      'quadrant4TextFill': '#141414',
+      'quadrantPointFill': '#202020',
+      'quadrantPointTextFill': '#212121',
+      'quadrantXAxisTextFill': '#222222',
+      'quadrantYAxisTextFill': '#232323',
+      'quadrantInternalBorderStrokeFill': '#242424',
+      'quadrantExternalBorderStrokeFill': '#252525',
+      'quadrantTitleFill': '#262626',
+    };
+    final fixture = ParityFixture.fromJson({
+      'id': 'quadrant-theme',
+      'type': 'quadrantChart',
+      'source': 'quadrantChart',
+      'themeVariables': variables,
+    });
+    final quadrant = fixture.renderOptions.theme.quadrant;
+
+    expect(
+      [
+        quadrant.quadrant1Fill,
+        quadrant.quadrant2Fill,
+        quadrant.quadrant3Fill,
+        quadrant.quadrant4Fill,
+        quadrant.quadrant1TextFill,
+        quadrant.quadrant2TextFill,
+        quadrant.quadrant3TextFill,
+        quadrant.quadrant4TextFill,
+        quadrant.pointFill,
+        quadrant.pointTextFill,
+        quadrant.xAxisTextFill,
+        quadrant.yAxisTextFill,
+        quadrant.internalBorderStroke,
+        quadrant.externalBorderStroke,
+        quadrant.titleFill,
+      ],
+      const [
+        Color(1, 1, 1),
+        Color(2, 2, 2),
+        Color(3, 3, 3),
+        Color(4, 4, 4),
+        Color(17, 17, 17),
+        Color(18, 18, 18),
+        Color(19, 19, 19),
+        Color(20, 20, 20),
+        Color(32, 32, 32),
+        Color(33, 33, 33),
+        Color(34, 34, 34),
+        Color(35, 35, 35),
+        Color(36, 36, 36),
+        Color(37, 37, 37),
+        Color(38, 38, 38),
+      ],
+    );
+    expect(fixture.mermaidConfig, {'themeVariables': variables});
   });
 
   test('fixture forwards every supported flat and nested theme variable as typed values', () {

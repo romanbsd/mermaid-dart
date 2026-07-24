@@ -1030,9 +1030,134 @@
       }
     },
     {
+      "id": "quadrant-campaigns",
+      "type": "quadrantChart",
+      "source": "quadrantChart\n  accTitle: Campaign quadrant\n  title Reach and engagement\n  x-axis Low Reach --> High Reach\n  y-axis Low Engagement --> High Engagement\n  quadrant-1 Expand\n  quadrant-2 Promote\n  quadrant-3 Re-evaluate\n  quadrant-4 Improve\n  Campaign A: [0.30, 0.60] color: #b9b9ff, stroke-color: #b9b9ff\n  Campaign B: [0.78, 0.34] color: #ff3300, radius: 9, stroke-color: #b9b9ff\n  Campaign C:::priority: [0.57, 0.69]\n  classDef priority color: #109060, stroke-color: #310085, stroke-width: 3px\n"
+    },
+    {
+      "id": "quadrant-upstream-quadrants-only",
+      "type": "quadrantChart",
+      "source": "quadrantChart\n  quadrant-1 Leaders\n  quadrant-2 Challengers\n  quadrant-3 Niche Players\n  quadrant-4 Visionaries\n"
+    },
+    {
+      "id": "quadrant-upstream-one-sided-axes",
+      "type": "quadrantChart",
+      "source": "quadrantChart\n  x-axis Completeness\n  y-axis Execution\n  quadrant-1 Leaders\n  quadrant-2 Challengers\n  quadrant-3 Niche Players\n  quadrant-4 Visionaries\n",
+      "quadrantOptions": {
+        "xAxisPosition": "bottom",
+        "yAxisPosition": "right"
+      }
+    },
+    {
+      "id": "quadrant-upstream-points-force-bottom",
+      "type": "quadrantChart",
+      "source": "quadrantChart\n  title Analytics and Business Intelligence Platforms\n  x-axis Completeness of Vision --> Market Vision\n  y-axis Ability to Execute --> Execution Strength\n  quadrant-1 Leaders\n  quadrant-2 Challengers\n  quadrant-3 Niche Players\n  quadrant-4 Visionaries\n  Microsoft: [0.75, 0.75] radius: 10, color: #ff0000, stroke-color: #ff00ff, stroke-width: 3px\n  Salesforce:::vendor: [0.55, 0.60] color: #00aa66\n  classDef vendor radius: 8, color: #1122cc, stroke-color: #334455, stroke-width: 2px\n",
+      "quadrantOptions": {
+        "xAxisPosition": "top",
+        "yAxisPosition": "right"
+      }
+    },
+    {
+      "id": "quadrant-upstream-custom-config",
+      "type": "quadrantChart",
+      "source": "quadrantChart\n  title Custom geometry\n  x-axis Left --> Right\n  y-axis Bottom --> Top\n  quadrant-1 One\n  quadrant-2 Two\n  quadrant-3 Three\n  quadrant-4 Four\n",
+      "quadrantOptions": {
+        "chartWidth": 640,
+        "chartHeight": 360,
+        "titlePadding": 8,
+        "titleFontSize": 18,
+        "quadrantPadding": 12,
+        "xAxisLabelPadding": 7,
+        "yAxisLabelPadding": 9,
+        "xAxisLabelFontSize": 14,
+        "yAxisLabelFontSize": 15,
+        "quadrantLabelFontSize": 13,
+        "quadrantTextTopPadding": 6,
+        "pointTextPadding": 4,
+        "pointLabelFontSize": 11,
+        "pointRadius": 7,
+        "xAxisPosition": "top",
+        "yAxisPosition": "right",
+        "quadrantInternalBorderStrokeWidth": 3,
+        "quadrantExternalBorderStrokeWidth": 4
+      }
+    },
+    {
+      "id": "quadrant-upstream-theme-variables",
+      "type": "quadrantChart",
+      "source": "quadrantChart\n  title Theme matrix\n  x-axis Low --> High\n  y-axis Bottom --> Top\n  quadrant-1 One\n  quadrant-2 Two\n  quadrant-3 Three\n  quadrant-4 Four\n  Default point: [0.35, 0.65]\n",
+      "themeVariables": {
+        "quadrant1Fill": "#102030",
+        "quadrant2Fill": "#203040",
+        "quadrant3Fill": "#304050",
+        "quadrant4Fill": "#405060",
+        "quadrant1TextFill": "#f1f2f3",
+        "quadrant2TextFill": "#e1e2e3",
+        "quadrant3TextFill": "#d1d2d3",
+        "quadrant4TextFill": "#c1c2c3",
+        "quadrantPointFill": "#55aa77",
+        "quadrantPointTextFill": "#112211",
+        "quadrantXAxisTextFill": "#223344",
+        "quadrantYAxisTextFill": "#334455",
+        "quadrantInternalBorderStrokeFill": "#778899",
+        "quadrantExternalBorderStrokeFill": "#99aabb",
+        "quadrantTitleFill": "#445566"
+      }
+    },
+    {
+      "id": "quadrant-upstream-unicode",
+      "type": "quadrantChart",
+      "source": "quadrantChart\n  title 分析象限图\n  x-axis 低覆盖率 --> 高覆盖率\n  y-axis 低参与度 --> 高参与度\n  quadrant-1 需要扩展\n  quadrant-2 🚀需要推广\n  quadrant-3 重新评估\n  quadrant-4 可以改进\n  产品A: [0.30, 0.60] color: #b9b9ff, stroke-color: #b9b9ff\n  Café: [0.45, 0.23] color: #ffcc00, stroke-color: #b9b9ff\n"
+    },
+    {
       "id": "xy-chart-sales",
       "type": "xychart",
-      "source": "xychart\n  accTitle: Quarterly sales\n  title \"Sales\"\n  x-axis \"Quarter\" [Q1, Q2, Q3, Q4]\n  y-axis \"Revenue\" 0 --> 100\n  bar \"Actual\" [20, 45, 70, 85]\n  line \"Forecast\" [25 \"Low\", 50, 75, 95 \"High\"]\n"
+      "source": "xychart\n  accTitle: Quarterly sales\n  title \"Sales\"\n  x-axis \"Quarter\" [Q1, Q2, Q3, Q4]\n  y-axis \"Revenue\" 0 --> 100\n  bar \"Actual\" [20, 45, 70, 85]\n  line \"Forecast\" [25 \"Low\", 50, 75, 95 \"High\"]\n",
+      "textMeasurements": {
+        "Sales": { "width": 45, "height": 23 },
+        "Quarter": { "width": 50, "height": 19 },
+        "Revenue": { "width": 50, "height": 19 },
+        "Q1": { "width": 17, "height": 16 },
+        "Q2": { "width": 17, "height": 16 },
+        "Q3": { "width": 17, "height": 16 },
+        "Q4": { "width": 17, "height": 16 },
+        "0": { "width": 8, "height": 16 },
+        "10": { "width": 15, "height": 16 },
+        "20": { "width": 15, "height": 16 },
+        "30": { "width": 15, "height": 16 },
+        "40": { "width": 15, "height": 16 },
+        "50": { "width": 15, "height": 16 },
+        "60": { "width": 15, "height": 16 },
+        "70": { "width": 15, "height": 16 },
+        "80": { "width": 15, "height": 16 },
+        "90": { "width": 15, "height": 16 },
+        "100": { "width": 22.031, "height": 16 }
+      }
+    },
+    {
+      "id": "xy-chart-horizontal",
+      "type": "xychart",
+      "source": "xychart horizontal\n  accTitle: Horizontal sales\n  title \"Sales\"\n  x-axis \"Quarter\" [Q1, Q2, Q3, Q4]\n  y-axis \"Revenue\" 0 --> 100\n  bar \"Actual\" [20, 45, 70, 85]\n  line \"Forecast\" [25 \"Low\", 50, 75, 95 \"High\"]\n",
+      "textMeasurements": {
+        "Sales": { "width": 45, "height": 23 },
+        "Quarter": { "width": 50, "height": 18.813 },
+        "Revenue": { "width": 50, "height": 19 },
+        "Q1": { "width": 17, "height": 16 },
+        "Q2": { "width": 17, "height": 16 },
+        "Q3": { "width": 17, "height": 16 },
+        "Q4": { "width": 17, "height": 16 },
+        "0": { "width": 8, "height": 16 },
+        "10": { "width": 15, "height": 16 },
+        "20": { "width": 15, "height": 16 },
+        "30": { "width": 15, "height": 16 },
+        "40": { "width": 15, "height": 16 },
+        "50": { "width": 15, "height": 16 },
+        "60": { "width": 15, "height": 16 },
+        "70": { "width": 15, "height": 16 },
+        "80": { "width": 15, "height": 16 },
+        "90": { "width": 15, "height": 16 },
+        "100": { "width": 22.031, "height": 16 }
+      }
     }
   ]
 }

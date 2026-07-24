@@ -36,6 +36,7 @@ part 'layout/kanban.dart';
 part 'layout/mindmap.dart';
 part 'layout/packet.dart';
 part 'layout/pie.dart';
+part 'layout/quadrant_chart.dart';
 part 'layout/radar.dart';
 part 'layout/railroad.dart';
 part 'layout/sequence.dart';
@@ -141,6 +142,11 @@ DiagramScene layoutDiagram(
     PieAst ast => (
       content: _layoutPie(ast, context),
       diagramOptions: options.optionsFor(const PieRenderOptions()),
+      rendererHandlesTitle: true,
+    ),
+    QuadrantChartAst ast => (
+      content: _layoutQuadrantChart(ast, context),
+      diagramOptions: options.optionsFor(const QuadrantChartRenderOptions()),
       rendererHandlesTitle: true,
     ),
     RadarAst ast => (
@@ -316,6 +322,42 @@ SceneText _text(
     cssClasses: cssClasses,
   );
 }
+
+SceneGroup _transformedText(
+  _LayoutContext context,
+  String text,
+  double x,
+  double y, {
+  required String idPrefix,
+  required Color color,
+  required double fontSize,
+  required TextAnchor anchor,
+  required TextBaseline baseline,
+  double rotation = 0,
+  SemanticRole? groupRole,
+  List<String> groupCssClasses = const [],
+  SemanticRole role = SemanticRole.label,
+  List<String> cssClasses = const [],
+}) => SceneGroup(
+  id: context.id(idPrefix),
+  // Mermaid positions component labels through an explicit translate/rotate pair.
+  transforms: [Translate(x, y), Rotate(rotation)],
+  role: groupRole,
+  cssClasses: groupCssClasses,
+  children: [
+    _text(
+      context,
+      text,
+      0,
+      0,
+      anchor: anchor,
+      baseline: baseline,
+      role: role,
+      style: SceneTextStyle(fontFamily: context.options.theme.fontFamily, fontSize: fontSize, color: color),
+      cssClasses: cssClasses,
+    ),
+  ],
+);
 
 // Scene colors store alpha as an eight-bit channel while Mermaid options use
 // normalized CSS opacity values.

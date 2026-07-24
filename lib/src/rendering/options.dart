@@ -559,7 +559,90 @@ final class WardleyTheme {
   final Color annotationFill;
 }
 
-/// Resolved Mermaid theme values used by the mermaid renderer.
+/// Typed Mermaid XY-chart theme variables.
+final class XyChartTheme {
+  const XyChartTheme({
+    this.backgroundColor = const Color(255, 255, 255),
+    this.titleColor = const Color(19, 19, 0),
+    this.dataLabelColor = const Color(19, 19, 0),
+    this.legendTextColor = const Color(19, 19, 0),
+    this.xAxisTitleColor = const Color(19, 19, 0),
+    this.xAxisLabelColor = const Color(19, 19, 0),
+    this.xAxisTickColor = const Color(19, 19, 0),
+    this.xAxisLineColor = const Color(19, 19, 0),
+    this.yAxisTitleColor = const Color(19, 19, 0),
+    this.yAxisLabelColor = const Color(19, 19, 0),
+    this.yAxisTickColor = const Color(19, 19, 0),
+    this.yAxisLineColor = const Color(19, 19, 0),
+    this.plotColors = _mermaidXyPlotColors,
+  });
+
+  final Color backgroundColor;
+  final Color titleColor;
+  final Color dataLabelColor;
+  final Color legendTextColor;
+  final Color xAxisTitleColor;
+  final Color xAxisLabelColor;
+  final Color xAxisTickColor;
+  final Color xAxisLineColor;
+  final Color yAxisTitleColor;
+  final Color yAxisLabelColor;
+  final Color yAxisTickColor;
+  final Color yAxisLineColor;
+  final List<Color> plotColors;
+}
+
+const _mermaidXyPlotColors = [
+  Color(236, 236, 255),
+  Color(132, 147, 166),
+  Color(255, 195, 160),
+  Color(220, 221, 225),
+  Color(184, 233, 148),
+  Color(209, 163, 111),
+  Color(195, 205, 230),
+  Color(255, 182, 193),
+  Color(73, 96, 120),
+  Color(248, 243, 227),
+];
+
+/// Typed Mermaid quadrant-chart theme variables.
+final class QuadrantTheme {
+  const QuadrantTheme({
+    this.quadrant1Fill = const Color(236, 236, 255),
+    this.quadrant2Fill = const Color(241, 241, 255),
+    this.quadrant3Fill = const Color(246, 246, 255),
+    this.quadrant4Fill = const Color(251, 251, 255),
+    this.quadrant1TextFill = const Color(19, 19, 0),
+    this.quadrant2TextFill = const Color(14, 14, 0),
+    this.quadrant3TextFill = const Color(9, 9, 0),
+    this.quadrant4TextFill = const Color(4, 4, 0),
+    this.pointFill = const Color(185, 185, 255),
+    this.pointTextFill = const Color(19, 19, 0),
+    this.xAxisTextFill = const Color(19, 19, 0),
+    this.yAxisTextFill = const Color(19, 19, 0),
+    this.internalBorderStroke = const Color(199, 199, 241),
+    this.externalBorderStroke = const Color(199, 199, 241),
+    this.titleFill = const Color(19, 19, 0),
+  });
+
+  final Color quadrant1Fill;
+  final Color quadrant2Fill;
+  final Color quadrant3Fill;
+  final Color quadrant4Fill;
+  final Color quadrant1TextFill;
+  final Color quadrant2TextFill;
+  final Color quadrant3TextFill;
+  final Color quadrant4TextFill;
+  final Color pointFill;
+  final Color pointTextFill;
+  final Color xAxisTextFill;
+  final Color yAxisTextFill;
+  final Color internalBorderStroke;
+  final Color externalBorderStroke;
+  final Color titleFill;
+}
+
+/// Resolved Mermaid theme values used by the Mermaid renderers.
 final class MermaidTheme {
   /// Mermaid's default SVG font stack when no `fontFamily` theme variable is
   /// supplied.
@@ -596,8 +679,10 @@ final class MermaidTheme {
     this.eventModeling = const EventModelingTheme(),
     this.gitGraph = const GitGraphTheme(),
     this.pie = const PieTheme(),
+    this.quadrant = const QuadrantTheme(),
     this.radar = const RadarTheme(),
     this.wardley = const WardleyTheme(),
+    this.xyChart = const XyChartTheme(),
   }) : _fontFamilyOverride = fontFamily,
        _railroadCommonOverrides = (
          primaryText: primaryText,
@@ -725,11 +810,17 @@ final class MermaidTheme {
   /// The pie.
   final PieTheme pie;
 
+  /// The quadrant chart.
+  final QuadrantTheme quadrant;
+
   /// The radar.
   final RadarTheme radar;
 
   /// The wardley.
   final WardleyTheme wardley;
+
+  /// The XY chart.
+  final XyChartTheme xyChart;
 }
 
 /// Defines the supported diagram direction values.
@@ -2660,28 +2751,120 @@ final class TimelineRenderOptions extends DiagramRenderOptions {
 /// [theme] supplies global Mermaid variables, while each diagram-specific
 /// field contains typed renderer configuration. [padding] is applied after
 /// diagram layout when the final scene viewport is constructed.
+/// Geometry and presentation configuration for one XY chart axis.
+final class XyChartAxisRenderOptions {
+  const XyChartAxisRenderOptions({
+    this.showLabel = true,
+    this.labelFontSize = 14,
+    this.labelPadding = 5,
+    this.showTitle = true,
+    this.titleFontSize = 16,
+    this.titlePadding = 5,
+    this.showTick = true,
+    this.tickLength = 5,
+    this.tickWidth = 2,
+    this.showAxisLine = true,
+    this.axisLineWidth = 2,
+    this.labelRotation = 0,
+  });
+
+  final bool showLabel;
+  final double labelFontSize;
+  final double labelPadding;
+  final bool showTitle;
+  final double titleFontSize;
+  final double titlePadding;
+  final bool showTick;
+  final double tickLength;
+  final double tickWidth;
+  final bool showAxisLine;
+  final double axisLineWidth;
+  final double labelRotation;
+}
+
 /// Geometry and presentation configuration for XY charts.
 final class XyChartRenderOptions extends DiagramRenderOptions {
   const XyChartRenderOptions({
     this.width = 700,
     this.height = 500,
-    this.chartPadding = 60,
-    this.titlePadding = 30,
-    this.axisLabelPadding = 18,
-    this.barGapRatio = .2,
+    this.titleFontSize = 20,
+    this.titlePadding = 10,
+    this.showTitle = true,
+    this.showLegend = true,
+    this.legendFontSize = 14,
+    this.legendPadding = 10,
     this.showDataLabel = false,
+    this.showDataLabelOutsideBar = false,
+    this.xAxis = const XyChartAxisRenderOptions(),
+    this.yAxis = const XyChartAxisRenderOptions(),
+    this.plotReservedSpacePercent = 50,
     super.useWidth,
     super.useMaxWidth = true,
   });
 
   final double width;
   final double height;
-  final double chartPadding;
+  final double titleFontSize;
   final double titlePadding;
-  final double axisLabelPadding;
-  final double barGapRatio;
+  final bool showTitle;
+  final bool showLegend;
+  final double legendFontSize;
+  final double legendPadding;
   final bool showDataLabel;
+  final bool showDataLabelOutsideBar;
+  final XyChartAxisRenderOptions xAxis;
+  final XyChartAxisRenderOptions yAxis;
+  final double plotReservedSpacePercent;
 }
+
+/// Geometry and presentation configuration for quadrant charts.
+final class QuadrantChartRenderOptions extends DiagramRenderOptions {
+  const QuadrantChartRenderOptions({
+    this.chartWidth = 500,
+    this.chartHeight = 500,
+    this.titlePadding = 10,
+    this.titleFontSize = 20,
+    this.quadrantPadding = 5,
+    this.xAxisLabelPadding = 5,
+    this.yAxisLabelPadding = 5,
+    this.xAxisLabelFontSize = 16,
+    this.yAxisLabelFontSize = 16,
+    this.quadrantLabelFontSize = 16,
+    this.quadrantTextTopPadding = 5,
+    this.pointTextPadding = 5,
+    this.pointLabelFontSize = 12,
+    this.pointRadius = 5,
+    this.xAxisPosition = QuadrantXAxisPosition.top,
+    this.yAxisPosition = QuadrantYAxisPosition.left,
+    this.internalBorderStrokeWidth = 1,
+    this.externalBorderStrokeWidth = 2,
+    super.useWidth,
+    super.useMaxWidth = true,
+  });
+
+  final double chartWidth;
+  final double chartHeight;
+  final double titlePadding;
+  final double titleFontSize;
+  final double quadrantPadding;
+  final double xAxisLabelPadding;
+  final double yAxisLabelPadding;
+  final double xAxisLabelFontSize;
+  final double yAxisLabelFontSize;
+  final double quadrantLabelFontSize;
+  final double quadrantTextTopPadding;
+  final double pointTextPadding;
+  final double pointLabelFontSize;
+  final double pointRadius;
+  final QuadrantXAxisPosition xAxisPosition;
+  final QuadrantYAxisPosition yAxisPosition;
+  final double internalBorderStrokeWidth;
+  final double externalBorderStrokeWidth;
+}
+
+enum QuadrantXAxisPosition { top, bottom }
+
+enum QuadrantYAxisPosition { left, right }
 
 final class RenderOptions {
   /// Creates rendering options with Mermaid-compatible defaults.
@@ -2701,6 +2884,7 @@ final class RenderOptions {
     this.mindmap = const MindmapRenderOptions(),
     this.packet = const PacketRenderOptions(),
     this.pie = const PieRenderOptions(),
+    this.quadrantChart = const QuadrantChartRenderOptions(),
     this.radar = const RadarRenderOptions(),
     this.railroad = const RailroadRenderOptions(),
     this.sequence = const SequenceRenderOptions(),
@@ -2758,6 +2942,9 @@ final class RenderOptions {
   /// Pie renderer configuration.
   final PieRenderOptions pie;
 
+  /// Quadrant-chart renderer configuration.
+  final QuadrantChartRenderOptions quadrantChart;
+
   /// Radar renderer configuration.
   final RadarRenderOptions radar;
 
@@ -2809,6 +2996,7 @@ final class RenderOptions {
           MindmapRenderOptions() => mindmap,
           PacketRenderOptions() => packet,
           PieRenderOptions() => pie,
+          QuadrantChartRenderOptions() => quadrantChart,
           RadarRenderOptions() => radar,
           RailroadRenderOptions() => railroad,
           SequenceRenderOptions() => sequence,

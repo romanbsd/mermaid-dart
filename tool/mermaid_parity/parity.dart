@@ -92,6 +92,7 @@ final class ParityFixture {
     const mindmapDefaults = MindmapRenderOptions();
     const packetDefaults = PacketRenderOptions();
     const pieDefaults = PieRenderOptions();
+    const quadrantDefaults = QuadrantChartRenderOptions();
     const radarDefaults = RadarRenderOptions();
     const railroadDefaults = RailroadRenderOptions();
     const sequenceDefaults = SequenceRenderOptions();
@@ -240,6 +241,45 @@ final class ParityFixture {
           final String value => _pieLegendPosition(value),
           _ => pieDefaults.legendPosition,
         },
+      ),
+      quadrantChart: QuadrantChartRenderOptions(
+        useWidth: _configuredUseWidth(diagramConfig, quadrantDefaults),
+        useMaxWidth: _configuredUseMaxWidth(diagramConfig, quadrantDefaults),
+        chartWidth: (diagramConfig['chartWidth'] as num?)?.toDouble() ?? quadrantDefaults.chartWidth,
+        chartHeight: (diagramConfig['chartHeight'] as num?)?.toDouble() ?? quadrantDefaults.chartHeight,
+        titlePadding: (diagramConfig['titlePadding'] as num?)?.toDouble() ?? quadrantDefaults.titlePadding,
+        titleFontSize: (diagramConfig['titleFontSize'] as num?)?.toDouble() ?? quadrantDefaults.titleFontSize,
+        quadrantPadding: (diagramConfig['quadrantPadding'] as num?)?.toDouble() ?? quadrantDefaults.quadrantPadding,
+        xAxisLabelPadding:
+            (diagramConfig['xAxisLabelPadding'] as num?)?.toDouble() ?? quadrantDefaults.xAxisLabelPadding,
+        yAxisLabelPadding:
+            (diagramConfig['yAxisLabelPadding'] as num?)?.toDouble() ?? quadrantDefaults.yAxisLabelPadding,
+        xAxisLabelFontSize:
+            (diagramConfig['xAxisLabelFontSize'] as num?)?.toDouble() ?? quadrantDefaults.xAxisLabelFontSize,
+        yAxisLabelFontSize:
+            (diagramConfig['yAxisLabelFontSize'] as num?)?.toDouble() ?? quadrantDefaults.yAxisLabelFontSize,
+        quadrantLabelFontSize:
+            (diagramConfig['quadrantLabelFontSize'] as num?)?.toDouble() ?? quadrantDefaults.quadrantLabelFontSize,
+        quadrantTextTopPadding:
+            (diagramConfig['quadrantTextTopPadding'] as num?)?.toDouble() ?? quadrantDefaults.quadrantTextTopPadding,
+        pointTextPadding: (diagramConfig['pointTextPadding'] as num?)?.toDouble() ?? quadrantDefaults.pointTextPadding,
+        pointLabelFontSize:
+            (diagramConfig['pointLabelFontSize'] as num?)?.toDouble() ?? quadrantDefaults.pointLabelFontSize,
+        pointRadius: (diagramConfig['pointRadius'] as num?)?.toDouble() ?? quadrantDefaults.pointRadius,
+        xAxisPosition: switch (diagramConfig['xAxisPosition']) {
+          'bottom' => QuadrantXAxisPosition.bottom,
+          _ => quadrantDefaults.xAxisPosition,
+        },
+        yAxisPosition: switch (diagramConfig['yAxisPosition']) {
+          'right' => QuadrantYAxisPosition.right,
+          _ => quadrantDefaults.yAxisPosition,
+        },
+        internalBorderStrokeWidth:
+            (diagramConfig['quadrantInternalBorderStrokeWidth'] as num?)?.toDouble() ??
+            quadrantDefaults.internalBorderStrokeWidth,
+        externalBorderStrokeWidth:
+            (diagramConfig['quadrantExternalBorderStrokeWidth'] as num?)?.toDouble() ??
+            quadrantDefaults.externalBorderStrokeWidth,
       ),
       radar: RadarRenderOptions(
         useWidth: _configuredUseWidth(diagramConfig, radarDefaults),
@@ -418,6 +458,21 @@ const _themeColorKeys = {
   'pieLegendTextColor',
   'pieStrokeColor',
   'pieOuterStrokeColor',
+  'quadrant1Fill',
+  'quadrant2Fill',
+  'quadrant3Fill',
+  'quadrant4Fill',
+  'quadrant1TextFill',
+  'quadrant2TextFill',
+  'quadrant3TextFill',
+  'quadrant4TextFill',
+  'quadrantPointFill',
+  'quadrantPointTextFill',
+  'quadrantXAxisTextFill',
+  'quadrantYAxisTextFill',
+  'quadrantInternalBorderStrokeFill',
+  'quadrantExternalBorderStrokeFill',
+  'quadrantTitleFill',
 };
 
 const _themeNumberKeys = {
@@ -691,6 +746,31 @@ MermaidTheme _themeOptions(Map<String, Object> variables) {
       outerStrokeColor: _themeColor(variables, 'pieOuterStrokeColor', defaults.pie.outerStrokeColor),
       opacity: _themeDouble(variables, 'pieOpacity', defaults.pie.opacity),
     ),
+    quadrant: QuadrantTheme(
+      quadrant1Fill: _themeColor(variables, 'quadrant1Fill', defaults.quadrant.quadrant1Fill),
+      quadrant2Fill: _themeColor(variables, 'quadrant2Fill', defaults.quadrant.quadrant2Fill),
+      quadrant3Fill: _themeColor(variables, 'quadrant3Fill', defaults.quadrant.quadrant3Fill),
+      quadrant4Fill: _themeColor(variables, 'quadrant4Fill', defaults.quadrant.quadrant4Fill),
+      quadrant1TextFill: _themeColor(variables, 'quadrant1TextFill', defaults.quadrant.quadrant1TextFill),
+      quadrant2TextFill: _themeColor(variables, 'quadrant2TextFill', defaults.quadrant.quadrant2TextFill),
+      quadrant3TextFill: _themeColor(variables, 'quadrant3TextFill', defaults.quadrant.quadrant3TextFill),
+      quadrant4TextFill: _themeColor(variables, 'quadrant4TextFill', defaults.quadrant.quadrant4TextFill),
+      pointFill: _themeColor(variables, 'quadrantPointFill', defaults.quadrant.pointFill),
+      pointTextFill: _themeColor(variables, 'quadrantPointTextFill', defaults.quadrant.pointTextFill),
+      xAxisTextFill: _themeColor(variables, 'quadrantXAxisTextFill', defaults.quadrant.xAxisTextFill),
+      yAxisTextFill: _themeColor(variables, 'quadrantYAxisTextFill', defaults.quadrant.yAxisTextFill),
+      internalBorderStroke: _themeColor(
+        variables,
+        'quadrantInternalBorderStrokeFill',
+        defaults.quadrant.internalBorderStroke,
+      ),
+      externalBorderStroke: _themeColor(
+        variables,
+        'quadrantExternalBorderStrokeFill',
+        defaults.quadrant.externalBorderStroke,
+      ),
+      titleFill: _themeColor(variables, 'quadrantTitleFill', defaults.quadrant.titleFill),
+    ),
     radar: RadarTheme(
       axisColor: _nestedThemeColor(radar, 'axisColor', lineOverride ?? defaults.radar.axisColor),
       axisStrokeWidth: _nestedThemeDouble(radar, 'axisStrokeWidth', defaults.radar.axisStrokeWidth),
@@ -830,6 +910,7 @@ const _fixtureOptionNames = {
   DiagramType.mindmap: 'mindmapOptions',
   DiagramType.packet: 'packetOptions',
   DiagramType.pie: 'pieOptions',
+  DiagramType.quadrantChart: 'quadrantOptions',
   DiagramType.radar: 'radarOptions',
   DiagramType.railroad: 'railroadOptions',
   DiagramType.railroadAbnf: 'railroadOptions',
@@ -856,6 +937,7 @@ const _mermaidConfigNames = {
   DiagramType.mindmap: 'mindmap',
   DiagramType.packet: 'packet',
   DiagramType.pie: 'pie',
+  DiagramType.quadrantChart: 'quadrantChart',
   DiagramType.radar: 'radar',
   DiagramType.railroad: 'railroad',
   DiagramType.railroadAbnf: 'railroad',
@@ -898,6 +980,7 @@ Map<String, Object> _diagramConfig(Map<Object?, Object?> json, DiagramType type)
     DiagramType.mindmap => _mindmapConfig(value),
     DiagramType.packet => _packetConfig(value),
     DiagramType.pie => _pieConfig(value),
+    DiagramType.quadrantChart => _quadrantConfig(value),
     DiagramType.radar => _radarConfig(value),
     DiagramType.railroad ||
     DiagramType.railroadAbnf ||
@@ -1595,6 +1678,69 @@ Map<String, Object> _pieConfig(Object? value) {
             _ => null,
           };
     if (valid == null) throw const FormatException('Invalid fixture pieOptions');
+    result[key] = valid;
+  }
+  return Map.unmodifiable(result);
+}
+
+const _quadrantConfigKeys = {
+  ..._baseDiagramConfigKeys,
+  'chartWidth',
+  'chartHeight',
+  'titlePadding',
+  'titleFontSize',
+  'quadrantPadding',
+  'xAxisLabelPadding',
+  'yAxisLabelPadding',
+  'xAxisLabelFontSize',
+  'yAxisLabelFontSize',
+  'quadrantLabelFontSize',
+  'quadrantTextTopPadding',
+  'pointTextPadding',
+  'pointLabelFontSize',
+  'pointRadius',
+  'xAxisPosition',
+  'yAxisPosition',
+  'quadrantInternalBorderStrokeWidth',
+  'quadrantExternalBorderStrokeWidth',
+};
+
+Map<String, Object> _quadrantConfig(Object? value) {
+  if (value == null) return const {};
+  if (value is! Map<String, Object?> || value.keys.any((key) => !_quadrantConfigKeys.contains(key))) {
+    throw const FormatException('Invalid fixture quadrantOptions');
+  }
+  final result = <String, Object>{};
+  for (final MapEntry(:key, :value) in value.entries) {
+    final valid = _baseDiagramConfigKeys.contains(key)
+        ? _baseDiagramConfigValue(key, value)
+        : switch ((key, value)) {
+            (
+              'chartWidth' ||
+                  'chartHeight' ||
+                  'titlePadding' ||
+                  'titleFontSize' ||
+                  'quadrantPadding' ||
+                  'xAxisLabelPadding' ||
+                  'yAxisLabelPadding' ||
+                  'xAxisLabelFontSize' ||
+                  'yAxisLabelFontSize' ||
+                  'quadrantLabelFontSize' ||
+                  'quadrantTextTopPadding' ||
+                  'pointTextPadding' ||
+                  'pointLabelFontSize' ||
+                  'pointRadius' ||
+                  'quadrantInternalBorderStrokeWidth' ||
+                  'quadrantExternalBorderStrokeWidth',
+              final num option,
+            )
+                when option > 0 =>
+              option,
+            ('xAxisPosition', 'top' || 'bottom') => value,
+            ('yAxisPosition', 'left' || 'right') => value,
+            _ => null,
+          };
+    if (valid == null) throw const FormatException('Invalid fixture quadrantOptions');
     result[key] = valid;
   }
   return Map.unmodifiable(result);

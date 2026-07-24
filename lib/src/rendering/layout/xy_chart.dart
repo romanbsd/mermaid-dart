@@ -1,289 +1,550 @@
 part of '../layout.dart';
 
-const _xyAxisStrokeWidth = 2.0;
-const _xyGridStrokeWidth = 1.0;
 const _xyLineStrokeWidth = 2.0;
-const _xyTickCount = 5;
-const _xyDataLabelOffset = 8.0;
+const _xyBarPaddingPercent = .05;
+const _xyBarWidthToTickWidthRatio = .7;
+const _xyLineLabelOffset = 10.0;
+const _xyLineLabelFontSize = 12.0;
 
 _LayoutResult _layoutXyChart(XyChartAst ast, _LayoutContext context) {
   if (ast.plots.isEmpty) {
     throw StateError('No Plot to render, please provide a plot with some data');
   }
   final config = context.options.optionsFor(const XyChartRenderOptions());
-  final geometry = _XyChartGeometry(ast, config);
+  final theme = context.options.theme.xyChart;
+  final geometry = _MermaidXyGeometry(ast, config, context);
   final elements = <SceneElement>[
     SceneRect(
       id: context.id('xychart-background'),
       bounds: Bounds(left: 0, top: 0, width: config.width, height: config.height),
-      fill: SolidFill(context.options.theme.background),
+      fill: SolidFill(theme.backgroundColor),
       cssClasses: const ['background'],
     ),
-    ..._xyValueAxis(context, geometry),
-    ..._xyCategoryAxis(ast, context, geometry),
+    if (config.showTitle && ast.title != null)
+      _transformedText(
+        context,
+        ast.title!,
+        config.width / 2,
+        geometry.titleHeight / 2,
+        idPrefix: 'xychart-text',
+        color: theme.titleColor,
+        fontSize: config.titleFontSize,
+        anchor: TextAnchor.middle,
+        baseline: TextBaseline.middle,
+        role: SemanticRole.title,
+        cssClasses: const ['chart-title'],
+      ),
   ];
-  final bars = ast.plots.where((plot) => plot.type == XyChartPlotType.bar).toList();
+
   for (final (plotIndex, plot) in ast.plots.indexed) {
-    elements.addAll(_xyPlot(plot, plotIndex, bars, context, geometry));
+    final color = theme.plotColors[plotIndex % theme.plotColors.length];
+    final visible = math.min(geometry.categoryCount, plot.points.length);
+    switch (plot.type) {
+      case XyChartPlotType.bar:
+        for (var index = 0; index < visible; index++) {
+          final bounds = geometry.barBounds(index, plot.points[index]);
+          elements.add(
+            SceneRect(
+              id: context.id('xychart-bar'),
+              bounds: bounds,
+              fill: SolidFill(color),
+              stroke: SceneStroke(color: color, width: 0),
+              role: SemanticRole.node,
+              cssClasses: ['bar-plot-$plotIndex'],
+              label: plot.title,
+            ),
+          );
+        }
+      case XyChartPlotType.line:
+        final points = [for (var index = 0; index < visible; index++) geometry.datum(index, plot.points[index])];
+        if (points.isNotEmpty) {
+          elements.add(
+            ScenePath(
+              id: context.id('xychart-line'),
+              commands: [MoveTo(points.first), for (final point in points.skip(1)) LineTo(point)],
+              fill: const NoFill(),
+              stroke: SceneStroke(color: color, width: _xyLineStrokeWidth),
+              role: SemanticRole.edge,
+              cssClasses: ['line-plot-$plotIndex'],
+              label: plot.title,
+            ),
+          );
+        }
+        for (final (index, point) in points.indexed) {
+          if (index >= plot.pointLabels.length || plot.pointLabels[index].isEmpty) continue;
+          elements.add(
+            _transformedText(
+              context,
+              plot.pointLabels[index],
+              point.x + (geometry.horizontal ? _xyLineLabelOffset : 0),
+              point.y - (geometry.horizontal ? 0 : _xyLineLabelOffset),
+              idPrefix: 'xychart-text',
+              color: color,
+              fontSize: _xyLineLabelFontSize,
+              anchor: geometry.horizontal ? TextAnchor.start : TextAnchor.middle,
+              baseline: TextBaseline.middle,
+              cssClasses: const ['point-label'],
+            ),
+          );
+        }
+    }
   }
-  elements.addAll(_xyTitles(ast, context, geometry));
+
+  if (geometry.horizontal) {
+    elements.addAll(_xyUpstreamLeftCategoryAxis(ast, context, geometry, theme));
+    elements.addAll(_xyUpstreamTopValueAxis(ast, context, geometry, theme));
+  } else {
+    elements.addAll(_xyUpstreamBottomAxis(ast, context, geometry, theme));
+    elements.addAll(_xyUpstreamLeftValueAxis(ast, context, geometry, theme));
+  }
   return _LayoutResult(config.width, config.height, elements);
 }
 
-List<SceneElement> _xyValueAxis(_LayoutContext context, _XyChartGeometry geometry) {
-  final stroke = SceneStroke(color: context.options.theme.line, width: _xyAxisStrokeWidth);
-  final gridStroke = SceneStroke(color: context.options.theme.tertiaryBorder, width: _xyGridStrokeWidth);
+List<SceneElement> _xyUpstreamBottomAxis(
+  XyChartAst ast,
+  _LayoutContext context,
+  _MermaidXyGeometry geometry,
+  XyChartTheme theme,
+) {
+  final config = geometry.config.xAxis;
+  final axisY = geometry.bottom + config.axisLineWidth / 2;
+  final tickY = geometry.bottom + config.axisLineWidth;
+  final labelY = tickY + config.tickLength + config.labelPadding;
   return [
-    for (var tick = 0; tick <= _xyTickCount; tick++) ...[
-      SceneLine(
-        id: context.id('xychart-grid'),
-        start: geometry.valueGridLine(tick / _xyTickCount).$1,
-        end: geometry.valueGridLine(tick / _xyTickCount).$2,
-        stroke: gridStroke,
-        cssClasses: const ['grid'],
-      ),
-      _text(
+    if (config.showAxisLine)
+      _xyPath(
         context,
-        _xyNumber(geometry.valueAt(tick / _xyTickCount)),
-        geometry.valueLabelPosition(tick / _xyTickCount).x,
-        geometry.valueLabelPosition(tick / _xyTickCount).y,
-        anchor: geometry.horizontal ? TextAnchor.middle : TextAnchor.end,
-        cssClasses: const ['tick'],
+        Point(geometry.left, axisY),
+        Point(geometry.right, axisY),
+        theme.xAxisLineColor,
+        config.axisLineWidth,
+        const ['bottom-axis', 'axis-line'],
       ),
-    ],
-    SceneLine(
-      id: context.id('xychart-x-axis'),
-      start: geometry.origin,
-      end: geometry.categoryAxisEnd,
-      stroke: stroke,
-      cssClasses: const ['axis', 'x-axis'],
-    ),
-    SceneLine(
-      id: context.id('xychart-y-axis'),
-      start: geometry.origin,
-      end: geometry.valueAxisEnd,
-      stroke: stroke,
-      cssClasses: const ['axis', 'y-axis'],
-    ),
-  ];
-}
-
-List<SceneElement> _xyCategoryAxis(XyChartAst ast, _LayoutContext context, _XyChartGeometry geometry) => [
-  for (final (index, label) in geometry.categoryLabels.indexed)
-    _text(
-      context,
-      label,
-      geometry.categoryLabelPosition(index).x,
-      geometry.categoryLabelPosition(index).y,
-      anchor: geometry.horizontal ? TextAnchor.end : TextAnchor.middle,
-      cssClasses: const ['tick'],
-    ),
-];
-
-List<SceneElement> _xyPlot(
-  XyChartPlotAst plot,
-  int plotIndex,
-  List<XyChartPlotAst> bars,
-  _LayoutContext context,
-  _XyChartGeometry geometry,
-) {
-  final color = context.options.theme.categoricalColors[plotIndex % context.options.theme.categoricalColors.length];
-  final visible = math.min(geometry.categoryCount, plot.points.length);
-  return switch (plot.type) {
-    XyChartPlotType.bar => _xyBars(plot, bars.indexOf(plot), bars.length, visible, color, context, geometry),
-    XyChartPlotType.line => _xyLine(plot, visible, color, context, geometry),
-  };
-}
-
-List<SceneElement> _xyBars(
-  XyChartPlotAst plot,
-  int barIndex,
-  int barCount,
-  int visible,
-  Color color,
-  _LayoutContext context,
-  _XyChartGeometry geometry,
-) {
-  final barSize = geometry.availableBarSize / barCount;
-  return [
-    for (var index = 0; index < visible; index++) ...[
-      SceneRect(
-        id: context.id('xychart-bar'),
-        bounds: geometry.barBounds(index, plot.points[index], barIndex, barSize),
-        fill: SolidFill(color),
-        role: SemanticRole.node,
-        cssClasses: const ['xychart-bar'],
-        label: plot.title,
-      ),
-      if (geometry.config.showDataLabel)
-        _xyLabel(
+    if (config.showLabel)
+      for (final (index, label) in geometry.categoryLabels.indexed)
+        _transformedText(
           context,
-          _xyNumber(plot.points[index]),
-          geometry.dataLabelPosition(index, plot.points[index]),
-          geometry.horizontal ? TextAnchor.start : TextAnchor.middle,
-          const ['data-label'],
+          label,
+          geometry.categoryPosition(index),
+          labelY,
+          idPrefix: 'xychart-text',
+          color: theme.xAxisLabelColor,
+          fontSize: config.labelFontSize,
+          anchor: TextAnchor.middle,
+          baseline: TextBaseline.textBeforeEdge,
+          cssClasses: const ['bottom-axis', 'label'],
         ),
-    ],
-  ];
-}
-
-List<SceneElement> _xyLine(
-  XyChartPlotAst plot,
-  int visible,
-  Color color,
-  _LayoutContext context,
-  _XyChartGeometry geometry,
-) {
-  final points = [for (var index = 0; index < visible; index++) geometry.datum(index, plot.points[index])];
-  return [
-    ScenePolyline(
-      id: context.id('xychart-line'),
-      points: points,
-      fill: const NoFill(),
-      stroke: SceneStroke(color: color, width: _xyLineStrokeWidth, join: StrokeJoin.round),
-      role: SemanticRole.edge,
-      cssClasses: const ['xychart-line'],
-      label: plot.title,
-    ),
-    for (final (index, point) in points.indexed) ...[
-      SceneCircle(
-        id: context.id('xychart-point'),
-        center: point,
-        radius: 3,
-        fill: SolidFill(color),
-        cssClasses: const ['xychart-point'],
+    if (config.showTick)
+      for (var index = 0; index < geometry.categoryCount; index++)
+        _xyPath(
+          context,
+          Point(geometry.categoryPosition(index), tickY),
+          Point(geometry.categoryPosition(index), tickY + config.tickLength),
+          theme.xAxisTickColor,
+          config.tickWidth,
+          const ['bottom-axis', 'ticks'],
+        ),
+    if (config.showTitle && ast.xAxis.title.isNotEmpty)
+      _transformedText(
+        context,
+        ast.xAxis.title,
+        _xyRoundToThousandth((geometry.left + geometry.right) / 2),
+        geometry.config.height - config.titlePadding - geometry.xAxisTitleTextHeight,
+        idPrefix: 'xychart-text',
+        color: theme.xAxisTitleColor,
+        fontSize: config.titleFontSize,
+        anchor: TextAnchor.middle,
+        baseline: TextBaseline.textBeforeEdge,
+        cssClasses: const ['bottom-axis', 'title'],
       ),
-      if (index < plot.pointLabels.length && plot.pointLabels[index].isNotEmpty)
-        _xyLabel(context, plot.pointLabels[index], point.translated(0, -_xyDataLabelOffset), TextAnchor.middle, const [
-          'point-label',
-        ]),
-    ],
   ];
 }
 
-List<SceneElement> _xyTitles(XyChartAst ast, _LayoutContext context, _XyChartGeometry geometry) => [
-  if (ast.title case final title?)
-    _text(
-      context,
-      title,
-      geometry.config.width / 2,
-      geometry.config.chartPadding / 2,
-      anchor: TextAnchor.middle,
-      role: SemanticRole.title,
-      style: _mermaidTextStyle(context, context.options.theme.fontSize * 1.25, color: context.options.theme.title),
-      cssClasses: const ['chart-title'],
-    ),
-  if (ast.xAxis.title.isNotEmpty)
-    _xyLabel(
-      context,
-      ast.xAxis.title,
-      geometry.categoryTitlePosition,
-      geometry.horizontal ? TextAnchor.start : TextAnchor.middle,
-      const ['axis-title'],
-    ),
-  if (ast.yAxis.title.isNotEmpty)
-    _xyLabel(
-      context,
-      ast.yAxis.title,
-      geometry.valueTitlePosition,
-      geometry.horizontal ? TextAnchor.end : TextAnchor.start,
-      const ['axis-title'],
-    ),
-];
+List<SceneElement> _xyUpstreamLeftValueAxis(
+  XyChartAst ast,
+  _LayoutContext context,
+  _MermaidXyGeometry geometry,
+  XyChartTheme theme,
+) {
+  final config = geometry.config.yAxis;
+  final axisX = geometry.left - config.axisLineWidth / 2;
+  final tickX = geometry.left - config.axisLineWidth;
+  final labelX = tickX - config.tickLength - config.labelPadding;
+  return [
+    if (config.showAxisLine)
+      _xyPath(
+        context,
+        Point(axisX, geometry.top),
+        Point(axisX, geometry.bottom),
+        theme.yAxisLineColor,
+        config.axisLineWidth,
+        const ['left-axis', 'axis-line'],
+      ),
+    if (config.showLabel)
+      for (final tick in geometry.yTicks)
+        _transformedText(
+          context,
+          _xyNumber(tick),
+          labelX,
+          geometry.valuePosition(tick),
+          idPrefix: 'xychart-text',
+          color: theme.yAxisLabelColor,
+          fontSize: config.labelFontSize,
+          anchor: TextAnchor.end,
+          baseline: TextBaseline.middle,
+          cssClasses: const ['left-axis', 'label'],
+        ),
+    if (config.showTick)
+      for (final tick in geometry.yTicks)
+        _xyPath(
+          context,
+          Point(tickX, geometry.valuePosition(tick)),
+          Point(tickX - config.tickLength, geometry.valuePosition(tick)),
+          theme.yAxisTickColor,
+          config.tickWidth,
+          const ['left-axis', 'ticks'],
+        ),
+    if (config.showTitle && ast.yAxis.title.isNotEmpty)
+      _transformedText(
+        context,
+        ast.yAxis.title,
+        config.titlePadding,
+        (geometry.top + geometry.bottom) / 2,
+        idPrefix: 'xychart-text',
+        color: theme.yAxisTitleColor,
+        fontSize: config.titleFontSize,
+        anchor: TextAnchor.middle,
+        baseline: TextBaseline.textBeforeEdge,
+        rotation: 270,
+        cssClasses: const ['left-axis', 'title'],
+      ),
+  ];
+}
 
-SceneText _xyLabel(_LayoutContext context, String value, Point position, TextAnchor anchor, List<String> cssClasses) =>
-    _text(context, value, position.x, position.y, anchor: anchor, cssClasses: cssClasses);
+List<SceneElement> _xyUpstreamLeftCategoryAxis(
+  XyChartAst ast,
+  _LayoutContext context,
+  _MermaidXyGeometry geometry,
+  XyChartTheme theme,
+) {
+  final config = geometry.config.xAxis;
+  final axisX = geometry.left - config.axisLineWidth / 2;
+  final tickX = geometry.left - config.axisLineWidth;
+  final labelX = tickX - config.tickLength - config.labelPadding;
+  return [
+    if (config.showAxisLine)
+      _xyPath(
+        context,
+        Point(axisX, geometry.top),
+        Point(axisX, geometry.bottom),
+        theme.xAxisLineColor,
+        config.axisLineWidth,
+        const ['left-axis', 'axis-line'],
+      ),
+    if (config.showLabel)
+      for (final (index, label) in geometry.categoryLabels.indexed)
+        _transformedText(
+          context,
+          label,
+          labelX,
+          geometry.categoryPosition(index),
+          idPrefix: 'xychart-text',
+          color: theme.xAxisLabelColor,
+          fontSize: config.labelFontSize,
+          anchor: TextAnchor.end,
+          baseline: TextBaseline.middle,
+          cssClasses: const ['left-axis', 'label'],
+        ),
+    if (config.showTick)
+      for (var index = 0; index < geometry.categoryCount; index++)
+        _xyPath(
+          context,
+          Point(tickX, geometry.categoryPosition(index)),
+          Point(tickX - config.tickLength, geometry.categoryPosition(index)),
+          theme.xAxisTickColor,
+          config.tickWidth,
+          const ['left-axis', 'ticks'],
+        ),
+    if (config.showTitle && ast.xAxis.title.isNotEmpty)
+      _transformedText(
+        context,
+        ast.xAxis.title,
+        config.titlePadding,
+        (geometry.top + geometry.bottom) / 2,
+        idPrefix: 'xychart-text',
+        color: theme.xAxisTitleColor,
+        fontSize: config.titleFontSize,
+        anchor: TextAnchor.middle,
+        baseline: TextBaseline.textBeforeEdge,
+        rotation: 270,
+        cssClasses: const ['left-axis', 'title'],
+      ),
+  ];
+}
 
-final class _XyChartGeometry {
-  _XyChartGeometry(this.ast, this.config)
-    : horizontal = ast.orientation == XyChartOrientation.horizontal,
-      left = config.chartPadding,
-      top = config.chartPadding + (ast.title == null ? 0 : config.titlePadding),
-      right = config.width - config.chartPadding,
-      bottom = config.height - config.chartPadding,
-      categoryCount = switch (ast.xAxis) {
-        XyChartBandAxisAst axis => axis.categories.length,
-        XyChartLinearAxisAst axis => math.max(1, axis.max.round() - axis.min.round() + 1),
-      };
+List<SceneElement> _xyUpstreamTopValueAxis(
+  XyChartAst ast,
+  _LayoutContext context,
+  _MermaidXyGeometry geometry,
+  XyChartTheme theme,
+) {
+  final config = geometry.config.yAxis;
+  final axisY = geometry.top - config.axisLineWidth / 2;
+  final tickY = geometry.top - config.axisLineWidth;
+  final labelY = geometry.titleHeight + geometry.yAxisTitleTextHeight + config.titlePadding * 2 + config.labelPadding;
+  return [
+    if (config.showAxisLine)
+      _xyPath(
+        context,
+        Point(geometry.left, axisY),
+        Point(geometry.right, axisY),
+        theme.yAxisLineColor,
+        config.axisLineWidth,
+        const ['top-axis', 'axis-line'],
+      ),
+    if (config.showLabel)
+      for (final tick in geometry.yTicks)
+        _transformedText(
+          context,
+          _xyNumber(tick),
+          geometry.valuePosition(tick),
+          labelY,
+          idPrefix: 'xychart-text',
+          color: theme.yAxisLabelColor,
+          fontSize: config.labelFontSize,
+          anchor: TextAnchor.middle,
+          baseline: TextBaseline.textBeforeEdge,
+          cssClasses: const ['top-axis', 'label'],
+        ),
+    if (config.showTick)
+      for (final tick in geometry.yTicks)
+        _xyPath(
+          context,
+          Point(geometry.valuePosition(tick), tickY),
+          Point(geometry.valuePosition(tick), tickY - config.tickLength),
+          theme.yAxisTickColor,
+          config.tickWidth,
+          const ['top-axis', 'ticks'],
+        ),
+    if (config.showTitle && ast.yAxis.title.isNotEmpty)
+      _transformedText(
+        context,
+        ast.yAxis.title,
+        (geometry.left + geometry.right) / 2,
+        geometry.titleHeight + config.titlePadding,
+        idPrefix: 'xychart-text',
+        color: theme.yAxisTitleColor,
+        fontSize: config.titleFontSize,
+        anchor: TextAnchor.middle,
+        baseline: TextBaseline.textBeforeEdge,
+        cssClasses: const ['top-axis', 'title'],
+      ),
+  ];
+}
+
+ScenePath _xyPath(_LayoutContext context, Point start, Point end, Color color, double width, List<String> cssClasses) =>
+    ScenePath(
+      id: context.id('xychart-path'),
+      commands: [MoveTo(start), LineTo(end)],
+      fill: const NoFill(),
+      stroke: SceneStroke(color: color, width: width),
+      cssClasses: cssClasses,
+    );
+
+final class _MermaidXyGeometry {
+  _MermaidXyGeometry(this.ast, this.config, _LayoutContext context)
+    : horizontal = ast.orientation == XyChartOrientation.horizontal {
+    categoryLabels = switch (ast.xAxis) {
+      XyChartBandAxisAst axis => axis.categories,
+      XyChartLinearAxisAst axis => _xyD3Ticks(axis.min, axis.max).map(_xyNumber).toList(growable: false),
+    };
+    categoryCount = math.max(1, categoryLabels.length);
+    final ticks = _xyD3Ticks(ast.yAxis.min, ast.yAxis.max);
+    yTicks = horizontal ? ticks : ticks.reversed.toList(growable: false);
+
+    final titleSize = ast.title == null
+        ? const Size(0, 0)
+        : context.measurer.measure(
+            ast.title!,
+            _xyTextStyle(context, config.titleFontSize, context.options.theme.xyChart.titleColor),
+          );
+    titleHeight = !config.showTitle || ast.title == null ? 0 : titleSize.height + config.titlePadding * 2;
+
+    final xLabelSizes = [
+      for (final label in categoryLabels)
+        context.measurer.measure(
+          label,
+          _xyTextStyle(context, config.xAxis.labelFontSize, context.options.theme.xyChart.xAxisLabelColor),
+        ),
+    ];
+    final xLabelHeight = xLabelSizes.fold(0.0, (height, size) => math.max(height, size.height));
+    final xLabelWidth = xLabelSizes.fold(0.0, (width, size) => math.max(width, size.width));
+    xAxisTitleTextHeight = ast.xAxis.title.isEmpty
+        ? 0
+        : context.measurer
+              .measure(
+                ast.xAxis.title,
+                _xyTextStyle(context, config.xAxis.titleFontSize, context.options.theme.xyChart.xAxisTitleColor),
+              )
+              .height;
+    xAxisHeight =
+        (config.xAxis.showAxisLine ? config.xAxis.axisLineWidth : 0.0) +
+        (config.xAxis.showLabel ? xLabelHeight + config.xAxis.labelPadding * 2 : 0.0) +
+        (config.xAxis.showTick ? config.xAxis.tickLength : 0.0) +
+        (!config.xAxis.showTitle || ast.xAxis.title.isEmpty
+            ? 0.0
+            : xAxisTitleTextHeight + config.xAxis.titlePadding * 2);
+
+    final yLabelSizes = [
+      for (final tick in yTicks)
+        context.measurer.measure(
+          _xyNumber(tick),
+          _xyTextStyle(context, config.yAxis.labelFontSize, context.options.theme.xyChart.yAxisLabelColor),
+        ),
+    ];
+    final yLabelWidth = yLabelSizes.fold(0.0, (width, size) => math.max(width, size.width));
+    final yLabelHeight = yLabelSizes.fold(0.0, (height, size) => math.max(height, size.height));
+    yAxisTitleTextHeight = ast.yAxis.title.isEmpty
+        ? 0
+        : context.measurer
+              .measure(
+                ast.yAxis.title,
+                _xyTextStyle(context, config.yAxis.titleFontSize, context.options.theme.xyChart.yAxisTitleColor),
+              )
+              .height;
+    final yAxisWidth =
+        (config.yAxis.showAxisLine ? config.yAxis.axisLineWidth : 0.0) +
+        (config.yAxis.showLabel ? yLabelWidth + config.yAxis.labelPadding * 2 : 0.0) +
+        (config.yAxis.showTick ? config.yAxis.tickLength : 0.0) +
+        (!config.yAxis.showTitle || ast.yAxis.title.isEmpty
+            ? 0.0
+            : yAxisTitleTextHeight + config.yAxis.titlePadding * 2);
+
+    final reservedWidth = (config.width * config.plotReservedSpacePercent / 100).floorToDouble();
+    final reservedHeight = (config.height * config.plotReservedSpacePercent / 100).floorToDouble();
+    if (horizontal) {
+      final xAxisWidth =
+          (config.xAxis.showAxisLine ? config.xAxis.axisLineWidth : 0.0) +
+          (config.xAxis.showLabel ? xLabelWidth + config.xAxis.labelPadding * 2 : 0.0) +
+          (config.xAxis.showTick ? config.xAxis.tickLength : 0.0) +
+          (!config.xAxis.showTitle || ast.xAxis.title.isEmpty
+              ? 0.0
+              : xAxisTitleTextHeight + config.xAxis.titlePadding * 2);
+      final yAxisHeight =
+          (config.yAxis.showAxisLine ? config.yAxis.axisLineWidth : 0.0) +
+          (config.yAxis.showLabel ? yLabelHeight + config.yAxis.labelPadding * 2 : 0.0) +
+          (config.yAxis.showTick ? config.yAxis.tickLength : 0.0) +
+          (!config.yAxis.showTitle || ast.yAxis.title.isEmpty
+              ? 0.0
+              : yAxisTitleTextHeight + config.yAxis.titlePadding * 2);
+      left = xAxisWidth;
+      top = titleHeight + yAxisHeight;
+      width = reservedWidth + (config.width - reservedWidth - xAxisWidth);
+      height = reservedHeight + (config.height - reservedHeight - titleHeight - yAxisHeight);
+    } else {
+      left = yAxisWidth;
+      top = titleHeight;
+      width = reservedWidth + (config.width - reservedWidth - yAxisWidth);
+      height = reservedHeight + (config.height - reservedHeight - titleHeight - xAxisHeight);
+    }
+    right = left + width;
+    bottom = top + height;
+
+    final categoryLabelHalfSize = (horizontal ? xLabelHeight : xLabelWidth) / 2;
+    final categoryLength = horizontal ? height : width;
+    final initialCategoryPadding = math.min(categoryLabelHalfSize, categoryLength * .2);
+    final initialTickDistance = (categoryLength - initialCategoryPadding * 2) / categoryCount;
+    categoryOuterPadding = _xyBarWidthToTickWidthRatio * initialTickDistance > initialCategoryPadding * 2
+        ? (_xyBarWidthToTickWidthRatio * initialTickDistance / 2).floorToDouble()
+        : initialCategoryPadding;
+    valueOuterPadding = horizontal ? math.min(yLabelWidth / 2, width * .2) : math.min(yLabelHeight / 2, height * .2);
+  }
 
   final XyChartAst ast;
   final XyChartRenderOptions config;
   final bool horizontal;
-  final double left;
-  final double top;
-  final double right;
-  final double bottom;
-  final int categoryCount;
+  late final List<String> categoryLabels;
+  late final List<double> yTicks;
+  late final int categoryCount;
+  late final double titleHeight;
+  late final double xAxisTitleTextHeight;
+  late final double yAxisTitleTextHeight;
+  late final double xAxisHeight;
+  late final double yAxisWidth;
+  late final double left;
+  late final double top;
+  late final double width;
+  late final double height;
+  late final double right;
+  late final double bottom;
+  late final double categoryOuterPadding;
+  late final double valueOuterPadding;
 
-  double get width => right - left;
-  double get height => bottom - top;
-  double get bandSize => (horizontal ? height : width) / math.max(1, categoryCount);
-  double get availableBarSize => bandSize * (1 - config.barGapRatio);
-  double get valueSpan => ast.yAxis.max == ast.yAxis.min ? 1 : ast.yAxis.max - ast.yAxis.min;
-  Point get origin => Point(left, bottom);
-  Point get categoryAxisEnd => horizontal ? Point(left, top) : Point(right, bottom);
-  Point get valueAxisEnd => horizontal ? Point(right, bottom) : Point(left, top);
+  double categoryPosition(int index) {
+    final start = (horizontal ? top : left) + categoryOuterPadding;
+    final end = (horizontal ? bottom : right) - categoryOuterPadding;
+    return categoryCount == 1 ? (start + end) / 2 : start + (end - start) * index / (categoryCount - 1);
+  }
 
-  List<String> get categoryLabels => switch (ast.xAxis) {
-    XyChartBandAxisAst axis => axis.categories,
-    XyChartLinearAxisAst axis => [for (var i = 0; i < categoryCount; i++) _xyNumber(axis.min + i)],
-  };
-
-  double valueAt(double fraction) => ast.yAxis.min + valueSpan * fraction;
-
-  double valuePosition(double value) => horizontal
-      ? left + (value - ast.yAxis.min) / valueSpan * width
-      : bottom - (value - ast.yAxis.min) / valueSpan * height;
-
-  double categoryPosition(int index) =>
-      (horizontal ? top : left) +
-      (categoryCount <= 1 ? .5 : (index + .5) / categoryCount) * (horizontal ? height : width);
+  double valuePosition(double value) {
+    final start = (horizontal ? left : top) + valueOuterPadding;
+    final end = (horizontal ? right : bottom) - valueOuterPadding;
+    final span = ast.yAxis.max - ast.yAxis.min;
+    if (span == 0) return (start + end) / 2;
+    return start + (horizontal ? value - ast.yAxis.min : ast.yAxis.max - value) / span * (end - start);
+  }
 
   Point datum(int index, double value) => horizontal
       ? Point(valuePosition(value), categoryPosition(index))
       : Point(categoryPosition(index), valuePosition(value));
 
-  (Point, Point) valueGridLine(double fraction) {
-    final coordinate = horizontal ? left + fraction * width : bottom - fraction * height;
+  Bounds barBounds(int index, double value) {
+    final categoryLength = horizontal ? height : width;
+    final tickDistance = (categoryLength - categoryOuterPadding * 2) / categoryCount;
+    final barWidth = math.min(categoryOuterPadding * 2, tickDistance) * (1 - _xyBarPaddingPercent);
+    final valueCoordinate = valuePosition(value);
     return horizontal
-        ? (Point(coordinate, top), Point(coordinate, bottom))
-        : (Point(left, coordinate), Point(right, coordinate));
+        ? Bounds(
+            left: left,
+            top: categoryPosition(index) - barWidth / 2,
+            width: valueCoordinate - left,
+            height: barWidth,
+          )
+        : Bounds(
+            left: categoryPosition(index) - barWidth / 2,
+            top: valueCoordinate,
+            width: barWidth,
+            height: bottom - valueCoordinate,
+          );
   }
-
-  Point valueLabelPosition(double fraction) {
-    final line = valueGridLine(fraction);
-    return horizontal
-        ? Point(line.$1.x, bottom + config.axisLabelPadding)
-        : Point(left - config.axisLabelPadding, line.$1.y);
-  }
-
-  Point categoryLabelPosition(int index) => horizontal
-      ? Point(left - config.axisLabelPadding, categoryPosition(index))
-      : Point(categoryPosition(index), bottom + config.axisLabelPadding);
-
-  Bounds barBounds(int index, double value, int barIndex, double barSize) {
-    final point = datum(index, value);
-    final zero = valuePosition(
-      0.clamp(math.min(ast.yAxis.min, ast.yAxis.max), math.max(ast.yAxis.min, ast.yAxis.max)).toDouble(),
-    );
-    final offset =
-        (horizontal ? top : left) + index * bandSize + bandSize * config.barGapRatio / 2 + barIndex * barSize;
-    return horizontal
-        ? Bounds(left: math.min(zero, point.x), top: offset, width: (point.x - zero).abs(), height: barSize)
-        : Bounds(left: offset, top: math.min(zero, point.y), width: barSize, height: (point.y - zero).abs());
-  }
-
-  Point dataLabelPosition(int index, double value) {
-    final point = datum(index, value);
-    return horizontal ? point.translated(_xyDataLabelOffset, 0) : point.translated(0, -_xyDataLabelOffset);
-  }
-
-  Point get categoryTitlePosition => horizontal
-      ? Point(left, top - config.axisLabelPadding)
-      : Point((left + right) / 2, config.height - config.axisLabelPadding);
-
-  Point get valueTitlePosition =>
-      horizontal ? Point(right, config.height - config.axisLabelPadding) : Point(left, top - config.axisLabelPadding);
 }
+
+SceneTextStyle _xyTextStyle(_LayoutContext context, double fontSize, Color color) =>
+    SceneTextStyle(fontFamily: context.options.theme.fontFamily, fontSize: fontSize, color: color);
+
+List<double> _xyD3Ticks(double start, double stop, [int count = 10]) {
+  if (start == stop || count <= 0) return [start];
+  final reverse = stop < start;
+  final low = reverse ? stop : start;
+  final high = reverse ? start : stop;
+  final rawStep = (high - low) / count;
+  final power = (math.log(rawStep) / math.ln10).floor();
+  final magnitude = math.pow(10, power).toDouble();
+  final error = rawStep / magnitude;
+  final factor = error >= math.sqrt(50)
+      ? 10
+      : error >= math.sqrt(10)
+      ? 5
+      : error >= math.sqrt(2)
+      ? 2
+      : 1;
+  final step = factor * magnitude;
+  final first = (low / step).ceil();
+  final last = (high / step).floor();
+  final ticks = [for (var index = first; index <= last; index++) index * step];
+  return reverse ? ticks.reversed.toList(growable: false) : ticks;
+}
+
+double _xyRoundToThousandth(double value) => (value * 1000).round() / 1000;
 
 String _xyNumber(double value) => value == value.roundToDouble() ? value.toInt().toString() : value.toStringAsFixed(2);

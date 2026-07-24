@@ -23,6 +23,7 @@ part 'kanban_ast.dart';
 part 'mindmap_ast.dart';
 part 'packet_ast.dart';
 part 'pie_ast.dart';
+part 'quadrant_chart_ast.dart';
 part 'radar_ast.dart';
 part 'railroad_ast.dart';
 part 'sequence_ast.dart';

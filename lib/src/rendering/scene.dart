@@ -270,6 +270,9 @@ enum TextBaseline {
 
   /// Selects the hanging variant.
   hanging,
+
+  /// Selects SVG's `text-before-edge` variant.
+  textBeforeEdge,
 }
 
 /// Backend-neutral scene text style in a laid-out diagram scene.

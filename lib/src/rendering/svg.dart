@@ -191,6 +191,7 @@ void _element(XmlBuilder builder, SceneElement element, {bool omitIdentity = fal
               TextBaseline.central => 'central',
               TextBaseline.middle => 'middle',
               TextBaseline.hanging => 'hanging',
+              TextBaseline.textBeforeEdge => 'text-before-edge',
             },
             'font-family': style.fontFamily,
             'font-size': _number(style.fontSize),

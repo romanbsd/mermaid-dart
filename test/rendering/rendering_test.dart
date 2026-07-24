@@ -533,6 +533,7 @@ disk2:T -- B:db
         DiagramType.mindmap: 'mindmap\nroot',
         DiagramType.packet: 'packet-beta',
         DiagramType.pie: 'pie',
+        DiagramType.quadrantChart: 'quadrantChart',
         DiagramType.radar: 'radar-beta',
         DiagramType.railroad: 'railroad-beta',
         DiagramType.railroadAbnf: 'railroad-abnf-beta',
