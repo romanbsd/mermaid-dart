@@ -2634,6 +2634,27 @@ final class SequenceRenderOptions extends DiagramRenderOptions {
   final double labelBoxHeight;
 }
 
+/// Typed Mermaid mindmap layout configuration.
+final class MindmapRenderOptions extends DiagramRenderOptions {
+  /// Creates mindmap options with Mermaid-compatible defaults.
+  const MindmapRenderOptions({super.useWidth, super.useMaxWidth = true, this.padding = 10});
+
+  /// Padding around the rendered diagram.
+  final double padding;
+}
+
+/// Typed Mermaid timeline layout configuration.
+final class TimelineRenderOptions extends DiagramRenderOptions {
+  /// Creates timeline options with Mermaid-compatible defaults.
+  const TimelineRenderOptions({super.useWidth, super.useMaxWidth = true, this.leftMargin = 150, this.padding = 50});
+
+  /// Leading outer margin, matching Mermaid's `leftMargin`.
+  final double leftMargin;
+
+  /// Padding around the rendered diagram.
+  final double padding;
+}
+
 /// Top-level configuration for layout and rendering.
 ///
 /// [theme] supplies global Mermaid variables, while each diagram-specific
@@ -2654,12 +2675,14 @@ final class RenderOptions {
     this.gitGraph = const GitGraphRenderOptions(),
     this.info = const InfoRenderOptions(),
     this.kanban = const KanbanRenderOptions(),
+    this.mindmap = const MindmapRenderOptions(),
     this.packet = const PacketRenderOptions(),
     this.pie = const PieRenderOptions(),
     this.radar = const RadarRenderOptions(),
     this.railroad = const RailroadRenderOptions(),
     this.sequence = const SequenceRenderOptions(),
     this.stateDiagram = const StateRenderOptions(),
+    this.timeline = const TimelineRenderOptions(),
     this.treeView = const TreeViewRenderOptions(),
     this.treemap = const TreemapRenderOptions(),
     this.wardley = const WardleyRenderOptions(),
@@ -2702,6 +2725,9 @@ final class RenderOptions {
   /// Kanban renderer configuration.
   final KanbanRenderOptions kanban;
 
+  /// Mindmap renderer configuration.
+  final MindmapRenderOptions mindmap;
+
   /// Packet renderer configuration.
   final PacketRenderOptions packet;
 
@@ -2719,6 +2745,9 @@ final class RenderOptions {
 
   /// State-diagram renderer configuration.
   final StateRenderOptions stateDiagram;
+
+  /// Timeline renderer configuration.
+  final TimelineRenderOptions timeline;
 
   /// Tree View renderer configuration.
   final TreeViewRenderOptions treeView;
@@ -2750,12 +2779,14 @@ final class RenderOptions {
           GitGraphRenderOptions() => gitGraph,
           InfoRenderOptions() => info,
           KanbanRenderOptions() => kanban,
+          MindmapRenderOptions() => mindmap,
           PacketRenderOptions() => packet,
           PieRenderOptions() => pie,
           RadarRenderOptions() => radar,
           RailroadRenderOptions() => railroad,
           SequenceRenderOptions() => sequence,
           StateRenderOptions() => stateDiagram,
+          TimelineRenderOptions() => timeline,
           TreeViewRenderOptions() => treeView,
           TreemapRenderOptions() => treemap,
           WardleyRenderOptions() => wardley,

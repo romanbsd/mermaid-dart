@@ -37,6 +37,7 @@ available in Mermaid.js.
 | Flowchart | `flowchart` | `flowchart`, `graph` |
 | Git Graph | `gitGraph` | `gitGraph` |
 | Info | `info` | `info` |
+| Mindmap | `mindmap` | `mindmap` |
 | Packet | `packet` | `packet`, `packet-beta` |
 | Pie | `pie` | `pie` |
 | Radar | `radar` | `radar-beta` |
@@ -46,6 +47,7 @@ available in Mermaid.js.
 | Railroad PEG | `railroadPeg` | `railroad-peg-beta` |
 | Sequence | `sequence` | `sequenceDiagram` |
 | State | `stateDiagram` | `stateDiagram`, `stateDiagram-v2` |
+| Timeline | `timeline` | `timeline`, `timeline LR`, `timeline TD` |
 | Tree View | `treeView` | `treeView-beta` |
 | Treemap | `treemap` | `treemap`, `treemap-beta` |
 | Wardley Map | `wardley` | `wardley-beta` |
@@ -241,8 +243,9 @@ final svg = renderDiagramSvg(
 ```
 
 `RenderOptions` exposes dedicated configuration objects for Architecture,
-Cynefin, Event Modeling, Flowchart, Gantt, Git Graph, Info, Kanban, Packet,
-Pie, Radar, Railroad, Sequence, Tree View, Treemap, and Wardley Map renderers.
+Cynefin, Event Modeling, Flowchart, Gantt, Git Graph, Info, Kanban, Mindmap,
+Packet, Pie, Radar, Railroad, Sequence, Timeline, Tree View, Treemap, and
+Wardley Map renderers.
 Theme and renderer defaults follow
 the corresponding Mermaid.js 11.16.0 behavior.
 

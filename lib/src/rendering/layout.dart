@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:collection/collection.dart';
+import 'package:fcose/fcose.dart';
 
 import '../parser/ast.dart';
 import '../parser/diagram_type.dart';
@@ -32,12 +33,14 @@ part 'layout/gantt.dart';
 part 'layout/git_graph.dart';
 part 'layout/info.dart';
 part 'layout/kanban.dart';
+part 'layout/mindmap.dart';
 part 'layout/packet.dart';
 part 'layout/pie.dart';
 part 'layout/radar.dart';
 part 'layout/railroad.dart';
 part 'layout/sequence.dart';
 part 'layout/state.dart';
+part 'layout/timeline.dart';
 part 'layout/tree_view.dart';
 part 'layout/treemap.dart';
 part 'layout/wardley.dart';
@@ -124,6 +127,11 @@ DiagramScene layoutDiagram(
       diagramOptions: options.optionsFor(const KanbanRenderOptions()),
       rendererHandlesTitle: false,
     ),
+    MindmapAst ast => (
+      content: _layoutMindmap(ast, context),
+      diagramOptions: options.optionsFor(const MindmapRenderOptions()),
+      rendererHandlesTitle: false,
+    ),
     PacketAst ast => (
       content: _layoutPacket(ast, context),
       diagramOptions: options.optionsFor(const PacketRenderOptions()),
@@ -153,6 +161,11 @@ DiagramScene layoutDiagram(
       content: _layoutStateDiagram(ast, context),
       diagramOptions: options.optionsFor(const StateRenderOptions()),
       rendererHandlesTitle: false,
+    ),
+    TimelineAst ast => (
+      content: _layoutTimeline(ast, context),
+      diagramOptions: options.optionsFor(const TimelineRenderOptions()),
+      rendererHandlesTitle: true,
     ),
     TreeViewAst ast => (
       content: _layoutTree(ast, context),

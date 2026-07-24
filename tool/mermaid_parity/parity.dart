@@ -89,12 +89,14 @@ final class ParityFixture {
     const ganttDefaults = GanttRenderOptions();
     const gitGraphDefaults = GitGraphRenderOptions();
     const kanbanDefaults = KanbanRenderOptions();
+    const mindmapDefaults = MindmapRenderOptions();
     const packetDefaults = PacketRenderOptions();
     const pieDefaults = PieRenderOptions();
     const radarDefaults = RadarRenderOptions();
     const railroadDefaults = RailroadRenderOptions();
     const sequenceDefaults = SequenceRenderOptions();
     const stateDefaults = StateRenderOptions();
+    const timelineDefaults = TimelineRenderOptions();
     const treeViewDefaults = TreeViewRenderOptions();
     const treemapDefaults = TreemapRenderOptions();
     const wardleyDefaults = WardleyRenderOptions();
@@ -213,6 +215,11 @@ final class ParityFixture {
         sectionWidth: (diagramConfig['sectionWidth'] as num?)?.toDouble() ?? kanbanDefaults.sectionWidth,
         ticketBaseUrl: diagramConfig['ticketBaseUrl'] as String? ?? kanbanDefaults.ticketBaseUrl,
       ),
+      mindmap: MindmapRenderOptions(
+        useWidth: _configuredUseWidth(diagramConfig, mindmapDefaults),
+        useMaxWidth: _configuredUseMaxWidth(diagramConfig, mindmapDefaults),
+        padding: (diagramConfig['padding'] as num?)?.toDouble() ?? mindmapDefaults.padding,
+      ),
       packet: PacketRenderOptions(
         useWidth: _configuredUseWidth(diagramConfig, packetDefaults),
         useMaxWidth: _configuredUseMaxWidth(diagramConfig, packetDefaults),
@@ -310,6 +317,12 @@ final class ParityFixture {
         nodePadding: (diagramConfig['nodePadding'] as num?)?.toDouble() ?? stateDefaults.nodePadding,
         noteMargin: (diagramConfig['noteMargin'] as num?)?.toDouble() ?? stateDefaults.noteMargin,
         edgeWidth: (diagramConfig['edgeWidth'] as num?)?.toDouble() ?? stateDefaults.edgeWidth,
+      ),
+      timeline: TimelineRenderOptions(
+        useWidth: _configuredUseWidth(diagramConfig, timelineDefaults),
+        useMaxWidth: _configuredUseMaxWidth(diagramConfig, timelineDefaults),
+        leftMargin: (diagramConfig['leftMargin'] as num?)?.toDouble() ?? timelineDefaults.leftMargin,
+        padding: (diagramConfig['padding'] as num?)?.toDouble() ?? timelineDefaults.padding,
       ),
       treeView: TreeViewRenderOptions(
         useWidth: _configuredUseWidth(diagramConfig, treeViewDefaults),
@@ -814,6 +827,7 @@ const _fixtureOptionNames = {
   DiagramType.gantt: 'ganttOptions',
   DiagramType.gitGraph: 'gitGraphOptions',
   DiagramType.kanban: 'kanbanOptions',
+  DiagramType.mindmap: 'mindmapOptions',
   DiagramType.packet: 'packetOptions',
   DiagramType.pie: 'pieOptions',
   DiagramType.radar: 'radarOptions',
@@ -823,6 +837,7 @@ const _fixtureOptionNames = {
   DiagramType.railroadPeg: 'railroadOptions',
   DiagramType.sequence: 'sequenceOptions',
   DiagramType.stateDiagram: 'stateOptions',
+  DiagramType.timeline: 'timelineOptions',
   DiagramType.treeView: 'treeViewOptions',
   DiagramType.treemap: 'treemapOptions',
   DiagramType.wardley: 'wardleyOptions',
@@ -838,6 +853,7 @@ const _mermaidConfigNames = {
   DiagramType.gantt: 'gantt',
   DiagramType.gitGraph: 'gitGraph',
   DiagramType.kanban: 'kanban',
+  DiagramType.mindmap: 'mindmap',
   DiagramType.packet: 'packet',
   DiagramType.pie: 'pie',
   DiagramType.radar: 'radar',
@@ -847,6 +863,7 @@ const _mermaidConfigNames = {
   DiagramType.railroadPeg: 'railroad',
   DiagramType.sequence: 'sequence',
   DiagramType.stateDiagram: 'state',
+  DiagramType.timeline: 'timeline',
   DiagramType.treeView: 'treeView',
   DiagramType.treemap: 'treemap',
   DiagramType.wardley: 'wardley-beta',
@@ -878,6 +895,7 @@ Map<String, Object> _diagramConfig(Map<Object?, Object?> json, DiagramType type)
     DiagramType.gantt => _ganttConfig(value),
     DiagramType.gitGraph => _gitGraphConfig(value),
     DiagramType.kanban => _kanbanConfig(value),
+    DiagramType.mindmap => _mindmapConfig(value),
     DiagramType.packet => _packetConfig(value),
     DiagramType.pie => _pieConfig(value),
     DiagramType.radar => _radarConfig(value),
@@ -887,6 +905,7 @@ Map<String, Object> _diagramConfig(Map<Object?, Object?> json, DiagramType type)
     DiagramType.railroadPeg => _railroadConfig(value),
     DiagramType.sequence => _sequenceConfig(value),
     DiagramType.stateDiagram => _stateConfig(value),
+    DiagramType.timeline => _timelineConfig(value),
     DiagramType.treeView => _treeViewConfig(value),
     DiagramType.treemap => _treemapConfig(value),
     DiagramType.wardley => _wardleyConfig(value),
@@ -923,6 +942,10 @@ const _erConfigKeys = {
   'edgeWidth',
 };
 
+const _mindmapConfigKeys = {..._baseDiagramConfigKeys, 'padding'};
+
+const _timelineConfigKeys = {..._baseDiagramConfigKeys, 'leftMargin', 'padding'};
+
 Map<String, Object> _classConfig(Object? value) =>
     _graphConfig(value, optionName: 'classOptions', keys: _classConfigKeys);
 
@@ -930,6 +953,12 @@ Map<String, Object> _stateConfig(Object? value) =>
     _graphConfig(value, optionName: 'stateOptions', keys: _stateConfigKeys);
 
 Map<String, Object> _erConfig(Object? value) => _graphConfig(value, optionName: 'erOptions', keys: _erConfigKeys);
+
+Map<String, Object> _mindmapConfig(Object? value) =>
+    _graphConfig(value, optionName: 'mindmapOptions', keys: _mindmapConfigKeys);
+
+Map<String, Object> _timelineConfig(Object? value) =>
+    _graphConfig(value, optionName: 'timelineOptions', keys: _timelineConfigKeys);
 
 Map<String, Object> _graphConfig(Object? value, {required String optionName, required Set<String> keys}) {
   if (value is! Map<String, Object?> || value.isEmpty || value.keys.any((key) => !keys.contains(key))) {
@@ -2324,6 +2353,10 @@ double _computedFontSize(XmlElement element, String styleSheets) {
     final value = rawValue.replaceFirst(RegExp(r'\s*!important\s*$', caseSensitive: false), '').trim().toLowerCase();
     if (value.endsWith('rem')) {
       fontSize = _defaultSvgFontSize * double.parse(value.substring(0, value.length - 3));
+    } else if (value.endsWith('ex')) {
+      // CSS defines `ex` from the font's x-height. Mermaid's default browser
+      // metrics resolve 1ex to half the inherited font size.
+      fontSize *= 0.5 * double.parse(value.substring(0, value.length - 2));
     } else if (value.endsWith('em')) {
       fontSize *= double.parse(value.substring(0, value.length - 2));
     } else if (value.endsWith('%')) {

@@ -87,5 +87,7 @@ title Visible title %% trailing comment
     expect(parseByName('flowchart', 'flowchart LR'), isA<FlowchartAst>());
     expect(DiagramType.tryFromWireName('sequence'), DiagramType.sequence);
     expect(DiagramType.tryFromWireName('sequenceDiagram'), isNull);
+    expect(DiagramType.tryFromWireName('mindmap'), DiagramType.mindmap);
+    expect(DiagramType.tryFromWireName('timeline'), DiagramType.timeline);
   });
 }

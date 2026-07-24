@@ -35,6 +35,9 @@ enum DiagramType {
   /// Selects the kanban variant.
   kanban('kanban'),
 
+  /// Selects the mindmap variant.
+  mindmap('mindmap'),
+
   /// Selects the packet variant.
   packet('packet'),
 
@@ -61,6 +64,9 @@ enum DiagramType {
 
   /// Selects the state diagram variant.
   stateDiagram('stateDiagram'),
+
+  /// Selects the timeline variant.
+  timeline('timeline'),
 
   /// Selects the tree view variant.
   treeView('treeView'),

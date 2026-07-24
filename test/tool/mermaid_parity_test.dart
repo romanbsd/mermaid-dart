@@ -26,8 +26,8 @@ void main() {
     final manifest = ParityManifest.load(File('tool/mermaid_parity/fixtures.json'));
 
     expect(manifest.mermaidVersion, '11.16.0');
-    expect(manifest.fixtures.map((fixture) => fixture.id), hasLength(84));
-    expect(manifest.fixtures.map((fixture) => fixture.id).toSet(), hasLength(84));
+    expect(manifest.fixtures.map((fixture) => fixture.id), hasLength(86));
+    expect(manifest.fixtures.map((fixture) => fixture.id).toSet(), hasLength(86));
     expect(
       manifest.fixtures.map((fixture) => fixture.id),
       containsAll([
@@ -48,6 +48,8 @@ void main() {
         'architecture-edge-labels',
         'class-domain-model',
         'er-commerce',
+        'mindmap-product',
+        'timeline-product-history',
         'flowchart-request-lifecycle',
         'sequence-request-response',
         'sequence-demo',
@@ -406,11 +408,14 @@ void main() {
       '<svg><text x="1" y="2" font-size="16" text-anchor="middle" '
       'dominant-baseline="central">Label</text></svg>',
     );
+    final exSvg = SvgSnapshot.fromSvg('<svg><text x="1" y="2" font-size="4ex">Label</text></svg>');
+    final explicitExSvg = SvgSnapshot.fromSvg('<svg><text x="1" y="2" font-size="32">Label</text></svg>');
 
     expect(SvgComparison.compare(inheritedSvg, explicitSvg).sameGeometry, isTrue);
     expect(SvgComparison.compare(inheritedSvg, differentSvg).sameGeometry, isFalse);
     expect(SvgComparison.compare(inheritedHtml, explicitHtml).sameGeometry, isTrue);
     expect(SvgComparison.compare(inheritedHtml, differentHtml).sameGeometry, isFalse);
+    expect(SvgComparison.compare(exSvg, explicitExSvg).sameGeometry, isTrue);
   });
 
   test('compares normalized inherited font families as visual text geometry', () {
@@ -1752,7 +1757,9 @@ void main() {
       (type: 'radar', options: 'radarOptions', config: 'radar'),
       (type: 'railroad', options: 'railroadOptions', config: 'railroad'),
       (type: 'sequence', options: 'sequenceOptions', config: 'sequence'),
+      (type: 'mindmap', options: 'mindmapOptions', config: 'mindmap'),
       (type: 'stateDiagram', options: 'stateOptions', config: 'state'),
+      (type: 'timeline', options: 'timelineOptions', config: 'timeline'),
       (type: 'treeView', options: 'treeViewOptions', config: 'treeView'),
       (type: 'treemap', options: 'treemapOptions', config: 'treemap'),
       (type: 'wardley', options: 'wardleyOptions', config: 'wardley-beta'),
@@ -1779,7 +1786,9 @@ void main() {
         DiagramType.radar => fixture.renderOptions.radar,
         DiagramType.railroad => fixture.renderOptions.railroad,
         DiagramType.sequence => fixture.renderOptions.sequence,
+        DiagramType.mindmap => fixture.renderOptions.mindmap,
         DiagramType.stateDiagram => fixture.renderOptions.stateDiagram,
+        DiagramType.timeline => fixture.renderOptions.timeline,
         DiagramType.treeView => fixture.renderOptions.treeView,
         DiagramType.treemap => fixture.renderOptions.treemap,
         DiagramType.wardley => fixture.renderOptions.wardley,

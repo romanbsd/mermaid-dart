@@ -10,6 +10,7 @@ import 'gantt_parser.dart';
 import 'git_graph_parser.dart';
 import 'info_parser.dart';
 import 'kanban_parser.dart';
+import 'mindmap_parser.dart';
 import 'packet_parser.dart';
 import 'pie_parser.dart';
 import 'radar_parser.dart';
@@ -19,6 +20,7 @@ import 'railroad_parser.dart';
 import 'railroad_peg_parser.dart';
 import 'sequence_parser.dart';
 import 'state_parser.dart';
+import 'timeline_parser.dart';
 import 'tree_view_parser.dart';
 import 'treemap_parser.dart';
 import 'wardley_parser.dart';
@@ -38,6 +40,7 @@ DiagramAst parse(DiagramType diagramType, String source) => switch (diagramType)
   DiagramType.gitGraph => parseGitGraph(source),
   DiagramType.info => parseInfo(source),
   DiagramType.kanban => parseKanban(source),
+  DiagramType.mindmap => parseMindmap(source),
   DiagramType.packet => parsePacket(source),
   DiagramType.pie => parsePie(source),
   DiagramType.radar => parseRadar(source),
@@ -47,6 +50,7 @@ DiagramAst parse(DiagramType diagramType, String source) => switch (diagramType)
   DiagramType.railroadPeg => parseRailroadPeg(source),
   DiagramType.sequence => parseSequence(source),
   DiagramType.stateDiagram => parseStateDiagram(source),
+  DiagramType.timeline => parseTimeline(source),
   DiagramType.treeView => parseTreeView(source),
   DiagramType.treemap => parseTreemap(source),
   DiagramType.wardley => parseWardley(source),

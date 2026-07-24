@@ -218,6 +218,21 @@ title Transport header
 ''',
   ),
   DemoSample(
+    type: DiagramType.mindmap,
+    title: 'Mindmap',
+    description:
+        'Indented hierarchy, node shapes, classes, and curved branches.',
+    source: '''
+mindmap
+  root((Product))
+    research[Research]
+      interviews(Interviews)
+      prototype(Prototype)
+    launch{{Launch}}
+      rollout)Rollout(
+''',
+  ),
+  DemoSample(
     type: DiagramType.pie,
     title: 'Pie',
     description: 'Slices, labels, values, title, and legend.',
@@ -331,6 +346,20 @@ src/ ## Application sources
     test/
         renderer_test.dart
 README.md
+''',
+  ),
+  DemoSample(
+    type: DiagramType.timeline,
+    title: 'Timeline',
+    description: 'Sections, periods, events, and top-down orientation.',
+    source: '''
+timeline TD
+title Product history
+section Discovery
+  Research : Interviews : Prototype
+section Delivery
+  Beta : Customer feedback
+  Launch : General availability
 ''',
   ),
   DemoSample(

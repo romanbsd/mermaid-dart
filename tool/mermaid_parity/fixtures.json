@@ -937,6 +937,19 @@
       }
     },
     {
+      "id": "mindmap-product",
+      "type": "mindmap",
+      "source": "mindmap\n  root((Product))\n",
+      "textMeasurements": {
+        "Product": { "width": 54.906, "height": 24 }
+      }
+    },
+    {
+      "id": "timeline-product-history",
+      "type": "timeline",
+      "source": "timeline TD\ntitle Product history\nsection Discovery\n  Research : Interviews : Prototype\nsection Delivery\n  Beta : Customer feedback\n  Launch : General availability\n"
+    },
+    {
       "id": "sequence-request-response",
       "type": "sequence",
       "source": "sequenceDiagram\nparticipant Client\nparticipant API\nClient->>API: Request\nAPI-->>Client: Response\n",
