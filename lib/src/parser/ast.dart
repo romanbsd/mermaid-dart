@@ -31,3 +31,4 @@ part 'timeline_ast.dart';
 part 'tree_view_ast.dart';
 part 'treemap_ast.dart';
 part 'wardley_ast.dart';
+part 'xy_chart_ast.dart';

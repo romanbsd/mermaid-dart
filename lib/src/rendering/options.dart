@@ -2660,6 +2660,29 @@ final class TimelineRenderOptions extends DiagramRenderOptions {
 /// [theme] supplies global Mermaid variables, while each diagram-specific
 /// field contains typed renderer configuration. [padding] is applied after
 /// diagram layout when the final scene viewport is constructed.
+/// Geometry and presentation configuration for XY charts.
+final class XyChartRenderOptions extends DiagramRenderOptions {
+  const XyChartRenderOptions({
+    this.width = 700,
+    this.height = 500,
+    this.chartPadding = 60,
+    this.titlePadding = 30,
+    this.axisLabelPadding = 18,
+    this.barGapRatio = .2,
+    this.showDataLabel = false,
+    super.useWidth,
+    super.useMaxWidth = true,
+  });
+
+  final double width;
+  final double height;
+  final double chartPadding;
+  final double titlePadding;
+  final double axisLabelPadding;
+  final double barGapRatio;
+  final bool showDataLabel;
+}
+
 final class RenderOptions {
   /// Creates rendering options with Mermaid-compatible defaults.
   const RenderOptions({
@@ -2686,6 +2709,7 @@ final class RenderOptions {
     this.treeView = const TreeViewRenderOptions(),
     this.treemap = const TreemapRenderOptions(),
     this.wardley = const WardleyRenderOptions(),
+    this.xyChart = const XyChartRenderOptions(),
     this.diagram = const <Type, DiagramRenderOptions>{},
   });
 
@@ -2758,6 +2782,9 @@ final class RenderOptions {
   /// Wardley renderer configuration.
   final WardleyRenderOptions wardley;
 
+  /// XY Chart renderer configuration.
+  final XyChartRenderOptions xyChart;
+
   /// Additional typed options for renderer families added after this API.
   final Map<Type, DiagramRenderOptions> diagram;
 
@@ -2790,6 +2817,7 @@ final class RenderOptions {
           TreeViewRenderOptions() => treeView,
           TreemapRenderOptions() => treemap,
           WardleyRenderOptions() => wardley,
+          XyChartRenderOptions() => xyChart,
         }
         as T;
   }

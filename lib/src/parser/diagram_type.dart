@@ -75,7 +75,10 @@ enum DiagramType {
   treemap('treemap'),
 
   /// Selects the wardley variant.
-  wardley('wardley');
+  wardley('wardley'),
+
+  /// Selects the XY chart variant.
+  xyChart('xychart');
 
   const DiagramType(this.wireName);
 

@@ -544,6 +544,7 @@ disk2:T -- B:db
         DiagramType.treeView: 'treeView-beta',
         DiagramType.treemap: 'treemap-beta',
         DiagramType.wardley: 'wardley-beta',
+        DiagramType.xyChart: 'xychart\nline [1]',
       };
 
       for (final type in DiagramType.values) {

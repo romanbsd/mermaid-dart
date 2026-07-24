@@ -1028,6 +1028,11 @@
         "FK": { "width": 17.609375, "height": 24 },
         "places": { "width": 39.53125, "height": 21 }
       }
+    },
+    {
+      "id": "xy-chart-sales",
+      "type": "xychart",
+      "source": "xychart\n  accTitle: Quarterly sales\n  title \"Sales\"\n  x-axis \"Quarter\" [Q1, Q2, Q3, Q4]\n  y-axis \"Revenue\" 0 --> 100\n  bar \"Actual\" [20, 45, 70, 85]\n  line \"Forecast\" [25 \"Low\", 50, 75, 95 \"High\"]\n"
     }
   ]
 }

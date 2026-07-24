@@ -24,6 +24,7 @@ import 'timeline_parser.dart';
 import 'tree_view_parser.dart';
 import 'treemap_parser.dart';
 import 'wardley_parser.dart';
+import 'xy_chart_parser.dart';
 
 /// Parses [source] using the Mermaid grammar identified by [diagramType].
 ///
@@ -54,6 +55,7 @@ DiagramAst parse(DiagramType diagramType, String source) => switch (diagramType)
   DiagramType.treeView => parseTreeView(source),
   DiagramType.treemap => parseTreemap(source),
   DiagramType.wardley => parseWardley(source),
+  DiagramType.xyChart => parseXyChart(source),
 };
 
 /// Parses [source] using Mermaid's string [diagramType] identifier.

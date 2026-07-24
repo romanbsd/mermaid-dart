@@ -51,6 +51,7 @@ available in Mermaid.js.
 | Tree View | `treeView` | `treeView-beta` |
 | Treemap | `treemap` | `treemap`, `treemap-beta` |
 | Wardley Map | `wardley` | `wardley-beta` |
+| XY Chart | `xyChart` | `xychart`, `xychart-beta` |
 
 All four railroad syntaxes lower into the same typed `RailroadAst`, allowing
 one layout implementation to render Railroad, ABNF, EBNF, and PEG input.

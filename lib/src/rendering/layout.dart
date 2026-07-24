@@ -44,6 +44,7 @@ part 'layout/timeline.dart';
 part 'layout/tree_view.dart';
 part 'layout/treemap.dart';
 part 'layout/wardley.dart';
+part 'layout/xy_chart.dart';
 
 const _palette = <Color>[
   Color(87, 103, 198),
@@ -180,6 +181,11 @@ DiagramScene layoutDiagram(
     WardleyAst ast => (
       content: _layoutWardley(ast, context),
       diagramOptions: options.optionsFor(const WardleyRenderOptions()),
+      rendererHandlesTitle: true,
+    ),
+    XyChartAst ast => (
+      content: _layoutXyChart(ast, context),
+      diagramOptions: options.optionsFor(const XyChartRenderOptions()),
       rendererHandlesTitle: true,
     ),
   };
