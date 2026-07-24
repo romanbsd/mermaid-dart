@@ -1,8 +1,10 @@
 import 'ast.dart';
 import 'architecture_parser.dart';
+import 'class_parser.dart';
 import 'cynefin_parser.dart';
 import 'diagram_type.dart';
 import 'event_modeling_parser.dart';
+import 'er_parser.dart';
 import 'flowchart_parser.dart';
 import 'gantt_parser.dart';
 import 'git_graph_parser.dart';
@@ -16,6 +18,7 @@ import 'railroad_ebnf_parser.dart';
 import 'railroad_parser.dart';
 import 'railroad_peg_parser.dart';
 import 'sequence_parser.dart';
+import 'state_parser.dart';
 import 'tree_view_parser.dart';
 import 'treemap_parser.dart';
 import 'wardley_parser.dart';
@@ -26,7 +29,9 @@ import 'wardley_parser.dart';
 /// failures throw [MermaidParseException] with a one-based source location.
 DiagramAst parse(DiagramType diagramType, String source) => switch (diagramType) {
   DiagramType.architecture => parseArchitecture(source),
+  DiagramType.classDiagram => parseClassDiagram(source),
   DiagramType.cynefin => parseCynefin(source),
+  DiagramType.entityRelationship => parseErDiagram(source),
   DiagramType.eventModeling => parseEventModeling(source),
   DiagramType.flowchart => parseFlowchart(source),
   DiagramType.gantt => parseGantt(source),
@@ -41,6 +46,7 @@ DiagramAst parse(DiagramType diagramType, String source) => switch (diagramType)
   DiagramType.railroadEbnf => parseRailroadEbnf(source),
   DiagramType.railroadPeg => parseRailroadPeg(source),
   DiagramType.sequence => parseSequence(source),
+  DiagramType.stateDiagram => parseStateDiagram(source),
   DiagramType.treeView => parseTreeView(source),
   DiagramType.treemap => parseTreemap(source),
   DiagramType.wardley => parseWardley(source),

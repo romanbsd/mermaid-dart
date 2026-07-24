@@ -11,8 +11,14 @@ enum DiagramType {
   /// Selects the cynefin variant.
   cynefin('cynefin'),
 
+  /// Selects the class diagram variant.
+  classDiagram('classDiagram'),
+
   /// Selects the event modeling variant.
   eventModeling('eventmodeling'),
+
+  /// Selects the entity-relationship variant.
+  entityRelationship('er'),
 
   /// Selects the flowchart variant.
   flowchart('flowchart'),
@@ -52,6 +58,9 @@ enum DiagramType {
 
   /// Selects the sequence diagram variant.
   sequence('sequence'),
+
+  /// Selects the state diagram variant.
+  stateDiagram('stateDiagram'),
 
   /// Selects the tree view variant.
   treeView('treeView'),

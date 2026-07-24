@@ -295,8 +295,9 @@ _FlowchartGraphLayout _layoutFlowchartGraph(
     if (edge.label case final label? when label.isNotEmpty) {
       final rank = ranks[edge.from];
       if (rank == null) continue;
-      final labelWidth = context.measurer.measure(label, context.textStyle).width;
-      labeledEdgeGaps[rank] = math.max(labeledEdgeGaps[rank] ?? 0, labelWidth);
+      final labelSize = context.measurer.measure(label, context.textStyle);
+      final labelExtent = horizontal ? labelSize.width : labelSize.height;
+      labeledEdgeGaps[rank] = math.max(labeledEdgeGaps[rank] ?? 0, labelExtent);
     }
   }
   for (final rank in orderedRanks) {
@@ -569,7 +570,7 @@ List<SceneElement> _flowchartEdgeElements(
             : Point(end.x, end.y + (forward ? -_flowchartPointMarkerOffset : _flowchartPointMarkerOffset))
       : end;
   final commands = middle.x == beforeEnd.x && middle.y == beforeEnd.y
-      ? _flowchartBasisPath(start, middle, pathEnd)
+      ? _graphBasisPath([start, middle, pathEnd])
       : <PathCommand>[MoveTo(start), LineTo(middle), LineTo(beforeEnd), LineTo(pathEnd)];
   final stroke = SceneStroke(
     color: context.options.theme.line,
@@ -608,30 +609,6 @@ List<SceneElement> _flowchartEdgeElements(
     );
   }
   return elements;
-}
-
-List<PathCommand> _flowchartBasisPath(Point start, Point middle, Point end) => [
-  MoveTo(start),
-  LineTo(_weightedPoint(start, 5, middle, 1, 6)),
-  CubicTo(
-    _weightedPoint(start, 2, middle, 1, 3),
-    _weightedPoint(start, 1, middle, 2, 3),
-    _weightedPoint(start, 1, middle, 4, 6, end: end),
-  ),
-  CubicTo(
-    _weightedPoint(middle, 2, end, 1, 3),
-    _weightedPoint(middle, 1, end, 2, 3),
-    _weightedPoint(middle, 1, end, 5, 6),
-  ),
-  LineTo(end),
-];
-
-Point _weightedPoint(Point first, double firstWeight, Point second, double secondWeight, double divisor, {Point? end}) {
-  final third = end ?? const Point(0, 0);
-  return Point(
-    (first.x * firstWeight + second.x * secondWeight + third.x) / divisor,
-    (first.y * firstWeight + second.y * secondWeight + third.y) / divisor,
-  );
 }
 
 SceneElement _flowchartMarker(

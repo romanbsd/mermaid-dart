@@ -1,5 +1,22 @@
 part of 'ast.dart';
 
+/// Cardinal layout direction shared by graph-shaped Mermaid diagrams.
+enum GraphDirection {
+  topDown,
+  bottomTop,
+  leftRight,
+  rightLeft;
+
+  /// Whether ranks progress on the vertical axis.
+  bool get isVertical => this == topDown || this == bottomTop;
+
+  /// Whether ranks progress on the horizontal axis.
+  bool get isHorizontal => !isVertical;
+
+  /// Whether ranks use their natural top-to-bottom or left-to-right order.
+  bool get isForward => this == topDown || this == leftRight;
+}
+
 /// Base type for immutable syntax trees produced by Mermaid parsers.
 ///
 /// Common title and accessibility metadata is normalized here so renderers can

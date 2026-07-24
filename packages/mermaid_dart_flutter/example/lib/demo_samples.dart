@@ -60,6 +60,24 @@ api:R --> L:db
 ''',
   ),
   DemoSample(
+    type: DiagramType.classDiagram,
+    title: 'Class Diagram',
+    description: 'Classes, members, inheritance, cardinality, and notes.',
+    source: '''
+classDiagram
+direction LR
+class Animal {
+  +String name
+  +move()
+}
+class Duck {
+  +swim()
+}
+Animal "1" <|-- "*" Duck : extends
+note for Duck "Can fly and swim"
+''',
+  ),
+  DemoSample(
     type: DiagramType.cynefin,
     title: 'Cynefin',
     description: 'All five decision-making domains and their practices.',
@@ -81,6 +99,23 @@ eventmodeling
 timeframe 01 command Cart.Update
 tf 02 evt Cart.Updated ->> 01 `jsobj`{ status: accepted }
 resetframe 03 readmodel Cart.Items ->> 02
+''',
+  ),
+  DemoSample(
+    type: DiagramType.entityRelationship,
+    title: 'Entity Relationship',
+    description: 'Entity attributes, keys, cardinalities, and relationships.',
+    source: '''
+erDiagram
+CUSTOMER {
+  int id PK
+  string name
+}
+ORDER {
+  int id PK
+  int customer_id FK
+}
+CUSTOMER ||--o{ ORDER : places
 ''',
   ),
   DemoSample(
@@ -263,6 +298,24 @@ else query
   API-->>-Client: Response
 end
 Note right of API: Validates access
+''',
+  ),
+  DemoSample(
+    type: DiagramType.stateDiagram,
+    title: 'State Diagram',
+    description: 'States, transitions, choices, notes, and terminal markers.',
+    source: '''
+stateDiagram-v2
+[*] --> Idle
+Idle --> Processing : submit
+state Processing {
+  [*] --> Validating
+  Validating --> Complete
+}
+Processing --> Done : success
+Processing --> Failed : error
+Done --> [*]
+note right of Failed : Retry is available
 ''',
   ),
   DemoSample(

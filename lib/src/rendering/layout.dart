@@ -22,9 +22,12 @@ import 'scene.dart';
 import 'svg.dart';
 
 part 'layout/architecture.dart';
+part 'layout/class.dart';
 part 'layout/cynefin.dart';
+part 'layout/er.dart';
 part 'layout/event_modeling.dart';
 part 'layout/flowchart.dart';
+part 'layout/graph_common.dart';
 part 'layout/gantt.dart';
 part 'layout/git_graph.dart';
 part 'layout/info.dart';
@@ -34,6 +37,7 @@ part 'layout/pie.dart';
 part 'layout/radar.dart';
 part 'layout/railroad.dart';
 part 'layout/sequence.dart';
+part 'layout/state.dart';
 part 'layout/tree_view.dart';
 part 'layout/treemap.dart';
 part 'layout/wardley.dart';
@@ -75,6 +79,11 @@ DiagramScene layoutDiagram(
       diagramOptions: options.optionsFor(const ArchitectureRenderOptions()),
       rendererHandlesTitle: true,
     ),
+    ClassDiagramAst ast => (
+      content: _layoutClassDiagram(ast, context),
+      diagramOptions: options.optionsFor(const ClassRenderOptions()),
+      rendererHandlesTitle: false,
+    ),
     CynefinAst ast => (
       content: _layoutCynefin(ast, context),
       diagramOptions: options.optionsFor(const CynefinRenderOptions()),
@@ -83,6 +92,11 @@ DiagramScene layoutDiagram(
     EventModelingAst ast => (
       content: _layoutEventModeling(ast, context),
       diagramOptions: options.optionsFor(const EventModelingRenderOptions()),
+      rendererHandlesTitle: false,
+    ),
+    ErDiagramAst ast => (
+      content: _layoutErDiagram(ast, context),
+      diagramOptions: options.optionsFor(const ErRenderOptions()),
       rendererHandlesTitle: false,
     ),
     FlowchartAst ast => (
@@ -133,6 +147,11 @@ DiagramScene layoutDiagram(
     SequenceAst ast => (
       content: _layoutSequence(ast, context),
       diagramOptions: options.optionsFor(const SequenceRenderOptions()),
+      rendererHandlesTitle: false,
+    ),
+    StateDiagramAst ast => (
+      content: _layoutStateDiagram(ast, context),
+      diagramOptions: options.optionsFor(const StateRenderOptions()),
       rendererHandlesTitle: false,
     ),
     TreeViewAst ast => (

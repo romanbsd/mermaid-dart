@@ -965,6 +965,56 @@
         "[query]": { "width": 52.25, "height": 19 },
         "Validates access": { "width": 115.453, "height": 19 }
       }
+    },
+    {
+      "id": "class-domain-model",
+      "type": "classDiagram",
+      "source": "classDiagram\ndirection LR\nclass Animal {\n  +String name\n  +move()\n}\nclass Duck {\n  +swim()\n}\nAnimal \"1\" <|-- \"*\" Duck : extends\nnote for Duck \"Can fly and swim\"\n",
+      "textMeasurements": {
+        "Animal": { "width": 51.34375, "height": 24 },
+        "+String name": { "width": 93.96875, "height": 24 },
+        "+move()": { "width": 58.578125, "height": 24 },
+        "Duck": { "width": 36.6875, "height": 24 },
+        "+swim()": { "width": 56.375, "height": 24 },
+        "extends": { "width": 55.953125, "height": 24 },
+        "1": { "width": 5.78125, "height": 16.5 },
+        "*": { "width": 4.046875, "height": 16.5 },
+        "Can fly and swim": { "width": 122, "height": 24 }
+      }
+    },
+    {
+      "id": "state-checkout",
+      "type": "stateDiagram",
+      "source": "stateDiagram-v2\n[*] --> Idle\nIdle --> Processing : submit\nstate Processing {\n  [*] --> Validating\n  Validating --> Complete\n}\nProcessing --> Done : success\nProcessing --> Failed : error\nDone --> [*]\nnote right of Failed : Retry is available\n",
+      "textMeasurements": {
+        "Idle": { "width": 26.8125, "height": 24 },
+        "submit": { "width": 48.328125, "height": 24 },
+        "Processing": { "width": 73.921875, "height": 24 },
+        "Validating": { "width": 70.828125, "height": 24 },
+        "Complete": { "width": 68.875, "height": 24 },
+        "success": { "width": 52.75, "height": 24 },
+        "Done": { "width": 35.875, "height": 24 },
+        "Failed": { "width": 43.734375, "height": 24 },
+        "error": { "width": 35.96875, "height": 24 },
+        "Retry is available": { "width": 123.21875, "height": 24 }
+      }
+    },
+    {
+      "id": "er-commerce",
+      "type": "er",
+      "source": "erDiagram\nCUSTOMER {\n  int id PK\n  string name\n}\nORDER {\n  int id PK\n  int customer_id FK\n}\nCUSTOMER ||--o{ ORDER : places\n",
+      "textMeasurements": {
+        "CUSTOMER": { "width": 76.0625, "height": 24 },
+        "ORDER": { "width": 47.796875, "height": 24 },
+        "int": { "width": 19.65625, "height": 24 },
+        "id": { "width": 13.484375, "height": 24 },
+        "PK": { "width": 18.140625, "height": 24 },
+        "string": { "width": 40.375, "height": 24 },
+        "name": { "width": 39.15625, "height": 24 },
+        "customer_id": { "width": 88.171875, "height": 24 },
+        "FK": { "width": 17.609375, "height": 24 },
+        "places": { "width": 39.53125, "height": 21 }
+      }
     }
   ]
 }

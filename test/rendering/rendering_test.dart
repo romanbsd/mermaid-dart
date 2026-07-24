@@ -521,7 +521,9 @@ disk2:T -- B:db
     test('parse-layout-render convenience covers every diagram type', () {
       const minimalSources = {
         DiagramType.architecture: 'architecture-beta',
+        DiagramType.classDiagram: 'classDiagram',
         DiagramType.cynefin: 'cynefin-beta',
+        DiagramType.entityRelationship: 'erDiagram',
         DiagramType.eventModeling: 'eventmodeling',
         DiagramType.flowchart: 'flowchart TD',
         DiagramType.gantt: 'gantt',
@@ -536,6 +538,7 @@ disk2:T -- B:db
         DiagramType.railroadEbnf: 'railroad-ebnf-beta',
         DiagramType.railroadPeg: 'railroad-peg-beta',
         DiagramType.sequence: 'sequenceDiagram',
+        DiagramType.stateDiagram: 'stateDiagram-v2',
         DiagramType.treeView: 'treeView-beta',
         DiagramType.treemap: 'treemap-beta',
         DiagramType.wardley: 'wardley-beta',

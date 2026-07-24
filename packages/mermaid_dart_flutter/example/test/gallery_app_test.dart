@@ -12,14 +12,18 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Mermaid Dart Gallery'), findsOneWidget);
-    expect(find.textContaining('19 supported grammars'), findsOneWidget);
+    expect(find.textContaining('22 supported grammars'), findsOneWidget);
     expect(find.byKey(const ValueKey('sample-architecture')), findsOneWidget);
     expect(find.byKey(const ValueKey('sample-flowchart')), findsOneWidget);
 
-    await tester.tap(find.byKey(const ValueKey('sample-architecture')));
+    await tester.enterText(find.byType(SearchBar), 'State Diagram');
+    await tester.pumpAndSettle();
+    final stateSample = find.byKey(const ValueKey('sample-stateDiagram'));
+    expect(stateSample, findsOneWidget);
+    await tester.tap(stateSample);
     await tester.pumpAndSettle();
 
-    expect(find.text('Architecture · Flutter icons'), findsWidgets);
+    expect(find.text('State Diagram'), findsWidgets);
     expect(find.text('Mermaid source'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });

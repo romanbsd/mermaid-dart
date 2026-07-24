@@ -86,6 +86,30 @@ void main() {
           statements: const [SequenceMessageAst(from: 'A', to: 'B', text: 'Hello')],
         ),
       ),
+      (
+        ClassDiagramAst(
+          classes: const [ClassAst(id: 'A', label: 'A')],
+        ),
+        ClassDiagramAst(
+          classes: const [ClassAst(id: 'A', label: 'A')],
+        ),
+      ),
+      (
+        StateDiagramAst(
+          states: const [StateAst(id: 'A', label: 'A')],
+        ),
+        StateDiagramAst(
+          states: const [StateAst(id: 'A', label: 'A')],
+        ),
+      ),
+      (
+        ErDiagramAst(
+          entities: const [ErEntityAst(id: 'A', label: 'A')],
+        ),
+        ErDiagramAst(
+          entities: const [ErEntityAst(id: 'A', label: 'A')],
+        ),
+      ),
     ];
 
     for (final (left, right) in pairs) {

@@ -26,8 +26,8 @@ void main() {
     final manifest = ParityManifest.load(File('tool/mermaid_parity/fixtures.json'));
 
     expect(manifest.mermaidVersion, '11.16.0');
-    expect(manifest.fixtures.map((fixture) => fixture.id), hasLength(81));
-    expect(manifest.fixtures.map((fixture) => fixture.id).toSet(), hasLength(81));
+    expect(manifest.fixtures.map((fixture) => fixture.id), hasLength(84));
+    expect(manifest.fixtures.map((fixture) => fixture.id).toSet(), hasLength(84));
     expect(
       manifest.fixtures.map((fixture) => fixture.id),
       containsAll([
@@ -46,9 +46,12 @@ void main() {
         'architecture-split-directioning',
         'architecture-directional-arrows',
         'architecture-edge-labels',
+        'class-domain-model',
+        'er-commerce',
         'flowchart-request-lifecycle',
         'sequence-request-response',
         'sequence-demo',
+        'state-checkout',
         'architecture-simple-junctions',
         'architecture-edge-length-default',
         'architecture-no-icon-edge-lengths',
@@ -111,7 +114,9 @@ void main() {
       manifest.fixtures.map((fixture) => fixture.type.name).toSet(),
       containsAll({
         'architecture',
+        'classDiagram',
         'cynefin',
+        'entityRelationship',
         'eventModeling',
         'gantt',
         'gitGraph',
@@ -125,6 +130,7 @@ void main() {
         'railroadEbnf',
         'railroadPeg',
         'sequence',
+        'stateDiagram',
         'treeView',
         'treemap',
         'wardley',
@@ -492,6 +498,28 @@ void main() {
     expect(SvgComparison.compare(html, svgText).samePaint, isTrue);
   });
 
+  test('uses browser-rendered State and ER foreignObject edge-label colors', () {
+    final state = SvgSnapshot.fromSvg(
+      '<svg class="statediagram"><g class="edgeLabel"><foreignObject width="10" height="10">'
+      '<span class="edgeLabel">next</span></foreignObject></g></svg>',
+    );
+    final stateText = SvgSnapshot.fromSvg(
+      '<svg class="statediagram"><text x="5" y="5" text-anchor="middle" '
+      'dominant-baseline="central" fill="#333">next</text></svg>',
+    );
+    final er = SvgSnapshot.fromSvg(
+      '<svg class="erDiagram"><g class="edgeLabel"><foreignObject width="10" height="10">'
+      '<span class="edgeLabel">owns</span></foreignObject></g></svg>',
+    );
+    final erText = SvgSnapshot.fromSvg(
+      '<svg class="erDiagram"><text x="5" y="5" text-anchor="middle" '
+      'dominant-baseline="central" fill="black">owns</text></svg>',
+    );
+
+    expect(SvgComparison.compare(state, stateText).visualParity, isTrue);
+    expect(SvgComparison.compare(er, erText).visualParity, isTrue);
+  });
+
   test('normalizes Mermaid createText wrappers to positioned SVG text', () {
     final mermaid = SvgSnapshot.fromSvg(
       '<svg><g transform="translate(10 20)" dominant-baseline="middle" '
@@ -621,6 +649,16 @@ void main() {
     final explicit = SvgSnapshot.fromSvg('<svg><rect x="1" y="2" width="3" height="4" rx="5" ry="5"/></svg>');
 
     expect(SvgComparison.compare(explicit, implicit).sameGeometry, isTrue);
+  });
+
+  test('resolves State cluster corner radii supplied by Mermaid CSS', () {
+    final mermaid = SvgSnapshot.fromSvg(
+      '<svg class="statediagram"><g class="statediagram-cluster">'
+      '<rect class="outer" width="20" height="10"/></g></svg>',
+    );
+    final dart = SvgSnapshot.fromSvg('<svg class="statediagram"><rect width="20" height="10" rx="5" ry="5"/></svg>');
+
+    expect(SvgComparison.compare(dart, mermaid).sameGeometry, isTrue);
   });
 
   test('normalizes equivalent centered text baselines', () {
@@ -1703,7 +1741,9 @@ void main() {
   test('all configurable renderers expose Mermaid base diagram options', () {
     const cases = [
       (type: 'architecture', options: 'architectureOptions', config: 'architecture'),
+      (type: 'classDiagram', options: 'classOptions', config: 'class'),
       (type: 'cynefin', options: 'cynefinOptions', config: 'cynefin'),
+      (type: 'er', options: 'erOptions', config: 'er'),
       (type: 'eventmodeling', options: 'eventModelingOptions', config: 'eventmodeling'),
       (type: 'flowchart', options: 'flowchartOptions', config: 'flowchart'),
       (type: 'gitGraph', options: 'gitGraphOptions', config: 'gitGraph'),
@@ -1712,6 +1752,7 @@ void main() {
       (type: 'radar', options: 'radarOptions', config: 'radar'),
       (type: 'railroad', options: 'railroadOptions', config: 'railroad'),
       (type: 'sequence', options: 'sequenceOptions', config: 'sequence'),
+      (type: 'stateDiagram', options: 'stateOptions', config: 'state'),
       (type: 'treeView', options: 'treeViewOptions', config: 'treeView'),
       (type: 'treemap', options: 'treemapOptions', config: 'treemap'),
       (type: 'wardley', options: 'wardleyOptions', config: 'wardley-beta'),
@@ -1727,7 +1768,9 @@ void main() {
       });
       final options = switch (fixture.type) {
         DiagramType.architecture => fixture.renderOptions.architecture,
+        DiagramType.classDiagram => fixture.renderOptions.classDiagram,
         DiagramType.cynefin => fixture.renderOptions.cynefin,
+        DiagramType.entityRelationship => fixture.renderOptions.entityRelationship,
         DiagramType.eventModeling => fixture.renderOptions.eventModeling,
         DiagramType.flowchart => fixture.renderOptions.flowchart,
         DiagramType.gitGraph => fixture.renderOptions.gitGraph,
@@ -1736,6 +1779,7 @@ void main() {
         DiagramType.radar => fixture.renderOptions.radar,
         DiagramType.railroad => fixture.renderOptions.railroad,
         DiagramType.sequence => fixture.renderOptions.sequence,
+        DiagramType.stateDiagram => fixture.renderOptions.stateDiagram,
         DiagramType.treeView => fixture.renderOptions.treeView,
         DiagramType.treemap => fixture.renderOptions.treemap,
         DiagramType.wardley => fixture.renderOptions.wardley,

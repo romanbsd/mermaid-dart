@@ -1,7 +1,7 @@
 # mermaid_dart
 
-A pure-Dart Mermaid parser and renderer with verified visual parity against
-Mermaid.js 11.16.0 for every diagram type currently supported by this package.
+A pure-Dart Mermaid parser and renderer with a visual-parity harness pinned to
+Mermaid.js 11.16.0.
 
 `mermaid_dart` runs without a browser, DOM, or JavaScript runtime. It parses
 Mermaid source into typed Dart ASTs, lays those ASTs out as a backend-neutral
@@ -9,11 +9,11 @@ scene graph, and can serialize the scene as accessible SVG.
 
 ## Status
 
-The parity suite currently covers 81 representative diagrams. All 81 pass
+The parity suite currently covers 84 representative diagrams, all of which pass
 visual comparison against the pinned Mermaid.js 11.16.0 renderer:
 
 ```text
-Result: 0 exact, 81 visual, 0 different, 0 errors
+Result: 0 exact, 84 visual, 0 different, 0 errors
 ```
 
 “Visual parity” means the viewport, visible text, element counts, geometry, and
@@ -21,15 +21,18 @@ paint agree within the harness tolerances. Canonical SVG strings are not
 expected to be identical: Mermaid.js emits browser-oriented wrappers and CSS,
 while this package serializes resolved styles from a backend-neutral scene.
 
-Parity applies to the supported diagram types below. It does not imply support
-for every diagram family available in Mermaid.js.
+Support does not imply every Mermaid.js syntax extension is implemented, and
+the parity status above does not imply support for every diagram family
+available in Mermaid.js.
 
 ## Supported diagrams
 
 | Diagram | `DiagramType` | Typical Mermaid header |
 | --- | --- | --- |
 | Architecture | `architecture` | `architecture-beta` |
+| Class | `classDiagram` | `classDiagram`, `classDiagram-v2` |
 | Cynefin | `cynefin` | `cynefin-beta` |
+| Entity Relationship | `entityRelationship` | `erDiagram` |
 | Event Modeling | `eventModeling` | `eventmodeling` |
 | Flowchart | `flowchart` | `flowchart`, `graph` |
 | Git Graph | `gitGraph` | `gitGraph` |
@@ -42,6 +45,7 @@ for every diagram family available in Mermaid.js.
 | Railroad EBNF | `railroadEbnf` | `railroad-ebnf-beta` |
 | Railroad PEG | `railroadPeg` | `railroad-peg-beta` |
 | Sequence | `sequence` | `sequenceDiagram` |
+| State | `stateDiagram` | `stateDiagram`, `stateDiagram-v2` |
 | Tree View | `treeView` | `treeView-beta` |
 | Treemap | `treemap` | `treemap`, `treemap-beta` |
 | Wardley Map | `wardley` | `wardley-beta` |

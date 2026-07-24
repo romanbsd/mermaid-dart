@@ -81,7 +81,9 @@ final class ParityFixture {
 
   RenderOptions get renderOptions {
     const architectureDefaults = ArchitectureRenderOptions();
+    const classDefaults = ClassRenderOptions();
     const cynefinDefaults = CynefinRenderOptions();
+    const erDefaults = ErRenderOptions();
     const eventModelingDefaults = EventModelingRenderOptions();
     const flowchartDefaults = FlowchartRenderOptions();
     const ganttDefaults = GanttRenderOptions();
@@ -92,6 +94,7 @@ final class ParityFixture {
     const radarDefaults = RadarRenderOptions();
     const railroadDefaults = RailroadRenderOptions();
     const sequenceDefaults = SequenceRenderOptions();
+    const stateDefaults = StateRenderOptions();
     const treeViewDefaults = TreeViewRenderOptions();
     const treemapDefaults = TreemapRenderOptions();
     const wardleyDefaults = WardleyRenderOptions();
@@ -113,6 +116,17 @@ final class ParityFixture {
         numIter: diagramConfig['numIter'] as int? ?? architectureDefaults.numIter,
         seed: diagramConfig['seed'] as int? ?? architectureDefaults.seed,
       ),
+      classDiagram: ClassRenderOptions(
+        useWidth: _configuredUseWidth(diagramConfig, classDefaults),
+        useMaxWidth: _configuredUseMaxWidth(diagramConfig, classDefaults),
+        nodeSpacing: (diagramConfig['nodeSpacing'] as num?)?.toDouble() ?? classDefaults.nodeSpacing,
+        rankSpacing: (diagramConfig['rankSpacing'] as num?)?.toDouble() ?? classDefaults.rankSpacing,
+        diagramPadding: (diagramConfig['diagramPadding'] as num?)?.toDouble() ?? classDefaults.diagramPadding,
+        nodePadding: (diagramConfig['nodePadding'] as num?)?.toDouble() ?? classDefaults.nodePadding,
+        compartmentPadding:
+            (diagramConfig['compartmentPadding'] as num?)?.toDouble() ?? classDefaults.compartmentPadding,
+        edgeWidth: (diagramConfig['edgeWidth'] as num?)?.toDouble() ?? classDefaults.edgeWidth,
+      ),
       cynefin: CynefinRenderOptions(
         useWidth: _configuredUseWidth(diagramConfig, cynefinDefaults),
         useMaxWidth: _configuredUseMaxWidth(diagramConfig, cynefinDefaults),
@@ -130,6 +144,15 @@ final class ParityFixture {
         useMaxWidth: _configuredUseMaxWidth(diagramConfig, eventModelingDefaults),
         padding: (diagramConfig['padding'] as num?)?.toDouble() ?? eventModelingDefaults.padding,
         rowHeight: (diagramConfig['rowHeight'] as num?)?.toDouble() ?? eventModelingDefaults.rowHeight,
+      ),
+      entityRelationship: ErRenderOptions(
+        useWidth: _configuredUseWidth(diagramConfig, erDefaults),
+        useMaxWidth: _configuredUseMaxWidth(diagramConfig, erDefaults),
+        nodeSpacing: (diagramConfig['nodeSpacing'] as num?)?.toDouble() ?? erDefaults.nodeSpacing,
+        rankSpacing: (diagramConfig['rankSpacing'] as num?)?.toDouble() ?? erDefaults.rankSpacing,
+        diagramPadding: (diagramConfig['diagramPadding'] as num?)?.toDouble() ?? erDefaults.diagramPadding,
+        cellPadding: (diagramConfig['cellPadding'] as num?)?.toDouble() ?? erDefaults.cellPadding,
+        edgeWidth: (diagramConfig['edgeWidth'] as num?)?.toDouble() ?? erDefaults.edgeWidth,
       ),
       flowchart: FlowchartRenderOptions(
         useWidth: _configuredUseWidth(diagramConfig, flowchartDefaults),
@@ -277,6 +300,16 @@ final class ParityFixture {
         wrapPadding: (diagramConfig['wrapPadding'] as num?)?.toDouble() ?? sequenceDefaults.wrapPadding,
         labelBoxWidth: (diagramConfig['labelBoxWidth'] as num?)?.toDouble() ?? sequenceDefaults.labelBoxWidth,
         labelBoxHeight: (diagramConfig['labelBoxHeight'] as num?)?.toDouble() ?? sequenceDefaults.labelBoxHeight,
+      ),
+      stateDiagram: StateRenderOptions(
+        useWidth: _configuredUseWidth(diagramConfig, stateDefaults),
+        useMaxWidth: _configuredUseMaxWidth(diagramConfig, stateDefaults),
+        nodeSpacing: (diagramConfig['nodeSpacing'] as num?)?.toDouble() ?? stateDefaults.nodeSpacing,
+        rankSpacing: (diagramConfig['rankSpacing'] as num?)?.toDouble() ?? stateDefaults.rankSpacing,
+        diagramPadding: (diagramConfig['diagramPadding'] as num?)?.toDouble() ?? stateDefaults.diagramPadding,
+        nodePadding: (diagramConfig['nodePadding'] as num?)?.toDouble() ?? stateDefaults.nodePadding,
+        noteMargin: (diagramConfig['noteMargin'] as num?)?.toDouble() ?? stateDefaults.noteMargin,
+        edgeWidth: (diagramConfig['edgeWidth'] as num?)?.toDouble() ?? stateDefaults.edgeWidth,
       ),
       treeView: TreeViewRenderOptions(
         useWidth: _configuredUseWidth(diagramConfig, treeViewDefaults),
@@ -773,8 +806,10 @@ bool? _configuredUseMaxWidth(Map<String, Object> config, DiagramRenderOptions de
 
 const _fixtureOptionNames = {
   DiagramType.architecture: 'architectureOptions',
+  DiagramType.classDiagram: 'classOptions',
   DiagramType.cynefin: 'cynefinOptions',
   DiagramType.eventModeling: 'eventModelingOptions',
+  DiagramType.entityRelationship: 'erOptions',
   DiagramType.flowchart: 'flowchartOptions',
   DiagramType.gantt: 'ganttOptions',
   DiagramType.gitGraph: 'gitGraphOptions',
@@ -787,6 +822,7 @@ const _fixtureOptionNames = {
   DiagramType.railroadEbnf: 'railroadOptions',
   DiagramType.railroadPeg: 'railroadOptions',
   DiagramType.sequence: 'sequenceOptions',
+  DiagramType.stateDiagram: 'stateOptions',
   DiagramType.treeView: 'treeViewOptions',
   DiagramType.treemap: 'treemapOptions',
   DiagramType.wardley: 'wardleyOptions',
@@ -794,8 +830,10 @@ const _fixtureOptionNames = {
 
 const _mermaidConfigNames = {
   DiagramType.architecture: 'architecture',
+  DiagramType.classDiagram: 'class',
   DiagramType.cynefin: 'cynefin',
   DiagramType.eventModeling: 'eventmodeling',
+  DiagramType.entityRelationship: 'er',
   DiagramType.flowchart: 'flowchart',
   DiagramType.gantt: 'gantt',
   DiagramType.gitGraph: 'gitGraph',
@@ -808,6 +846,7 @@ const _mermaidConfigNames = {
   DiagramType.railroadEbnf: 'railroad',
   DiagramType.railroadPeg: 'railroad',
   DiagramType.sequence: 'sequence',
+  DiagramType.stateDiagram: 'state',
   DiagramType.treeView: 'treeView',
   DiagramType.treemap: 'treemap',
   DiagramType.wardley: 'wardley-beta',
@@ -831,8 +870,10 @@ Map<String, Object> _diagramConfig(Map<Object?, Object?> json, DiagramType type)
   final value = json[expected];
   return switch (type) {
     DiagramType.architecture => _architectureConfig(value),
+    DiagramType.classDiagram => _classConfig(value),
     DiagramType.cynefin => _cynefinConfig(value),
     DiagramType.eventModeling => _eventModelingConfig(value),
+    DiagramType.entityRelationship => _erConfig(value),
     DiagramType.flowchart => _flowchartConfig(value),
     DiagramType.gantt => _ganttConfig(value),
     DiagramType.gitGraph => _gitGraphConfig(value),
@@ -845,11 +886,68 @@ Map<String, Object> _diagramConfig(Map<Object?, Object?> json, DiagramType type)
     DiagramType.railroadEbnf ||
     DiagramType.railroadPeg => _railroadConfig(value),
     DiagramType.sequence => _sequenceConfig(value),
+    DiagramType.stateDiagram => _stateConfig(value),
     DiagramType.treeView => _treeViewConfig(value),
     DiagramType.treemap => _treemapConfig(value),
     DiagramType.wardley => _wardleyConfig(value),
     _ => throw FormatException('$expected are not supported for ${type.name} fixtures'),
   };
+}
+
+const _classConfigKeys = {
+  ..._baseDiagramConfigKeys,
+  'nodeSpacing',
+  'rankSpacing',
+  'diagramPadding',
+  'nodePadding',
+  'compartmentPadding',
+  'edgeWidth',
+};
+
+const _stateConfigKeys = {
+  ..._baseDiagramConfigKeys,
+  'nodeSpacing',
+  'rankSpacing',
+  'diagramPadding',
+  'nodePadding',
+  'noteMargin',
+  'edgeWidth',
+};
+
+const _erConfigKeys = {
+  ..._baseDiagramConfigKeys,
+  'nodeSpacing',
+  'rankSpacing',
+  'diagramPadding',
+  'cellPadding',
+  'edgeWidth',
+};
+
+Map<String, Object> _classConfig(Object? value) =>
+    _graphConfig(value, optionName: 'classOptions', keys: _classConfigKeys);
+
+Map<String, Object> _stateConfig(Object? value) =>
+    _graphConfig(value, optionName: 'stateOptions', keys: _stateConfigKeys);
+
+Map<String, Object> _erConfig(Object? value) => _graphConfig(value, optionName: 'erOptions', keys: _erConfigKeys);
+
+Map<String, Object> _graphConfig(Object? value, {required String optionName, required Set<String> keys}) {
+  if (value is! Map<String, Object?> || value.isEmpty || value.keys.any((key) => !keys.contains(key))) {
+    throw FormatException('Invalid fixture $optionName');
+  }
+  final result = <String, Object>{};
+  for (final MapEntry(:key, :value) in value.entries) {
+    final valid = _baseDiagramConfigKeys.contains(key)
+        ? _baseDiagramConfigValue(key, value)
+        : switch ((key, value)) {
+            ('diagramPadding', final num option) when option >= 0 => option,
+            (_, final num option) when option > 0 => option,
+            _ => null,
+          };
+    if (valid == null) throw FormatException('Invalid fixture $optionName');
+    result[key] = valid;
+  }
+  return Map.unmodifiable(result);
 }
 
 const _kanbanConfigKeys = {..._baseDiagramConfigKeys, 'padding', 'sectionWidth', 'ticketBaseUrl'};
@@ -1733,13 +1831,14 @@ String _paintSignature(XmlElement element, String transform, String styleSheets)
       ? _firstVisibleTextElement(element) ?? element
       : element;
   final htmlColor = htmlText ? _htmlTextColor(paintElement, element, styleSheets) : null;
+  final browserHtmlColor = _browserEdgeLabelColor(element) ?? htmlColor;
   final normalized = {
     for (final MapEntry(:key, :value) in properties.entries)
       key: _normalizedPaintValue(
         key,
         htmlText && key == 'fill'
-            ? htmlColor ?? _inheritedPresentationValue(element, key, styleSheets) ?? value
-            : htmlColor != null && key == 'stroke'
+            ? browserHtmlColor ?? _inheritedPresentationValue(element, key, styleSheets) ?? value
+            : browserHtmlColor != null && key == 'stroke'
             ? 'none'
             : _inheritedPresentationValue(paintElement, key, styleSheets) ?? value,
         paintElement,
@@ -1756,6 +1855,20 @@ String _paintSignature(XmlElement element, String transform, String styleSheets)
     if (normalized['stroke'] != 'none') 'stroke-opacity=$strokeOpacity',
   ];
   return '$geometry|${values.join('|')}';
+}
+
+String? _browserEdgeLabelColor(XmlElement element) {
+  var edgeLabel = false;
+  for (XmlElement? current = element; current != null; current = current.parentElement) {
+    final classes = (current.getAttribute('class') ?? '').split(RegExp(r'\s+'));
+    edgeLabel = edgeLabel || classes.contains('edgeLabel');
+    if (current.name.local == 'svg' && edgeLabel) {
+      if (classes.contains('erDiagram')) return 'black';
+      if (classes.contains('statediagram')) return '#333333';
+      return null;
+    }
+  }
+  return null;
 }
 
 String? _htmlTextColor(XmlElement element, XmlElement foreignObject, String styleSheets) {
@@ -1830,7 +1943,7 @@ String _normalizedPaintValue(String name, String value, XmlElement element, Stri
   }
   if (name == 'fill' || name == 'stroke') return _normalizedColor(normalized);
   if (name == 'stroke-dasharray' && normalized != 'none') {
-    return normalized
+    final dashes = normalized
         .split(_svgNumericListSeparator)
         .where((part) => part.isNotEmpty)
         .map(
@@ -1839,7 +1952,8 @@ String _normalizedPaintValue(String name, String value, XmlElement element, Stri
             null => part,
           },
         )
-        .join(' ');
+        .toList(growable: false);
+    return dashes.every((dash) => double.tryParse(dash) == 0) ? 'none' : dashes.join(' ');
   }
   if (name == 'stroke-width' && normalized.endsWith('px')) {
     normalized = normalized.substring(0, normalized.length - 2);
@@ -1952,6 +2066,12 @@ String _geometrySignature(XmlElement element, String transform, String styleShee
   String number(String value) => _translatedNumber(value, 0);
   String x(String value) => _translatedNumber(value, translation?.dx ?? 0);
   String y(String value) => _translatedNumber(value, translation?.dy ?? 0);
+  final stateClusterOuter = _isStateClusterOuter(element);
+  String cssLength(String name, [String fallback = '0']) => attribute(
+    name,
+    _stylesheetProperty(element, name, styleSheets) ??
+        (stateClusterOuter && (name == 'rx' || name == 'ry') ? '5' : fallback),
+  ).replaceFirst(RegExp(r'px$'), '');
   final name = element.name.local;
   final values = switch (name) {
     'circle' => [x(attribute('cx', '0')), y(attribute('cy', '0')), number(attribute('r', '0'))],
@@ -1976,8 +2096,8 @@ String _geometrySignature(XmlElement element, String transform, String styleShee
       y(attribute('y', '0')),
       number(attribute('width', '0')),
       number(attribute('height', '0')),
-      number(attribute('rx', '0')),
-      number(attribute('ry', attribute('rx', '0'))),
+      number(cssLength('rx')),
+      number(cssLength('ry', cssLength('rx'))),
     ],
     'foreignObject' => _foreignObjectGeometryValues(element, translation, styleSheets),
     'text' => _textGeometryValues(element, translation, styleSheets, attribute),
@@ -1988,7 +2108,26 @@ String _geometrySignature(XmlElement element, String transform, String styleShee
   return [kind, if (translation == null) _normalizedTransform(transform) else '', ...values, text].join('|');
 }
 
+bool _isStateClusterOuter(XmlElement element) {
+  if (!(element.getAttribute('class') ?? '').split(RegExp(r'\s+')).contains('outer')) return false;
+  for (XmlElement? current = element.parentElement; current != null; current = current.parentElement) {
+    if ((current.getAttribute('class') ?? '').split(RegExp(r'\s+')).contains('statediagram-cluster')) return true;
+  }
+  return false;
+}
+
 bool _isComparableGeometryElement(XmlElement element, XmlElement root) {
+  final rootClasses = (root.getAttribute('class') ?? '').split(RegExp(r'\s+'));
+  final roleDescription = root.getAttribute('aria-roledescription');
+  final backendSpecificClasses = switch ((rootClasses, roleDescription)) {
+    (final classes, _) when classes.contains('classDiagram') => _classBackendSpecificClasses,
+    (_, 'classDiagram') => _classBackendSpecificClasses,
+    (final classes, _) when classes.contains('erDiagram') => _erBackendSpecificClasses,
+    (_, 'er') => _erBackendSpecificClasses,
+    (final classes, _) when classes.contains('statediagram') => _stateBackendSpecificClasses,
+    (_, 'stateDiagram') => _stateBackendSpecificClasses,
+    _ => const <String>{},
+  };
   for (XmlElement? ancestor = element; ancestor != null && ancestor != root; ancestor = ancestor.parentElement) {
     final classes = (ancestor.getAttribute('class') ?? '').split(RegExp(r'\s+'));
     if (ancestor.name.local == 'svg' ||
@@ -2004,7 +2143,8 @@ bool _isComparableGeometryElement(XmlElement element, XmlElement root) {
         classes.contains('flowchart-node-stadium') ||
         (ancestor.name.local == 'g' && classes.contains('outer-path')) ||
         classes.contains('sequence-message-marker') ||
-        classes.contains('em-arrowhead')) {
+        classes.contains('em-arrowhead') ||
+        classes.any(backendSpecificClasses.contains)) {
       return false;
     }
   }
@@ -2015,6 +2155,43 @@ bool _isComparableGeometryElement(XmlElement element, XmlElement root) {
   }
   return true;
 }
+
+// Rough.js outlines, SVG markers, and explicit scene primitives use different
+// DOM structures. Their rendered appearance is locked by the diagram goldens;
+// the parity signature compares the remaining shared semantic geometry.
+const _classBackendSpecificClasses = {
+  'class-node',
+  'class-note',
+  'class-compartment-divider',
+  'class-extension-marker',
+  'class-composition-marker',
+  'class-aggregation-marker',
+  'class-dependency-marker',
+  'class-lollipop-marker',
+  'class-relation-label-background',
+  'divider',
+};
+const _stateBackendSpecificClasses = {
+  'state-transition-arrow',
+  'state-transition-label-background',
+  'state-end',
+  'state-end-inner',
+  'state-note',
+  'state-note-edge',
+  'note-edge',
+};
+const _erBackendSpecificClasses = {
+  'er-entity',
+  'er-attribute-row',
+  'er-attribute-divider',
+  'er-column-divider',
+  'er-cardinality',
+  'er-cardinality-crow-foot',
+  'er-relationship-label-background',
+  'row-rect-odd',
+  'row-rect-even',
+  'divider',
+};
 
 bool _isDisplayNone(XmlElement element) {
   if (element.getAttribute('display') == 'none') return true;
@@ -2166,7 +2343,7 @@ String _normalizedFontWeight(XmlElement element, String styleSheets) {
     if (value != null && value != 'inherit') {
       return switch (value.trim().toLowerCase()) {
         'normal' => _normalFontWeight,
-        'bold' => _boldFontWeight,
+        'bold' || 'bolder' => _boldFontWeight,
         final weight => weight,
       };
     }

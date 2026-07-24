@@ -757,6 +757,31 @@ sealed class DiagramRenderOptions {
   final bool? useMaxWidth;
 }
 
+/// Shared spacing and stroke options for directed graph renderers.
+sealed class GraphRenderOptions extends DiagramRenderOptions {
+  /// Creates graph renderer options.
+  const GraphRenderOptions({
+    super.useWidth,
+    super.useMaxWidth,
+    required this.nodeSpacing,
+    required this.rankSpacing,
+    required this.diagramPadding,
+    required this.edgeWidth,
+  });
+
+  /// Separation between nodes in the same rank, in scene units.
+  final double nodeSpacing;
+
+  /// Separation between consecutive ranks, in scene units.
+  final double rankSpacing;
+
+  /// Padding around graph content before global viewport padding.
+  final double diagramPadding;
+
+  /// Normal relationship stroke width.
+  final double edgeWidth;
+}
+
 /// Typed rendering options for Mermaid architecture diagrams.
 final class ArchitectureRenderOptions extends DiagramRenderOptions {
   /// Creates a typed [ArchitectureRenderOptions].
@@ -2449,32 +2474,79 @@ final class RadarRenderOptions extends DiagramRenderOptions {
 }
 
 /// Typed rendering options for Mermaid flowcharts.
-final class FlowchartRenderOptions extends DiagramRenderOptions {
+final class FlowchartRenderOptions extends GraphRenderOptions {
   /// Creates flowchart options with Mermaid-compatible spacing defaults.
   const FlowchartRenderOptions({
     super.useWidth,
     super.useMaxWidth = true,
-    this.nodeSpacing = 50,
-    this.rankSpacing = 50,
-    this.diagramPadding = 8,
+    super.nodeSpacing = 50,
+    super.rankSpacing = 50,
+    super.diagramPadding = 8,
     this.nodePadding = 15,
-    this.edgeWidth = 1,
+    super.edgeWidth = 1,
   });
-
-  /// Separation between nodes in the same rank, in scene units.
-  final double nodeSpacing;
-
-  /// Separation between consecutive ranks, in scene units.
-  final double rankSpacing;
-
-  /// Padding around flowchart content before global viewport padding.
-  final double diagramPadding;
 
   /// Horizontal and vertical padding around node labels.
   final double nodePadding;
+}
 
-  /// Normal flowchart edge width.
-  final double edgeWidth;
+/// Typed rendering options for Mermaid class diagrams.
+final class ClassRenderOptions extends GraphRenderOptions {
+  /// Creates class-diagram options with Mermaid-compatible spacing defaults.
+  const ClassRenderOptions({
+    super.useWidth,
+    super.useMaxWidth = true,
+    super.nodeSpacing = 50,
+    super.rankSpacing = 50,
+    super.diagramPadding = 8,
+    this.nodePadding = 12,
+    this.compartmentPadding = 7,
+    super.edgeWidth = 1,
+  });
+
+  /// Horizontal padding inside class boxes.
+  final double nodePadding;
+
+  /// Vertical padding around compartment rows.
+  final double compartmentPadding;
+}
+
+/// Typed rendering options for Mermaid state diagrams.
+final class StateRenderOptions extends GraphRenderOptions {
+  /// Creates state-diagram options with Mermaid-compatible spacing defaults.
+  const StateRenderOptions({
+    super.useWidth,
+    super.useMaxWidth = true,
+    super.nodeSpacing = 50,
+    super.rankSpacing = 50,
+    super.diagramPadding = 8,
+    this.nodePadding = 15,
+    this.noteMargin = 10,
+    super.edgeWidth = 1,
+  });
+
+  /// Padding inside state boxes.
+  final double nodePadding;
+
+  /// Gap between a state and an attached note.
+  final double noteMargin;
+}
+
+/// Typed rendering options for Mermaid entity-relationship diagrams.
+final class ErRenderOptions extends GraphRenderOptions {
+  /// Creates ER-diagram options with Mermaid-compatible spacing defaults.
+  const ErRenderOptions({
+    super.useWidth,
+    super.useMaxWidth = true,
+    super.nodeSpacing = 50,
+    super.rankSpacing = 80,
+    super.diagramPadding = 8,
+    this.cellPadding = 12.5,
+    super.edgeWidth = 1,
+  });
+
+  /// Padding inside entity-table cells.
+  final double cellPadding;
 }
 
 /// Typed Mermaid sequence-diagram layout configuration.
@@ -2575,6 +2647,8 @@ final class RenderOptions {
     this.architecture = const ArchitectureRenderOptions(),
     this.cynefin = const CynefinRenderOptions(),
     this.eventModeling = const EventModelingRenderOptions(),
+    this.classDiagram = const ClassRenderOptions(),
+    this.entityRelationship = const ErRenderOptions(),
     this.flowchart = const FlowchartRenderOptions(),
     this.gantt = const GanttRenderOptions(),
     this.gitGraph = const GitGraphRenderOptions(),
@@ -2585,6 +2659,7 @@ final class RenderOptions {
     this.radar = const RadarRenderOptions(),
     this.railroad = const RailroadRenderOptions(),
     this.sequence = const SequenceRenderOptions(),
+    this.stateDiagram = const StateRenderOptions(),
     this.treeView = const TreeViewRenderOptions(),
     this.treemap = const TreemapRenderOptions(),
     this.wardley = const WardleyRenderOptions(),
@@ -2605,6 +2680,12 @@ final class RenderOptions {
 
   /// Event Modeling renderer configuration.
   final EventModelingRenderOptions eventModeling;
+
+  /// Class-diagram renderer configuration.
+  final ClassRenderOptions classDiagram;
+
+  /// Entity-relationship renderer configuration.
+  final ErRenderOptions entityRelationship;
 
   /// Flowchart renderer configuration.
   final FlowchartRenderOptions flowchart;
@@ -2636,6 +2717,9 @@ final class RenderOptions {
   /// Sequence renderer configuration.
   final SequenceRenderOptions sequence;
 
+  /// State-diagram renderer configuration.
+  final StateRenderOptions stateDiagram;
+
   /// Tree View renderer configuration.
   final TreeViewRenderOptions treeView;
 
@@ -2659,6 +2743,8 @@ final class RenderOptions {
           ArchitectureRenderOptions() => architecture,
           CynefinRenderOptions() => cynefin,
           EventModelingRenderOptions() => eventModeling,
+          ClassRenderOptions() => classDiagram,
+          ErRenderOptions() => entityRelationship,
           FlowchartRenderOptions() => flowchart,
           GanttRenderOptions() => gantt,
           GitGraphRenderOptions() => gitGraph,
@@ -2669,6 +2755,7 @@ final class RenderOptions {
           RadarRenderOptions() => radar,
           RailroadRenderOptions() => railroad,
           SequenceRenderOptions() => sequence,
+          StateRenderOptions() => stateDiagram,
           TreeViewRenderOptions() => treeView,
           TreemapRenderOptions() => treemap,
           WardleyRenderOptions() => wardley,
