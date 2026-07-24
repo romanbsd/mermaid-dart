@@ -222,10 +222,15 @@ void _element(XmlBuilder builder, SceneElement element, {bool omitIdentity = fal
         );
       }
 
-      if (link == null) {
+      final href = link == null ? null : _safeHref(link);
+      if (href == null) {
         buildText();
       } else {
-        builder.element('a', attributes: {'href': link, 'target': '_blank'}, nest: buildText);
+        builder.element(
+          'a',
+          attributes: {'href': href, 'target': '_blank', 'rel': 'noopener noreferrer'},
+          nest: buildText,
+        );
       }
     case SceneIcon(:final position, :final geometry, :final fill, :final stroke):
       builder.element(
@@ -294,6 +299,29 @@ String _command(PathCommand command) => switch (command) {
 String _points(List<Point> points) => points.map((point) => '${_number(point.x)},${_number(point.y)}').join(' ');
 String _bounds(Bounds bounds) =>
     '${_number(bounds.left)} ${_number(bounds.top)} ${_number(bounds.width)} ${_number(bounds.height)}';
+
+// SVG is commonly embedded inline, so links use a strict default policy:
+// ordinary web/mail destinations and unambiguous relative references only.
+String? _safeHref(String value) {
+  final href = value.trim();
+  if (href.isEmpty || href.runes.any(_unsafeHrefCodePoint) || href.startsWith('//') || href.startsWith(r'\\')) {
+    return null;
+  }
+  final uri = Uri.tryParse(href);
+  if (uri == null) return null;
+  if (!uri.hasScheme) return href.contains(r'\') ? null : href;
+  return switch (uri.scheme.toLowerCase()) {
+    'http' || 'https' when uri.hasAuthority && uri.host.isNotEmpty => href,
+    'mailto' when uri.path.isNotEmpty => href,
+    _ => null,
+  };
+}
+
+bool _unsafeHrefCodePoint(int codePoint) =>
+    codePoint <= 0x1f ||
+    codePoint >= 0x7f && codePoint <= 0x9f ||
+    codePoint >= 0x2000 && codePoint <= 0x200d ||
+    codePoint == 0xfeff;
 
 // Four digits keep ordinary SVG compact. Six are retained only when the
 // shorter representation would cross a centipixel comparison boundary.

@@ -70,5 +70,31 @@ void main() {
       expect(model.commits.first.message, 'replacement');
       expect(model.commits.last.parents, ['A']);
     });
+
+    test('keeps implicit branch order stable past nine branches', () {
+      final model = buildGitGraphModel(
+        GitGraphAst(statements: [for (var i = 1; i <= 12; i++) GitGraphBranchAst(name: 'b$i')]),
+        const GitGraphRenderOptions(),
+      );
+
+      // Implicit orders must preserve creation order; the previous
+      // `double.parse('0.$creationIndex')` made b10 (0.1) collide with b1 and
+      // sort ahead of b2..b9.
+      expect(model.branches.map((branch) => branch.name), [
+        'main',
+        'b1',
+        'b2',
+        'b3',
+        'b4',
+        'b5',
+        'b6',
+        'b7',
+        'b8',
+        'b9',
+        'b10',
+        'b11',
+        'b12',
+      ]);
+    });
   });
 }

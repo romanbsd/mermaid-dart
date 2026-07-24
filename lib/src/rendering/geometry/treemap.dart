@@ -134,14 +134,10 @@ void _slice<T>(
 
 Bounds _tileBounds(double x0, double y0, double x1, double y1, double padding, bool round) {
   final half = padding / 2;
-  final left = x0 + half;
-  final top = y0 + half;
-  final right = x1 - half;
-  final bottom = y1 - half;
-  return Bounds(
-    left: round ? left.roundToDouble() : left,
-    top: round ? top.roundToDouble() : top,
-    width: (round ? right.roundToDouble() : right) - (round ? left.roundToDouble() : left),
-    height: (round ? bottom.roundToDouble() : bottom) - (round ? top.roundToDouble() : top),
-  );
+  double snap(double value) => round ? value.roundToDouble() : value;
+  final left = snap(x0 + half);
+  final top = snap(y0 + half);
+  final right = snap(x1 - half);
+  final bottom = snap(y1 - half);
+  return Bounds(left: left, top: top, width: right - left, height: bottom - top);
 }

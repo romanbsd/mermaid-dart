@@ -69,7 +69,11 @@ GitGraphModel buildGitGraphModel(GitGraphAst ast, GitGraphRenderOptions options)
         branches.add(
           GitBranchModel(
             name: name,
-            order: order?.toDouble() ?? double.parse('0.$creationIndex'),
+            // Implicit-order branches sort just after main (order 0) in creation
+            // order. A decimal-string fraction (`0.$creationIndex`) collides once
+            // creationIndex reaches double digits (10 -> 0.1 == branch 1); a plain
+            // divide keeps them monotonic. creationIndex tiebreaks in the sort.
+            order: order?.toDouble() ?? creationIndex / 1000,
             creationIndex: creationIndex,
           ),
         );
