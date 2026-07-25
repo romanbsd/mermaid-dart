@@ -49,7 +49,7 @@ Bounds? sceneElementGeometryBounds(SceneElement element, {bool includeText = tru
     width: radiusX * 2,
     height: radiusY * 2,
   ),
-  ScenePolygon(:final points) || ScenePolyline(:final points) => _pointsBounds(points),
+  ScenePointsShape(:final points) => _pointsBounds(points),
   ScenePath(:final commands) => pathBounds(commands),
   SceneText(:final bounds) => includeText ? bounds : null,
   SceneIcon(:final position, :final geometry) => geometry.bounds.translated(position.x, position.y),

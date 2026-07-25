@@ -42,15 +42,7 @@ RailroadNodeAst _parsePrefix(RailroadScanner scanner) {
 }
 
 RailroadNodeAst _parsePrimary(RailroadScanner scanner) {
-  final current = scanner.current;
-  if (current == '"' || current == "'") {
-    return RailroadTerminalAst(scanner.quotedString());
-  }
-  if (scanner.tryConsume('(')) {
-    final node = _parseChoice(scanner);
-    scanner.expect(')');
-    return node;
-  }
+  if (railroadCommonPrimary(scanner, _parseChoice) case final node?) return node;
   if (scanner.tryConsume('.')) return const RailroadSpecialAst('.');
   return RailroadNonTerminalAst(scanner.identifier(_identifier));
 }

@@ -48,15 +48,7 @@ RailroadNodeAst _parseTerm(RailroadScanner scanner) {
 }
 
 RailroadNodeAst _parsePrimary(RailroadScanner scanner) {
-  final current = scanner.current;
-  if (current == '"' || current == "'") {
-    return RailroadTerminalAst(scanner.quotedString());
-  }
-  if (scanner.tryConsume('(')) {
-    final node = _parseChoice(scanner);
-    scanner.expect(')');
-    return node;
-  }
+  if (railroadCommonPrimary(scanner, _parseChoice) case final node?) return node;
   if (scanner.tryConsume('[')) {
     final node = RailroadOptionalAst(_parseChoice(scanner));
     scanner.expect(']');

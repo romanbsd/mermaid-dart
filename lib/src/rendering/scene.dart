@@ -673,10 +673,12 @@ final class SceneEllipse extends SceneShape with _SceneValue {
   List<Object?> get fields => [id, center, radiusX, radiusY, fill, stroke, role, cssClasses, label];
 }
 
-/// Backend-neutral scene polygon in a laid-out diagram scene.
-final class ScenePolygon extends SceneShape with _SceneValue {
-  /// Creates a typed [ScenePolygon].
-  const ScenePolygon({
+/// A scene element whose geometry is the list of [points] it connects.
+///
+/// Consumers that only need the outline, such as bounds, can handle every point
+/// list in one branch instead of once per element kind.
+sealed class ScenePointsShape extends SceneShape {
+  const ScenePointsShape({
     required super.id,
     required this.points,
     super.fill,
@@ -688,16 +690,31 @@ final class ScenePolygon extends SceneShape with _SceneValue {
 
   /// The points.
   final List<Point> points;
+}
+
+/// Backend-neutral scene polygon in a laid-out diagram scene.
+final class ScenePolygon extends ScenePointsShape with _SceneValue {
+  /// Creates a typed [ScenePolygon].
+  const ScenePolygon({
+    required super.id,
+    required super.points,
+    super.fill,
+    super.stroke,
+    super.role,
+    super.cssClasses,
+    super.label,
+  });
+
   @override
   List<Object?> get fields => [id, points, fill, stroke, role, cssClasses, label];
 }
 
 /// Backend-neutral scene polyline in a laid-out diagram scene.
-final class ScenePolyline extends SceneShape with _SceneValue {
+final class ScenePolyline extends ScenePointsShape with _SceneValue {
   /// Creates a typed [ScenePolyline].
   const ScenePolyline({
     required super.id,
-    required this.points,
+    required super.points,
     super.fill,
     super.stroke,
     super.role,
@@ -705,8 +722,6 @@ final class ScenePolyline extends SceneShape with _SceneValue {
     super.label,
   });
 
-  /// The points.
-  final List<Point> points;
   @override
   List<Object?> get fields => [id, points, fill, stroke, role, cssClasses, label];
 }

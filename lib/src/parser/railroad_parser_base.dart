@@ -68,6 +68,23 @@ RailroadAst railroadAst(CommonMetadata metadata, List<RailroadRuleAst> rules, Ra
   accessibilityDescription: metadata.accessibilityDescription,
 );
 
+/// The primary expression forms EBNF and PEG spell the same way: a quoted
+/// terminal or a parenthesised group. Returns `null` when the scanner is at
+/// neither, leaving the dialect's own forms to the caller.
+RailroadNodeAst? railroadCommonPrimary(
+  RailroadScanner scanner,
+  RailroadNodeAst Function(RailroadScanner scanner) parseChoice,
+) {
+  final current = scanner.current;
+  if (current == '"' || current == "'") return RailroadTerminalAst(scanner.quotedString());
+  if (scanner.tryConsume('(')) {
+    final node = parseChoice(scanner);
+    scanner.expect(')');
+    return node;
+  }
+  return null;
+}
+
 /// A `*` repetition: zero or more of [node].
 RailroadNodeAst railroadZeroOrMore(RailroadNodeAst node) => RailroadRepetitionAst(node, min: 0, max: double.infinity);
 
