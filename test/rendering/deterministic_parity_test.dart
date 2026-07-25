@@ -2021,16 +2021,18 @@ void main() {
 
       final web = services['Web App']!;
       // Two nonlinear 1000-tick proof passes accumulate a few millionths of
-      // floating-point drift relative to the JavaScript implementation.
-      expect(web.x - services['NSG']!.x, closeTo(441.7933154561815, 5e-6));
-      expect(web.x - services['App Plan']!.x, closeTo(227.80741633129946, 5e-6));
-      expect(web.y - services['Registry']!.y, closeTo(332.99465409932237, 5e-6));
-      expect(services['PE Bus']!.y - web.y, closeTo(188.59217977970275, 5e-6));
-      expect(services['PE Blob']!.x - web.x, closeTo(250.00364483071098, 5e-6));
-      expect(services['PE Blob']!.y - web.y, closeTo(256.4503909145969, 5e-6));
-      expect(services['VM']!.x - web.x, closeTo(-788.0451198792834, 5e-6));
-      expect(groups['App Subnet']!.width, closeTo(606.7933154561815, 5e-6));
-      expect(groups['Subscription B']!.height, closeTo(1014.2293650989059, 5e-6));
+      // floating-point drift relative to the JavaScript implementation; a
+      // last-bit difference in the starting geometry grows to about ten
+      // millionths by the end of the second pass.
+      expect(web.x - services['NSG']!.x, closeTo(441.7933154561815, 1e-5));
+      expect(web.x - services['App Plan']!.x, closeTo(227.80741633129946, 1e-5));
+      expect(web.y - services['Registry']!.y, closeTo(332.99465409932237, 1e-5));
+      expect(services['PE Bus']!.y - web.y, closeTo(188.59217977970275, 1e-5));
+      expect(services['PE Blob']!.x - web.x, closeTo(250.00364483071098, 1e-5));
+      expect(services['PE Blob']!.y - web.y, closeTo(256.4503909145969, 1e-5));
+      expect(services['VM']!.x - web.x, closeTo(-788.0451198792834, 1e-5));
+      expect(groups['App Subnet']!.width, closeTo(606.7933154561815, 1e-5));
+      expect(groups['Subscription B']!.height, closeTo(1014.2293650989059, 1e-5));
     });
 
     test('architecture row alignments center a fan-in using Mermaid proof spacing', () {
@@ -2058,7 +2060,9 @@ void main() {
       expect(services.map((service) => service.y).take(3).toSet(), hasLength(1));
       // Dart and JavaScript force accumulation differs by a few thousandths
       // while remaining inside the visual-parity tolerance.
-      expect(services[0].x, 40);
+      // The leftmost service lands on the left margin up to the last bit that
+      // the closing fCoSE recentering leaves in the coordinate.
+      expect(services[0].x, closeTo(40, 1e-9));
       expect(services[1].x - services[0].x, closeTo(126.76058618426365, 0.01));
       expect(services[2].x - services[1].x, closeTo(127.95720834057621, 0.01));
       expect(services[3].x - (services[0].x + services[2].x) / 2, closeTo(0.53541549731812, 0.01));
